@@ -1,4 +1,89 @@
+#define _POSIX_C_SOURCE 200809L
 #include "headers/file_io.h"
+
+/*
+    Read the dataset from the given filename into the provided buffers.
+    The dataset file is expected to have a header line followed by data lines.
+    Each data line contains feature values followed by a label, all separated by commas.
+
+    Parameters:
+        filename: Path to the dataset file.
+        examples_buffer: Array to store feature values.
+        labels_buffer: Array to store labels.
+        num_features: Number of features per sample.
+        num_samples: Number of samples to read.
+
+    Returns:
+        1 on success, 0 on failure.
+*/
+int read_dataset(const char *filename, double *examples_buffer, int *labels_buffer, int num_features, int num_samples){
+    // Open the dataset file
+    FILE *fp = fopen(filename, "r");
+    if(!fp){
+        fprintf(stderr, "Error opening dataset file \n");
+        return -1;
+    }
+
+    // Creating reading buffer
+    char line_buffer[READING_BUFFER_SIZE];
+    int readed_rows = 0;
+
+    // Skip the first line (header)
+    if(!fgets(line_buffer, sizeof(line_buffer), fp)) return 0; 
+
+    // Read each line and parse the values
+    while(readed_rows < num_samples && fgets(line_buffer, sizeof(line_buffer), fp) != NULL){
+        // Parse the line, extracting features and label
+        char *ptr = line_buffer;
+        for(int f=0; f<num_features; f++){
+            examples_buffer[readed_rows * num_features + f] = strtod(ptr,&ptr);
+            if(*ptr == ',') ptr++;
+        }
+        labels_buffer[readed_rows] = (int)strtol(ptr, NULL, 10);
+        readed_rows++;
+    }
+
+    fclose(fp);
+    // Return 1 if succefully read
+    return readed_rows == num_samples ? 1 : 0;
+}
+
+/*
+    Read metadata from the given metadata file.
+    The metadata file is expected to contain lines in the format:
+        samples: <number_of_samples>
+        features: <number_of_features>
+        clusters: <number_of_clusters>
+
+    Parameters:
+        metadata_filename: Path to the metadata file.
+        samples: Pointer to store the number of samples.
+        features: Pointer to store the number of features.
+        clusters: Pointer to store the number of clusters.
+
+    Returns:
+        1 on success, -1 on failure.
+*/
+int read_metadata(const char *metadata_filename, int *samples, int *features, int *clusters){
+    // Open the metadata file
+    FILE *meta_fp = fopen(metadata_filename, "r");
+    if(!meta_fp){
+        fprintf(stderr, "Error opening metadata file \n");
+        return -1;
+    }
+
+    // Read metadata lines
+    char line[READING_BUFFER_SIZE];
+    while(fgets(line, sizeof(line), meta_fp) != NULL) {
+        if(sscanf(line, "samples: %d", samples) == 1) continue;
+        if(sscanf(line, "features: %d", features) == 1) continue;
+        if(sscanf(line, "clusters: %d", clusters) == 1) continue;
+    }
+
+    fclose(meta_fp);
+    // Return 1 if successfully read
+    return 1;
+}
 
 /*
     Write the execution information to the output csv file
