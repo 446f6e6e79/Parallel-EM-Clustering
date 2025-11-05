@@ -1,0 +1,21 @@
+\section{Performance and Scalability Analysis}
+
+\begin{table}[h!]
+    \centering
+    \label{tab:matrix_vector_times}
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{|c|c|c|c|c|c|}
+    \hline
+    \textbf{N\_Processes} & \multicolumn{5}{c|}{\textbf{Order of Matrix}} \\ \hline
+    & \textbf{1024} & \textbf{2048} & \textbf{4096} & \textbf{8192} & \textbf{16,384} \\ \hline
+    1  & 4.1 & 16.0 & 64.0 & 270 & 1100 \\ \hline
+    2  & 2.3 & 8.5  & 33.0 & 140 & 560  \\ \hline
+    4  & 2.0 & 5.1  & 18.0 & 70  & 280  \\ \hline
+    8  & 1.7 & 3.3  & 9.8  & 36  & 140  \\ \hline
+    16 & 1.7 & 2.6  & 5.9  & 19  & 71   \\ \hline
+    \end{tabular}
+    \caption{Run-times (in seconds) for}
+    \vspace{0.5em}
+\end{table}
+
+    

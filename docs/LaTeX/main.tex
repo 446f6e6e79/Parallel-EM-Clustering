@@ -1,0 +1,32 @@
+\documentclass{article}
+
+% Importa tutti i pacchetti e le configurazioni
+\input{setup.tex}
+
+\title{Parallel EM Clustering\\}
+\author{Davide Donà - 264467 \and
+ Andrea Blushi - 264468}
+
+\date{\MonthName\ \number\year \\[0.5em]
+\small\textcolor{gray}{\href{https://github.com/446f6e6e79/Parallel-EM-Clustering}{https://github.com/446f6e6e79/Parallel-EM-Clustering}}
+}
+
+\begin{document}
+
+%Title and table of contents
+\maketitle
+\newpage
+\tableofcontents
+
+\newpage
+
+\include{chapters/Introduction.tex}
+\include{chapters/Parallel_design.tex}
+\include{chapters/Implementation.tex}
+\include{chapters/Scalability.tex}
+
+\newpage
+\nocite{*}
+\bibliographystyle{plain}
+\bibliography{references.bib}
+\end{document}
