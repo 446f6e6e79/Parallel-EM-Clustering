@@ -2,6 +2,8 @@
 *.d
 
 # Object files
+*/obj/
+*/dep/
 *.o
 *.ko
 *.obj
@@ -50,3 +52,23 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+#Gitignore for LaTeX projects
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.bbl
+*.blg
+*/LaTeX/build/main.pdf
+.DS_Store
+notes/
+
+# Ignoring the data files
+data/*.txt
+data/*.bin
+.vscode/
+
