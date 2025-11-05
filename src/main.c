@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     const char *filename = argv[1];
     const char *metadata_filename = argv[2];
 
-    // Read metadata
+    // Read metadata from metadata file
     int samples = 0, features = 0, clusters = 0;
     int meta_status = read_metadata(metadata_filename, &samples, &features, &clusters);
     if(meta_status != 1){
@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
     int *labels_buffer = malloc(samples * sizeof(int));
 
     // Read dataset
-    int n_read = read_dataset(filename, examples_buffer, labels_buffer, features, samples);
+    int n_read = read_dataset(filename, features, samples, examples_buffer, labels_buffer);
     if(n_read != 1){
         fprintf(stderr, "Failed to read dataset from file: %s\n", filename);
         free(examples_buffer);

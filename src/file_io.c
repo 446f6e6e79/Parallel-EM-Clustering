@@ -2,21 +2,22 @@
 #include "headers/file_io.h"
 
 /*
-    Read the dataset from the given filename into the provided buffers.
-    The dataset file is expected to have a header line followed by data lines.
-    Each data line contains feature values followed by a label, all separated by commas.
+    Read the dataset from the given filename, storing information into the provided vectors.
+    The dataset file is expected to have a header line followed by num_samples data lines.
+    Each data line contains num_features feature values followed by a label, all separated by commas.
 
     Parameters:
-        filename: Path to the dataset file.
-        examples_buffer: Array to store feature values.
-        labels_buffer: Array to store labels.
-        num_features: Number of features per sample.
-        num_samples: Number of samples to read.
+        - filename: Path to the dataset file.
+        - num_features: Number of features per sample.
+        - num_samples: Number of samples to read.
+    Output parameters:
+        - examples_buffer: Array to store feature values.
+        - labels_buffer: Array to store labels.
 
     Returns:
         1 on success, 0 on failure.
 */
-int read_dataset(const char *filename, double *examples_buffer, int *labels_buffer, int num_features, int num_samples){
+int read_dataset(const char *filename, int num_features, int num_samples, double *examples_buffer, int *labels_buffer){
     // Open the dataset file
     FILE *fp = fopen(filename, "r");
     if(!fp){
@@ -44,7 +45,7 @@ int read_dataset(const char *filename, double *examples_buffer, int *labels_buff
     }
 
     fclose(fp);
-    // Return 1 if succefully read
+    // Return 1 if successfully read
     return readed_rows == num_samples ? 1 : 0;
 }
 
@@ -56,10 +57,11 @@ int read_dataset(const char *filename, double *examples_buffer, int *labels_buff
         clusters: <number_of_clusters>
 
     Parameters:
-        metadata_filename: Path to the metadata file.
-        samples: Pointer to store the number of samples.
-        features: Pointer to store the number of features.
-        clusters: Pointer to store the number of clusters.
+        - metadata_filename: Path to the metadata file.
+    Output parameters:
+        - samples*: Pointer to store the number of samples.
+        - features*: Pointer to store the number of features.
+        - clusters*: Pointer to store the number of clusters.
 
     Returns:
         1 on success, -1 on failure.

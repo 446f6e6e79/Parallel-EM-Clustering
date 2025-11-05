@@ -11,7 +11,7 @@
 #define READING_BUFFER_SIZE 2048
 
 int read_metadata(const char *metadata_filename, int *samples, int *features, int *clusters);
-int read_dataset(const char *filename, double *examples_buffer, int *labels_buffer, int num_features, int num_samples);
+int read_dataset(const char *filename, int num_features, int num_samples, double *examples_buffer, int *labels_buffer);
 int write_execution_info(const char *filename, int n_process, int n_elements, double time_seconds, double io_time, double compute_time);
 
 #endif
