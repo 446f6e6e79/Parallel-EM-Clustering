@@ -46,7 +46,7 @@ def build_parser():
     parser.add_argument("-f", "--features", type=int, default=2, help="Number of features (default: 2)")
     parser.add_argument("-k", "--clusters", type=int, default=3, help="Number of clusters (default: 3)")
     parser.add_argument("--means", nargs="+", default=None,
-                        help='List of cluster means, e.g. --means -5,0 0,5 5,0 (a mean per feature per cluster must be provided)')
+                        help='List of cluster means, e.g. --means m_1 m_2 ... m_k, where m_i= m_i_1,m_i_2,...,m_i_d (a mean per feature per cluster must be provided)')
     parser.add_argument("--std", type=float, nargs="+", default=None,
                         help="List of cluster standard deviations (default: all 1.0)")
     parser.add_argument("-r", "--random_state", type=int, default=42, help="Random seed (default: 42)")
@@ -60,13 +60,12 @@ def build_parser():
 
 def parse_means(means_list, n_clusters, n_features):
     """
-        Parse means input from CLI: e.g. --means -5,0 0,5 5,0
+        Parse means input from CLI: e.g. --means m_1 m_2 ... m_k, where m_i= m_i_1,m_i_2,...,m_i_d
     """
     if means_list is None:
         return None
 
     centers = []
-    # For each mean string (e.g. -5,0 - one per cluster) parse the atomic parameters
     for mean_str in means_list:
         # Split the string into individual coordinates
         mean_values = [float(x) for x in mean_str.split(",")]
