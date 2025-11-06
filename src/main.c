@@ -1,14 +1,12 @@
 #define _GNU_SOURCE
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+
 #include "headers/main.h"
-#include "headers/file_io.h"
 
 #define MAX_ITER 100
 
 double gaussian(double x, double mean, double var) {
+    // Guard to avoid division by zero
     if (var <= 0.0) {
         var = 1e-12;
     }
@@ -25,14 +23,15 @@ double gaussian(double x, double mean, double var) {
 int main(int argc, char **argv) {
     int N;                              // Number of samples
     int D;                              // Number of features
-    int K;                              // Number of clusters   
-    double *X = NULL;                   // Data matrix
+    int K;                              // Number of clusters
+    double *X = NULL;                   // X[N * D] Vector of data points
+    double *mu = NULL;                  // mu[k] Vector of cluster means
+    double *sigma = NULL;               // sigma[k] Vector of cluster variances
+    double *pi = NULL;                  // pi[k] Vector of mixture weights
+    double *gamma = NULL;               // gamma[N * K] Responsibilities vector, where gamma[i*K + k] is the responsibility of cluster k for data point i
+    
     int *predicted_labels = NULL;       // Predicted cluster labels
     int *ground_truth_labels = NULL;    // Ground truth labels
-    double *mu = NULL;                  // Cluster means
-    double *sigma = NULL;               // Cluster variances
-    double *pi = NULL;                  // Mixture weights
-    double *resp = NULL;                // Responsibilities
     
     // Check command line arguments
     if(argc < 3 || argc > 4){
@@ -55,7 +54,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Failed to read metadata from file: %s\n", metadata_filename);
         return 1;
     }
-    printf("Metadata: samples=%d, features=%d, clusters=%d\n", N, D, K);
+    printf("Metadata: samples N=%d, features D=%d, clusters K=%d\n", N, D, K);
 
     // Allocate buffers
     X = malloc(N * D * sizeof(double));
@@ -64,83 +63,94 @@ int main(int argc, char **argv) {
     mu = malloc(K * sizeof(double));
     sigma = malloc(K * sizeof(double));
     pi = malloc(K * sizeof(double));
-    resp = malloc((size_t)N * K * sizeof(double));
+    gamma = malloc(N * K * sizeof(double));
 
     // Check that all allocations were successful
-    if(!X || !predicted_labels || !ground_truth_labels || !mu || !sigma || !pi || !resp){
+    if(!X || !predicted_labels || !ground_truth_labels || !mu || !sigma || !pi || !gamma){
         fprintf(stderr, "Memory allocation failed\n");
-        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&resp);
+        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&gamma);
         return 1;
     }   
 
     // Read dataset
     if(read_dataset(filename, D, N, X, ground_truth_labels) != 0){
         fprintf(stderr, "Failed to read dataset from file: %s\n", filename);
-        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&resp);
+        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&gamma);
         return 1;
     }
     printf("dataset read -> %d rows\n", N);
 
-    /* TODO:check from here on */
     // test print first few rows
-    for(int i=0; i<5 && i<N; i++){
+    for(int i = 0; i < 5 && i < N; i++){
         printf("Row %d: ", i);
-        for(int f=0; f<D; f++){
+        for(int f = 0; f < D; f++){
             printf("%lf ", X[i * D + f]);
         }
         printf("Label=%d\n", ground_truth_labels[i]);
     }
 
-
-    // --- Initialize parameters ---
+    
+    // Initialization of the parameters
     for (int k = 0; k < K; k++) {
-        mu[k] = X[(rand() % N) * D];
+        // Initialize means to random data points
+        mu[k] = X[(rand() % N)];
+        // Initialize variances to 1.0
         sigma[k] = 1.0;
+        // Initialize mixture weights uniformly (each cluster has equal weight 1 / K)
         pi[k] = 1.0 / K;
     }
 
-    // --- EM loop ---
+    /*
+        EM loop:
+            - E-step: compute responsibilities (gamma)
+            - M-step: update parameters (mu, sigma, pi)
+        The loop runs until MAX_ITER is reached
+    */
     for (int iter = 0; iter < MAX_ITER; iter++) {
+        
         // E-step
         for (int i = 0; i < N; i++) {
             double denom = 0.0;
             for (int k = 0; k < K; k++) {
-                resp[i*K + k] = pi[k] * gaussian(X[i * D], mu[k], sigma[k]);
-                denom += resp[i*K + k];
+                gamma[i*K + k] = pi[k] * gaussian(X[i], mu[k], sigma[k]);
+                denom += gamma[i*K + k];
             }
-            for (int k = 0; k < K; k++) resp[i*K + k] /= denom;
+            // Guard to avoid division by zero
+            if (denom == 0.0 || isnan(denom)) denom = 1e-12;
+            for (int k = 0; k < K; k++) gamma[i*K + k] /= denom;
         }
-
+        
+        //TODO: check division by zero here and go on with refactoring
         // M-step
         for (int k = 0; k < K; k++) {
             double Nk = 0.0, mu_num = 0.0, var_num = 0.0;
             for (int i = 0; i < N; i++) {
-                Nk += resp[i*K + k];
-                mu_num += resp[i*K + k] * X[i * D];
+                Nk += gamma[i*K + k];
+                mu_num += gamma[i*K + k] * X[i];
             }
             mu[k] = mu_num / Nk;
             for (int i = 0; i < N; i++) {
-                var_num += resp[i*K + k] * (X[i * D] - mu[k]) * (X[i * D] - mu[k]);
+                var_num += gamma[i*K + k] * (X[i] - mu[k]) * (X[i] - mu[k]);
             }
             sigma[k] = var_num / Nk;
             pi[k] = Nk / N;
         }
     }
-
+    
     // --- Clustering assignment ---
     for (int i = 0; i < N; i++) {
         int best_k = 0;
-        double best_val = resp[i*K + 0];
+        double best_val = gamma[i*K + 0];
         for (int k = 1; k < K; k++) {
-            if (resp[i*K + k] > best_val) {
-                best_val = resp[i*K + k];
+            if (gamma[i*K + k] > best_val) {
+                best_val = gamma[i*K + k];
                 best_k = k;
             }
         }
         predicted_labels[i] = best_k;
     }
 
-    // --- Print final parameters ---
+    // Print final parameters 
     for (int k = 0; k < K; k++) {
         printf("Cluster %d: mu=%.3f sigma=%.3f pi=%.3f\n", k, mu[k], sqrt(sigma[k]), pi[k]);
     }
@@ -154,7 +164,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    // free memory
-    safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&resp);
+    // Free al the allocated memory
+    safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&gamma);
     return 0;
 }
