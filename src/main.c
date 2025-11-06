@@ -120,18 +120,25 @@ int main(int argc, char **argv) {
             for (int k = 0; k < K; k++) gamma[i*K + k] /= denom;
         }
         
-        //TODO: check division by zero here and go on with refactoring
         // M-step
         for (int k = 0; k < K; k++) {
-            double Nk = 0.0, mu_num = 0.0, var_num = 0.0;
+            double Nk = 0.0;                // Sum of responsibilities for cluster k
+            double mu_num = 0.0;            // Weighted sum of data points (for mean calculation)
+            double var_num = 0.0;           // Weighted sum of squared deviations (for variance calculation) 
+            // Sum over all data points for Nk and mu_num
             for (int i = 0; i < N; i++) {
                 Nk += gamma[i*K + k];
                 mu_num += gamma[i*K + k] * X[i];
             }
+            // Guard to avoid division by zero
+            if (Nk <= 0.0 || isnan(Nk)) Nk = 1e-12;
+            // Update mean
             mu[k] = mu_num / Nk;
+            // Compute variance
             for (int i = 0; i < N; i++) {
                 var_num += gamma[i*K + k] * (X[i] - mu[k]) * (X[i] - mu[k]);
             }
+            // Update variance and mixture weight
             sigma[k] = var_num / Nk;
             pi[k] = Nk / N;
         }
@@ -139,9 +146,11 @@ int main(int argc, char **argv) {
     
     // --- Clustering assignment ---
     for (int i = 0; i < N; i++) {
+        // Find the cluster with the highest responsibility
         int best_k = 0;
         double best_val = gamma[i*K + 0];
         for (int k = 1; k < K; k++) {
+            // Update best_k if current responsibility is higher
             if (gamma[i*K + k] > best_val) {
                 best_val = gamma[i*K + k];
                 best_k = k;

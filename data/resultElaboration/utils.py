@@ -142,17 +142,17 @@ def clustering_accuracy(csv_file):
         Returns:
             accuracy: Clustering accuracy as a float
     """
-    # Leggi il CSV
+    # Read the CSV file
     df = pd.read_csv(csv_file)
     y_pred = df['predicted'].to_numpy()
     y_true = df['real'].to_numpy()
     
-    # Costruisci la confusion matrix
+    # Build confusion matrix
     cm = confusion_matrix(y_true, y_pred)
     
-    # Hungarian algorithm per massimizzare il matching
+    # Hungarian algorithm to maximize accuracy
     row_ind, col_ind = linear_sum_assignment(-cm)
     
-    # Accuracy finale
-    accuracy = cm[row_ind, col_ind].sum() / cm.sum() * 100
+    # Final accuracy calculation
+    accuracy = cm[row_ind, col_ind].sum() / cm.sum() 
     return accuracy * 100
