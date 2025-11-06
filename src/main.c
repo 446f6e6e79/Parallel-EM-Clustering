@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
     // N = samples, D = features, K = clusters
     int N = 0, D = 0, K = 0;
     int meta_status = read_metadata(metadata_filename, &N, &D, &K);
-    if(meta_status != 1){
+    if(meta_status != 0){
         fprintf(stderr, "Failed to read metadata from file: %s\n", metadata_filename);
         return 1;
     }
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
 
     // Read dataset
     int n_read = read_dataset(filename, D, N, X, labels_buffer);
-    if(n_read != 1){
+    if(n_read != 0){
         fprintf(stderr, "Failed to read dataset from file: %s\n", filename);
         free(X);
         free(labels_buffer);

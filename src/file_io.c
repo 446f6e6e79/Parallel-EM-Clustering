@@ -15,7 +15,7 @@
         - labels_buffer: Array to store labels.
 
     Returns:
-        1 on success, 0 on failure.
+        0 on success, -1 on failure.
 */
 int read_dataset(const char *filename, int num_features, int num_samples, double *examples_buffer, int *labels_buffer){
     // Open the dataset file
@@ -45,8 +45,8 @@ int read_dataset(const char *filename, int num_features, int num_samples, double
     }
 
     fclose(fp);
-    // Return 1 if successfully read
-    return readed_rows == num_samples ? 1 : 0;
+    // Return 0 if successfully read
+    return readed_rows == num_samples ? 0 : -1;
 }
 
 /*
@@ -64,7 +64,7 @@ int read_dataset(const char *filename, int num_features, int num_samples, double
         - clusters*: Pointer to store the number of clusters.
 
     Returns:
-        1 on success, -1 on failure.
+        0 on success, -1 on failure.
 */
 int read_metadata(const char *metadata_filename, int *samples, int *features, int *clusters){
     // Open the metadata file
@@ -83,8 +83,8 @@ int read_metadata(const char *metadata_filename, int *samples, int *features, in
     }
 
     fclose(meta_fp);
-    // Return 1 if successfully read
-    return 1;
+    // Return 0 if successfully read
+    return 0;
 }
 
 /*
@@ -92,6 +92,7 @@ int read_metadata(const char *metadata_filename, int *samples, int *features, in
     The file format is:
         n_process,total_size,time_seconds
     Each execution will append a new line to the file.
+    Returns 0 on success, -1 on failure.
 */
 int write_execution_info(const char *filename, int n_process, int n_elements, double time_seconds, double io_time, double compute_time) {
     // Open the file in append mode
@@ -145,7 +146,6 @@ int write_execution_info(const char *filename, int n_process, int n_elements, do
 
     Returns:
         0 on success, -1 on failure.
-
 */
 int write_labels_info(const char *filename, int *predicted_labels, int *real_labels, int num_samples){
     // Open the file for writing
@@ -154,15 +154,13 @@ int write_labels_info(const char *filename, int *predicted_labels, int *real_lab
         perror("fopen");
         return -1;
     }
-
-    // Header
+    // Print CSV header
     fprintf(f, "predicted,real\n");
 
     // Write each label pair
     for(int i=0; i<num_samples; i++){
         fprintf(f, "%d,%d\n", predicted_labels[i], real_labels[i]);
     }
-
     fclose(f);
     return 0;
 }
