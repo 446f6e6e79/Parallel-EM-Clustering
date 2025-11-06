@@ -1,6 +1,9 @@
 import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
+import pandas as pd
+from sklearn.metrics import confusion_matrix
+from scipy.optimize import linear_sum_assignment
 
 def compute_metrics(group):
     """
@@ -129,3 +132,27 @@ def plot_metrics(filtered_df, metric):
 )
     # Return the figure to the caller
     return fig
+
+def clustering_accuracy(csv_file):
+    """
+        Calculate clustering accuracy from a CSV file containing 'predicted' and 'real' columns.
+        Uses the Hungarian algorithm to find the best matching between predicted and real labels.
+        Parameters:
+            csv_file: Path to the CSV file
+        Returns:
+            accuracy: Clustering accuracy as a float
+    """
+    # Leggi il CSV
+    df = pd.read_csv(csv_file)
+    y_pred = df['predicted'].to_numpy()
+    y_true = df['real'].to_numpy()
+    
+    # Costruisci la confusion matrix
+    cm = confusion_matrix(y_true, y_pred)
+    
+    # Hungarian algorithm per massimizzare il matching
+    row_ind, col_ind = linear_sum_assignment(-cm)
+    
+    # Accuracy finale
+    accuracy = cm[row_ind, col_ind].sum() / cm.sum() * 100
+    return accuracy * 100

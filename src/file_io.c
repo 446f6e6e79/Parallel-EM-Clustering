@@ -132,3 +132,37 @@ int write_execution_info(const char *filename, int n_process, int n_elements, do
     fclose(fp);
     return 0;
 }
+
+/*
+    Write predicted and real labels to a CSV file for validation.
+    The CSV file will have two columns: "predicted" and "real".
+
+    Parameters:
+        - filename: Path to the output CSV file.
+        - predicted_labels: Array of predicted cluster labels.
+        - real_labels: Array of real labels.
+        - num_samples: Number of samples (length of the label arrays).
+
+    Returns:
+        0 on success, -1 on failure.
+
+*/
+int write_labels_info(const char *filename, int *predicted_labels, int *real_labels, int num_samples){
+    // Open the file for writing
+    FILE *f = fopen(filename, "w");
+    if(!f){
+        perror("fopen");
+        return -1;
+    }
+
+    // Header
+    fprintf(f, "predicted,real\n");
+
+    // Write each label pair
+    for(int i=0; i<num_samples; i++){
+        fprintf(f, "%d,%d\n", predicted_labels[i], real_labels[i]);
+    }
+
+    fclose(f);
+    return 0;
+}

@@ -19,22 +19,23 @@ double gaussian(double x, double mean, double var) {
 /*
     Expection-Maximization Clustering Algorithm
 
-    Usage: ./program <dataset_file> <metadata_file>
+    Usage: ./program <dataset_file> <metadata_file> <output_labels_file>
 */
 int main(int argc, char **argv) {
     // Check command line arguments
-    if(argc < 3){
-        fprintf(stderr, "Usage: %s <dataset_file> <metadata_file>\n", argv[0]);
+    if(argc < 4){
+        fprintf(stderr, "Usage: %s <dataset_file> <metadata_file> <output_labels_file>\n", argv[0]);
         return 1;
     }
-    if(argv[1] == NULL || argv[2] == NULL){
-        fprintf(stderr, "Dataset file and metadata file must be provided\n");
+    if(argv[1] == NULL || argv[2] == NULL || argv[3] == NULL){
+        fprintf(stderr, "Dataset file, metadata file and labels file must be provided\n");
         return 1;
     }
 
     // Get filenames from arguments
     const char *filename = argv[1];
     const char *metadata_filename = argv[2];
+    const char *output_labels_file = argv[3];
 
     // Read metadata from metadata file
     // N = samples, D = features, K = clusters
@@ -48,6 +49,7 @@ int main(int argc, char **argv) {
 
     // Allocate buffers
     double *X = malloc(N * D * sizeof(double));
+    int *cluster_buffer = malloc(N * sizeof(int));
     int *labels_buffer = malloc(N * sizeof(int));
     double *mu = malloc(K * sizeof(double));
     double *sigma = malloc(K * sizeof(double));
@@ -107,35 +109,30 @@ int main(int argc, char **argv) {
             sigma[k] = var_num / Nk;
             pi[k] = Nk / N;
         }
+    }
 
-        // --- Clustering assignment ---
-        int *cluster_buffer = malloc(N * sizeof(int));
-        int *cluster_count = calloc(K, sizeof(int));
-
-        for (int i = 0; i < N; i++) {
-            int best_k = 0;
-            double best_val = resp[i*K + 0];
-            for (int k = 1; k < K; k++) {
-                if (resp[i*K + k] > best_val) {
-                    best_val = resp[i*K + k];
-                    best_k = k;
-                }
+    // --- Clustering assignment ---
+    for (int i = 0; i < N; i++) {
+        int best_k = 0;
+        double best_val = resp[i*K + 0];
+        for (int k = 1; k < K; k++) {
+            if (resp[i*K + k] > best_val) {
+                best_val = resp[i*K + k];
+                best_k = k;
             }
-            cluster_buffer[i] = best_k;
-            cluster_count[best_k]++;
         }
-
-        // Summary
-        for (int k = 0; k < K; k++)
-            printf("Cluster %d points = %d\n", k, cluster_count[k]);
-
-        free(cluster_buffer);
-        free(cluster_count);
+        cluster_buffer[i] = best_k;
     }
 
     // --- Print final parameters ---
     for (int k = 0; k < K; k++) {
         printf("Cluster %d: mu=%.3f sigma=%.3f pi=%.3f\n", k, mu[k], sqrt(sigma[k]), pi[k]);
+    }
+
+    // Write final cluster assignments to file to validate
+    int write_status = write_labels_info(output_labels_file, cluster_buffer, labels_buffer, N);
+    if(write_status != 0){
+        fprintf(stderr, "Failed to write labels to file: %s\n", output_labels_file);
     }
 
     // free memory
