@@ -11,10 +11,32 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.datasets import make_blobs
 import numpy as np
+from pathlib import Path
 
 # Limit the number of points per cluster to plot for clarity
 PLOT_MAX_PER_CLUSTER = 100
 PLOT_SAMPLE_SEED = 123
+
+def get_repo_data_dir() -> Path:
+    """
+        Return the absolute path to the repository's data directory,
+        regardless of the current working directory.
+    """
+    # parents[0]=.../data/datasetGeneration, parents[1]=.../data, parents[2]=.../Parallel-EM-Clustering
+    repo_root = Path(__file__).resolve().parents[2]
+    data_dir = repo_root / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return data_dir
+
+def resolve_to_data_dir(path_str: str) -> Path:
+    """
+        If path_str is absolute, return it unchanged.
+        If relative, place the file (basename) inside the repo data directory.
+    """
+    p = Path(path_str)
+    if p.is_absolute():
+        return p
+    return get_repo_data_dir() / p.name
 
 def build_parser():
     parser = argparse.ArgumentParser(
@@ -128,29 +150,33 @@ def main():
         random_state=args.random_state
     )
 
+    # Resolve output paths to the repo's data directory
+    output_path = resolve_to_data_dir(args.output)
+    metadata_path = resolve_to_data_dir(args.metadata) if args.metadata else None
+
     # Define a DataFrame with all the generated features
     df = pd.DataFrame(X, columns=[f"feature{i+1}" for i in range(args.features)])
     # Add true labels to the DataFrame
     df["true_label"] = y_true
     # Save the dataset to CSV
-    df.to_csv(args.output, index=False)
+    df.to_csv(output_path, index=False)
     
-    print(f"Dataset saved to '{args.output}'")
+    print(f"Dataset saved to '{output_path}'")
     print(f"   Samples: {args.samples}, Features: {args.features}, Clusters: {args.clusters}")
     if centers is not None:
         print(f"   Means: {centers}")
     print(f"   Std: {cluster_std}")
 
     # Save metadata
-    if args.metadata:
-        with open(args.metadata, "w") as meta_file:
+    if metadata_path:
+        with open(metadata_path, "w") as meta_file:
             meta_file.write(f"samples: {args.samples}\n")
             meta_file.write(f"features: {args.features}\n")
             meta_file.write(f"clusters: {args.clusters}\n")
             meta_file.write(f"means: {centers if centers is not None else 'generated'}\n")
             meta_file.write(f"std: {cluster_std}\n")
             meta_file.write(f"random_state: {args.random_state}\n")
-        print(f"Metadata saved to '{args.metadata}'")
+        print(f"Metadata saved to '{metadata_path}'")
 
     # Subsample for plotting if too many points per cluster
     if args.plot and args.features == 2:

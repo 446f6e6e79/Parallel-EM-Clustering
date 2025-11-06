@@ -72,3 +72,4 @@ data/*.txt
 data/*.bin
 .vscode/
 
+data/em_dataset.csv
