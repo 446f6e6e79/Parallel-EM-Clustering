@@ -69,6 +69,6 @@ notes/
 
 # Ignoring the data files
 data/*.txt
-data/*.bin
+data/*.csv
 .vscode/
 

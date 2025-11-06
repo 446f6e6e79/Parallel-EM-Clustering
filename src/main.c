@@ -1,6 +1,20 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "headers/file_io.h"
+
+#define MAX_ITER 100
+
+double gaussian(double x, double mean, double var) {
+    if (var <= 0.0) {
+        var = 1e-12;
+    }
+    double coeff = 1.0 / sqrt(2.0 * M_PI * var);
+    double expo  = exp(-( (x - mean)*(x - mean) ) / (2.0 * var));
+    return coeff * expo;
+}
 
 /*
     Expection-Maximization Clustering Algorithm
@@ -23,40 +37,113 @@ int main(int argc, char **argv) {
     const char *metadata_filename = argv[2];
 
     // Read metadata from metadata file
-    int samples = 0, features = 0, clusters = 0;
-    int meta_status = read_metadata(metadata_filename, &samples, &features, &clusters);
+    // N = samples, D = features, K = clusters
+    int N = 0, D = 0, K = 0;
+    int meta_status = read_metadata(metadata_filename, &N, &D, &K);
     if(meta_status != 1){
         fprintf(stderr, "Failed to read metadata from file: %s\n", metadata_filename);
         return 1;
     }
-    printf("Metadata: samples=%d, features=%d, clusters=%d\n", samples, features, clusters);
+    printf("Metadata: samples=%d, features=%d, clusters=%d\n", N, D, K);
 
     // Allocate buffers
-    double *examples_buffer = malloc(samples * features * sizeof(double));
-    int *labels_buffer = malloc(samples * sizeof(int));
+    double *X = malloc(N * D * sizeof(double));
+    int *labels_buffer = malloc(N * sizeof(int));
+    double *mu = malloc(K * sizeof(double));
+    double *sigma = malloc(K * sizeof(double));
+    double *pi = malloc(K * sizeof(double));
+    double *resp = malloc((size_t)N * K * sizeof(double));
 
     // Read dataset
-    int n_read = read_dataset(filename, features, samples, examples_buffer, labels_buffer);
+    int n_read = read_dataset(filename, D, N, X, labels_buffer);
     if(n_read != 1){
         fprintf(stderr, "Failed to read dataset from file: %s\n", filename);
-        free(examples_buffer);
+        free(X);
         free(labels_buffer);
         return 1;
     }
-    printf("dataset read -> %d rows\n", samples);
+    printf("dataset read -> %d rows\n", N);
 
     // test print first few rows
-    for(int i=0; i<5 && i<samples; i++){
+    for(int i=0; i<5 && i<N; i++){
         printf("Row %d: ", i);
-        for(int f=0; f<features; f++){
-            printf("%lf ", examples_buffer[i * features + f]);
+        for(int f=0; f<D; f++){
+            printf("%lf ", X[i * D + f]);
         }
         printf("Label=%d\n", labels_buffer[i]);
     }
 
-    // free memory
-    free(examples_buffer);
-    free(labels_buffer);
 
+    // --- Initialize parameters ---
+    for (int k = 0; k < K; k++) {
+        mu[k] = X[(rand() % N) * D];
+        sigma[k] = 1.0;
+        pi[k] = 1.0 / K;
+    }
+
+    // --- EM loop ---
+    for (int iter = 0; iter < MAX_ITER; iter++) {
+        // E-step
+        for (int i = 0; i < N; i++) {
+            double denom = 0.0;
+            for (int k = 0; k < K; k++) {
+                resp[i*K + k] = pi[k] * gaussian(X[i * D], mu[k], sigma[k]);
+                denom += resp[i*K + k];
+            }
+            for (int k = 0; k < K; k++) resp[i*K + k] /= denom;
+        }
+
+        // M-step
+        for (int k = 0; k < K; k++) {
+            double Nk = 0.0, mu_num = 0.0, var_num = 0.0;
+            for (int i = 0; i < N; i++) {
+                Nk += resp[i*K + k];
+                mu_num += resp[i*K + k] * X[i * D];
+            }
+            mu[k] = mu_num / Nk;
+            for (int i = 0; i < N; i++) {
+                var_num += resp[i*K + k] * (X[i * D] - mu[k]) * (X[i * D] - mu[k]);
+            }
+            sigma[k] = var_num / Nk;
+            pi[k] = Nk / N;
+        }
+
+        // --- Clustering assignment ---
+        int *cluster_buffer = malloc(N * sizeof(int));
+        int *cluster_count = calloc(K, sizeof(int));
+
+        for (int i = 0; i < N; i++) {
+            int best_k = 0;
+            double best_val = resp[i*K + 0];
+            for (int k = 1; k < K; k++) {
+                if (resp[i*K + k] > best_val) {
+                    best_val = resp[i*K + k];
+                    best_k = k;
+                }
+            }
+            cluster_buffer[i] = best_k;
+            cluster_count[best_k]++;
+        }
+
+        // Summary
+        for (int k = 0; k < K; k++)
+            printf("Cluster %d points = %d\n", k, cluster_count[k]);
+
+        free(cluster_buffer);
+        free(cluster_count);
+    }
+
+    // --- Print final parameters ---
+    for (int k = 0; k < K; k++) {
+        printf("Cluster %d: mu=%.3f sigma=%.3f pi=%.3f\n", k, mu[k], sqrt(sigma[k]), pi[k]);
+    }
+
+    // free memory
+    free(X);
+    free(labels_buffer);
+    free(mu);
+    free(sigma);
+    free(pi);
+    free(resp); 
     return 0;
 }
