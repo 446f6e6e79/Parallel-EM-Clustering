@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "file_io.h"    
+#include "utils.h"
 
 int main(int argc, char **argv);
 

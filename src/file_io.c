@@ -83,7 +83,8 @@ int read_metadata(const char *metadata_filename, int *samples, int *features, in
     }
 
     fclose(meta_fp);
-    // Return 0 if successfully read
+    // Check that all metadata values were correctly read and valid
+    if(*samples <= 0 || *features <= 0 || *clusters <= 0) return -1;
     return 0;
 }
 

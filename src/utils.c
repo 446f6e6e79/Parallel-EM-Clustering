@@ -12,7 +12,8 @@ static inline void free_and_null(void **p) {
 */
 void safe_cleanup(
     double **X,
-    int **labels_buffer,
+    int **predicted_labels,
+    int **ground_truth_labels,
     double **mu,
     double **sigma,
     double **pi,
@@ -20,7 +21,8 @@ void safe_cleanup(
 )
 {
     free_and_null((void**)X);
-    free_and_null((void**)labels_buffer);
+    free_and_null((void**)predicted_labels);
+    free_and_null((void**)ground_truth_labels);
     free_and_null((void**)mu);
     free_and_null((void**)sigma);
     free_and_null((void**)pi);
