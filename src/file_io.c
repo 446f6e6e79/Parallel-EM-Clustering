@@ -25,26 +25,30 @@ int read_dataset(const char *filename, int num_features, int num_samples, double
         return -1;
     }
 
+    //TODO: add a maxLineLength field in the metadata. This way we can allocate the buffer dynamically
     // Creating reading buffer
     char line_buffer[READING_BUFFER_SIZE];
     int readed_rows = 0;
 
     // Skip the first line (header)
-    if(!fgets(line_buffer, sizeof(line_buffer), fp)) return 0; 
+    if(!fgets(line_buffer, sizeof(line_buffer), fp)) return -1; 
 
     // Read each line and parse the values
     while(readed_rows < num_samples && fgets(line_buffer, sizeof(line_buffer), fp) != NULL){
         // Parse the line, extracting features and label
         char *ptr = line_buffer;
-        for(int f=0; f<num_features; f++){
+        // For each feature, add to the examples buffer
+        for(int f = 0; f < num_features; f++){
             examples_buffer[readed_rows * num_features + f] = strtod(ptr,&ptr);
             if(*ptr == ',') ptr++;
         }
+        // Add the ground truth labels
         labels_buffer[readed_rows] = (int)strtol(ptr, NULL, 10);
         readed_rows++;
     }
-
+    // Close the filePointer
     fclose(fp);
+
     // Return 0 if successfully read
     return readed_rows == num_samples ? 0 : -1;
 }

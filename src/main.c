@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "headers/main.h"
 #include "headers/file_io.h"
 
 #define MAX_ITER 100
@@ -34,7 +35,7 @@ int main(int argc, char **argv) {
     double *resp = NULL;                // Responsibilities
     
     // Check command line arguments
-    if(argc < 3){
+    if(argc < 3 || argc > 4){
         fprintf(stderr, "Usage: %s <dataset_file> <metadata_file> [output_labels_file]\n", argv[0]);
         return 1;
     }
@@ -71,17 +72,16 @@ int main(int argc, char **argv) {
         safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&resp);
         return 1;
     }   
-    /* TODO:check from here on */
+
     // Read dataset
-    int n_read = read_dataset(filename, D, N, X, ground_truth_labels);
-    if(n_read != 0){
+    if(read_dataset(filename, D, N, X, ground_truth_labels) != 0){
         fprintf(stderr, "Failed to read dataset from file: %s\n", filename);
-        free(X);
-        free(ground_truth_labels);
+        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&resp);
         return 1;
     }
     printf("dataset read -> %d rows\n", N);
 
+    /* TODO:check from here on */
     // test print first few rows
     for(int i=0; i<5 && i<N; i++){
         printf("Row %d: ", i);
@@ -155,11 +155,6 @@ int main(int argc, char **argv) {
     }
 
     // free memory
-    free(X);
-    free(ground_truth_labels);
-    free(mu);
-    free(sigma);
-    free(pi);
-    free(resp); 
+    safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&resp);
     return 0;
 }
