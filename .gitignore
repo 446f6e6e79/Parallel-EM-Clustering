@@ -74,3 +74,4 @@ data/*.csv
 
 data/em_dataset.csv
 notes.txt
+bin/EM_Clustering
