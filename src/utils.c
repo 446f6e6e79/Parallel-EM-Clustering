@@ -17,7 +17,10 @@ void safe_cleanup(
     double **mu,
     double **sigma,
     double **pi,
-    double **resp
+    double **resp,
+    double **N_k,
+    double **mu_k,
+    double **sigma_k
 )
 {
     free_and_null((void**)X);
@@ -27,4 +30,7 @@ void safe_cleanup(
     free_and_null((void**)sigma);
     free_and_null((void**)pi);
     free_and_null((void**)resp);
+    free_and_null((void**)N_k);
+    free_and_null((void**)mu_k);
+    free_and_null((void**)sigma_k);
 }
