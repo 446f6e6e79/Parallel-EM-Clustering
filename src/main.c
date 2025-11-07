@@ -24,6 +24,7 @@ int main(int argc, char **argv) {
     int N;                              // Number of samples
     int D;                              // Number of features
     int K;                              // Number of clusters
+    int max_line_size;                  // Maximum line size in the dataset file
     double *X = NULL;                   // X[N * D] Vector of data points
     double *mu = NULL;                  // mu[k] Vector of cluster means
     double *sigma = NULL;               // sigma[k] Vector of cluster variances
@@ -49,7 +50,7 @@ int main(int argc, char **argv) {
     const char *output_labels_file = (argc > 3) ? argv[3] : NULL;
 
     // Read metadata from metadata file
-    int meta_status = read_metadata(metadata_filename, &N, &D, &K);
+    int meta_status = read_metadata(metadata_filename, &N, &D, &K, &max_line_size);
     if(meta_status != 0){
         fprintf(stderr, "Failed to read metadata from file: %s\n", metadata_filename);
         return 1;
@@ -73,7 +74,7 @@ int main(int argc, char **argv) {
     }   
 
     // Read dataset
-    if(read_dataset(filename, D, N, X, ground_truth_labels) != 0){
+    if(read_dataset(filename, D, N, max_line_size, X, ground_truth_labels) != 0){
         fprintf(stderr, "Failed to read dataset from file: %s\n", filename);
         safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&gamma);
         return 1;
