@@ -120,6 +120,10 @@ def make_plot(X, y_true, max_per_cluster=PLOT_MAX_PER_CLUSTER, sample_seed=PLOT_
     plt.ylabel("Feature 2")
     plt.show()
 
+def longest_line_len(path):
+    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        return max((len(line.rstrip("\n")) for line in f), default=0)
+
 def main():
     parser = build_parser()
     args = parser.parse_args()
@@ -159,12 +163,16 @@ def main():
     df["true_label"] = y_true
     # Save the dataset to CSV
     df.to_csv(output_path, index=False)
-    
+
+    # Print summary
     print(f"Dataset saved to '{output_path}'")
     print(f"   Samples: {args.samples}, Features: {args.features}, Clusters: {args.clusters}")
     if centers is not None:
         print(f"   Means: {centers}")
     print(f"   Std: {cluster_std}")
+    # length of the longest line in the CSV
+    longest = longest_line_len(output_path)
+    print(f"   Longest CSV line: {longest} chars")
 
     # Save metadata
     if metadata_path:
@@ -175,8 +183,7 @@ def main():
             meta_file.write(f"means: {centers if centers is not None else 'generated'}\n")
             meta_file.write(f"std: {cluster_std}\n")
             meta_file.write(f"random_state: {args.random_state}\n")
-            # Estimate max_line_size as follows: each feature (plus label) value approx 20 chars, plus commas
-            meta_file.write(f"max_line_size: {(args.features + 1) * 20 + args.features}\n")
+            meta_file.write(f"max_line_size: {longest}\n")
         print(f"Metadata saved to '{metadata_path}'")
 
     # Subsample for plotting if too many points per cluster
