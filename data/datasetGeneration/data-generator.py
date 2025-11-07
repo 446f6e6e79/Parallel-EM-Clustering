@@ -175,6 +175,8 @@ def main():
             meta_file.write(f"means: {centers if centers is not None else 'generated'}\n")
             meta_file.write(f"std: {cluster_std}\n")
             meta_file.write(f"random_state: {args.random_state}\n")
+            # Estimate max_line_size as follows: each feature (plus label) value approx 20 chars, plus commas
+            meta_file.write(f"max_line_size: {(args.features + 1) * 20 + args.features}\n")
         print(f"Metadata saved to '{metadata_path}'")
 
     # Subsample for plotting if too many points per cluster

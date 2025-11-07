@@ -1,5 +1,8 @@
 #include "headers/file_io.h"
 
+
+int GLOBAL_MAX_LINE_SIZE = 0; // Global variable to hold the maximum line size for dataset reading 
+
 /*
     Read the dataset from the given filename, storing information into the provided vectors.
     The dataset file is expected to have a header line followed by num_samples data lines.
@@ -24,9 +27,8 @@ int read_dataset(const char *filename, int num_features, int num_samples, double
         return -1;
     }
 
-    //TODO: add a maxLineLength field in the metadata. This way we can allocate the buffer dynamically
     // Creating reading buffer
-    char line_buffer[READING_BUFFER_SIZE];
+    char line_buffer[GLOBAL_MAX_LINE_SIZE];
     int readed_rows = 0;
 
     // Skip the first line (header)
@@ -65,7 +67,6 @@ int read_dataset(const char *filename, int num_features, int num_samples, double
         - samples*: Pointer to store the number of samples.
         - features*: Pointer to store the number of features.
         - clusters*: Pointer to store the number of clusters.
-
     Returns:
         0 on success, -1 on failure.
 */
@@ -83,11 +84,12 @@ int read_metadata(const char *metadata_filename, int *samples, int *features, in
         if(sscanf(line, "samples: %d", samples) == 1) continue;
         if(sscanf(line, "features: %d", features) == 1) continue;
         if(sscanf(line, "clusters: %d", clusters) == 1) continue;
+        if(sscanf(line, "max_line_size: %d", &GLOBAL_MAX_LINE_SIZE) == 1) continue;
     }
 
     fclose(meta_fp);
     // Check that all metadata values were correctly read and valid
-    if(*samples <= 0 || *features <= 0 || *clusters <= 0) return -1;
+    if(*samples <= 0 || *features <= 0 || *clusters <= 0 || GLOBAL_MAX_LINE_SIZE<=0) return -1;
     return 0;
 }
 

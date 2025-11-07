@@ -8,8 +8,9 @@
 #include <unistd.h>
 #include <string.h>
 
-//TODO:remove the buffer size when dynamic allocation is implemented
-#define READING_BUFFER_SIZE 4096
+#define READING_BUFFER_SIZE 256
+
+extern int GLOBAL_MAX_LINE_SIZE;
 
 int read_metadata(const char *metadata_filename, int *samples, int *features, int *clusters);
 int read_dataset(const char *filename, int num_features, int num_samples, double *examples_buffer, int *labels_buffer);
