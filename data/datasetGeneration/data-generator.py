@@ -49,7 +49,9 @@ def build_parser():
                         help='List of cluster means, e.g. --means m_1 m_2 ... m_k, where m_i= m_i_1,m_i_2,...,m_i_d (a mean per feature per cluster must be provided)')
     parser.add_argument("--std", type=float, nargs="+", default=None,
                         help="List of cluster standard deviations (default: all 1.0)")
-    parser.add_argument("-r", "--random_state", type=int, default=42, help="Random seed (default: 42)")
+    parser.add_argument("-equal", "--equal_size", action="store_true",
+                        help="Generate clusters of equal size (default: False)", default=False)
+    parser.add_argument("-r", "--random_state", type=int, default=43, help="Random seed (default: 43)")
     parser.add_argument("-o", "--output", type=str, default="em_dataset.csv",
                         help="Output CSV filename (default: em_dataset.csv)")
     parser.add_argument("-m", "--metadata", type=str, default="em_metadata.txt",
@@ -78,6 +80,47 @@ def parse_means(means_list, n_clusters, n_features):
         raise ValueError(f"Number of means must equal number of clusters ({n_clusters}).")
     return centers
 
+def compute_cluster_counts(total_samples: int, k: int, equal: bool, seed: int) -> list[int]:
+    """
+        Return a list of k per-cluster sample counts summing to total_samples.
+        Guarantees each cluster has at least 1 sample (if total_samples >= k).
+    """
+    if total_samples < k:
+        raise ValueError(f"Total samples ({total_samples}) must be >= number of clusters ({k})")
+    
+    # If we specified uniform cluster sizes, divide equally the number of samples
+    if equal:
+        base = total_samples // k
+        counts = [base] * k
+        # Distribute remainder
+        for i in range(total_samples - base * k):
+            counts[i] += 1
+        return counts
+    
+    rng = np.random.default_rng(seed)
+    # Dirichlet for proportions (alpha=1 => uniform over simplex)
+    weights = rng.dirichlet(alpha=np.ones(k))
+    counts = np.floor(weights * total_samples).astype(int)
+    
+    # Add one sample to any empty cluster
+    counts[counts == 0] = 1
+    
+    # Compute how many samples we need to add/subtract to reach total_samples 
+    diff = total_samples - counts.sum()
+    # Adjust diff (positive: add; negative: subtract)
+    while diff != 0:
+        if diff > 0:
+            i = rng.integers(0, k)
+            counts[i] += 1
+            diff -= 1
+        else:  # diff < 0 we need to remove samples
+            # choose cluster with count > 1
+            idxs = np.where(counts > 1)[0]
+            i = idxs[rng.integers(0, len(idxs))]
+            counts[i] -= 1
+            diff += 1
+    return counts.tolist()
+
 def generate_em_dataset(n_samples, n_features, n_clusters, cluster_std, centers, random_state):
     """
         Generate synthetic Gaussian cluster data.
@@ -85,7 +128,6 @@ def generate_em_dataset(n_samples, n_features, n_clusters, cluster_std, centers,
             X: array of shape (n_samples, n_features) - generated samples
             y_true: array of shape (n_samples,) - true cluster labels
     """
-    # If centers not provided, pass integer n_clusters to make_blobs so it generates centers
     centers_arg = centers if centers is not None else n_clusters
     X, y_true = make_blobs(
         n_samples=n_samples,
@@ -143,9 +185,13 @@ def main():
     # Parse means
     centers = parse_means(args.means, args.clusters, args.features)
 
+    # Determine per-cluster counts
+    per_cluster_counts = compute_cluster_counts(args.samples, args.clusters, args.equal_size, args.random_state)
+    total_samples = sum(per_cluster_counts)
+
     # Generate data
     X, y_true = generate_em_dataset(
-        n_samples=args.samples,
+        n_samples=per_cluster_counts,
         n_features=args.features,
         n_clusters=args.clusters,
         cluster_std=cluster_std,
@@ -166,7 +212,8 @@ def main():
 
     # Print summary
     print(f"Dataset saved to '{output_path}'")
-    print(f"   Samples: {args.samples}, Features: {args.features}, Clusters: {args.clusters}")
+    print(f"   Total samples: {total_samples} (per cluster: {per_cluster_counts})")
+    print(f"   Features: {args.features}, Clusters: {args.clusters}")
     if centers is not None:
         print(f"   Means: {centers}")
     print(f"   Std: {cluster_std}")
@@ -177,9 +224,10 @@ def main():
     # Save metadata
     if metadata_path:
         with open(metadata_path, "w") as meta_file:
-            meta_file.write(f"samples: {args.samples}\n")
+            meta_file.write(f"samples: {total_samples}\n")
             meta_file.write(f"features: {args.features}\n")
             meta_file.write(f"clusters: {args.clusters}\n")
+            meta_file.write(f"samples_per_cluster: {per_cluster_counts}\n")
             meta_file.write(f"means: {centers if centers is not None else 'generated'}\n")
             meta_file.write(f"std: {cluster_std}\n")
             meta_file.write(f"random_state: {args.random_state}\n")
