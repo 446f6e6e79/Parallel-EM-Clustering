@@ -9,7 +9,7 @@
         - filename: Path to the dataset file.
         - num_features: Number of features per sample.
         - num_samples: Number of samples to read.
-        . max_line_size: Maximum size of a line in the dataset file.
+        - max_line_size: Maximum number of characters in a line.
     Output parameters:
         - examples_buffer: Array to store feature values.
         - labels_buffer: Array to store labels.
@@ -24,16 +24,17 @@ int read_dataset(const char *filename, int num_features, int num_samples,  int m
         fprintf(stderr, "Error opening dataset file \n");
         return -1;
     }
-
-    // Creating reading buffer
-    char *line_buffer = malloc(max_line_size * sizeof(char));
+    // Size of the allocated reading buffer. We should take into account the \n and \0 characters
+    int BUFFER_SIZE = max_line_size + 3;
+    // Creating reading buffer. We have to take into account the \n and \0 characters
+    char *line_buffer = malloc(BUFFER_SIZE * sizeof(char));
     int readed_rows = 0;
 
     // Skip the first line (header)
-    if(!fgets(line_buffer, sizeof(line_buffer), fp)) return -1; 
+    if(!fgets(line_buffer, BUFFER_SIZE, fp)) return -1;
 
     // Read each line and parse the values
-    while(readed_rows < num_samples && fgets(line_buffer, sizeof(line_buffer), fp) != NULL){
+    while(readed_rows < num_samples && fgets(line_buffer, BUFFER_SIZE, fp) != NULL){
         // Parse the line, extracting features and label
         char *ptr = line_buffer;
         // For each feature, add to the examples buffer

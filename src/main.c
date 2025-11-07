@@ -24,7 +24,8 @@ int main(int argc, char **argv) {
     int N;                              // Number of samples
     int D;                              // Number of features
     int K;                              // Number of clusters
-    int max_line_size;                  // Maximum line size in the dataset file
+    int max_line_size;                  // Maximum number of character in a line in the dataset file
+    
     double *X = NULL;                   // X[N * D] Vector of data points
     double *mu = NULL;                  // mu[k] Vector of cluster means
     double *sigma = NULL;               // sigma[k] Vector of cluster variances
