@@ -6,7 +6,7 @@ WALLTIME="06:00:00"
 QUEUE="short_cpuQ"
 MEM="16gb"
 PLACEMENT="pack:excl"
-PARAMETERS=""
+PARAMETERS="${BASE_DIR}/data/em_dataset.csv ${BASE_DIR}/data/em_metadata.txt ${BASE_DIR}/data/execution_info.csv"
 EXECUTABLE="${BASE_DIR}/bin/EM_Clustering"      # Path to the executable file
 TEMPLATE="${BASE_DIR}/scripts/job_template.sh"
 

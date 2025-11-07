@@ -123,7 +123,7 @@ int write_execution_info(const char *filename, int n_process, int n_elements, do
     }
 
     // Write the execution info (note: MPI_Offset is typically a long long)
-    if (fprintf(fp, "%d,%d,%.6f,,%.6f,,%.6f\n", n_process, n_elements, time_seconds, io_time, compute_time) == -1) {
+    if (fprintf(fp, "%d,%d,%.6f,%.6f,%.6f\n", n_process, n_elements, time_seconds, io_time, compute_time) == -1) {
         fprintf(stderr, "Failed to write to file\n");
 
         flock(fd, LOCK_UN);
