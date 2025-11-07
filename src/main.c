@@ -15,6 +15,19 @@ double gaussian(double x, double mean, double var) {
     return coeff * expo;
 }
 
+double gaussian_multi(double *x, const double *mean, const double *var, int D) {
+    double log_prob = 0.0;
+    for(int i = 0; i < D; i++) {
+        double v = var[i];
+        // Guard to avoid division by zero
+        if(v <= 0.0) v = 1e-12; 
+        double diff = x[i] - mean[i];
+        // log gaussian componente i
+        log_prob += -0.5 * (log(2.0 * M_PI * v) + (diff*diff) / v);
+    }
+    return exp(log_prob);
+}
+
 /*
     Expection-Maximization Clustering Algorithm
 
