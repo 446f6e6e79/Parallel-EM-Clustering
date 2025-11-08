@@ -7,7 +7,7 @@ LDFLAGS ?= -lm
 TARGET  := bin/EM_Clustering
 
 # Source files
-SRC     := src/main.c src/file_io.c src/utils.c src/debug.c
+SRC     := src/main.c src/file_io.c src/utils.c src/debug.c src/em_algorithm.c
 
 # Object and dependency directories
 OBJDIR  := src/obj
