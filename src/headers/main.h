@@ -7,6 +7,7 @@
 #include "file_io.h"    
 #include "utils.h"
 #include "em_algorithm.h"
+#include "debug.h"
 
 int main(int argc, char **argv);
 

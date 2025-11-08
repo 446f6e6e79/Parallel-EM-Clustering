@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-
 #include "headers/main.h"
 
 #define MAX_ITER 100
@@ -48,7 +46,7 @@ int main(int argc, char **argv) {
         MPI_Abort(MPI_COMM_WORLD,1);
     }
     if(argv[1] == NULL || argv[2] == NULL || argv[3] == NULL || (argc > 4 && argv[4] == NULL)){
-        if (rank == 0) fprintf(stderr, "Dataset file and metadata file must be provided\n");
+        if (rank == 0) fprintf(stderr, "Dataset file, metadata and execution info file must be provided\n");
         MPI_Abort(MPI_COMM_WORLD,1);
     }
 
@@ -67,7 +65,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, "Failed to read metadata from file: %s\n", metadata_filename);
             MPI_Abort(MPI_COMM_WORLD,1);
         }
-    printf("Metadata: samples N=%d, features D=%d, clusters K=%d\n", N, D, K);
+        printf("Metadata: samples N=%d, features D=%d, clusters K=%d\n", N, D, K);
     }
     io_time += MPI_Wtime() - io_start;
 
@@ -131,17 +129,7 @@ int main(int argc, char **argv) {
     io_start = MPI_Wtime();
     if (rank == 0) {
         // Print final parameters 
-        for (int k = 0; k < K; k++) {
-            printf("Cluster %d: mu=", k);
-            for (int d = 0; d < D; d++) {
-                printf("%.3f ", mu[k * D + d]);
-            }
-            printf(" sigma=");
-            for (int d = 0; d < D; d++) {
-                printf("%.3f ", sqrt(sigma[k * D + d]));
-            }
-            printf(" pi=%.3f\n", pi[k]);
-        }
+        debug_print_cluster_params(K, D, mu, sigma, pi);
 
         // Write final cluster assignments to file to validate
         if (output_labels_file){

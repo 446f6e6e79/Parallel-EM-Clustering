@@ -1,6 +1,6 @@
 # MPI compiler and flags
 MPICC   ?= mpicc
-CFLAGS ?= -std=gnu11 -O2 -Wall -Wextra -I./src
+CFLAGS ?= -std=gnu11 -O2 -Wall -Wextra -I./src -D_GNU_SOURCE
 LDFLAGS ?= -lm
 
 # Target binary executable
