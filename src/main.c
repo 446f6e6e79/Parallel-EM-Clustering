@@ -7,7 +7,7 @@
 /*
     Expection-Maximization Clustering Algorithm
 
-    Usage: ./program <dataset_file> <metadata_file> [output_labels_file]
+    Usage: ./program <dataset_file> <metadata_file> <execution_info_file> [output_labels_file]
 */
 int main(int argc, char **argv) { 
     // Initialize MPI
@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
     int rank;
     // Number of processes
     int size;
-
+    
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -39,15 +39,15 @@ int main(int argc, char **argv) {
     int *predicted_labels = NULL;       // Predicted cluster labels
     int *ground_truth_labels = NULL;    // Ground truth labels
 
-    double start_time = MPI_Wtime();
+    double start_time = MPI_Wtime();    
     double io_time = 0.0, compute_time = 0.0;
 
     // Check command line arguments
-    if(argc < 3 || argc > 4){
-        if (rank == 0) fprintf(stderr, "Usage: %s <dataset_file> <metadata_file> [output_labels_file]\n", argv[0]);
+    if(argc < 4 || argc > 5){
+        if (rank == 0) fprintf(stderr, "Usage: %s <dataset_file> <metadata_file> <execution_info_file> [output_labels_file]\n", argv[0]);
         MPI_Abort(MPI_COMM_WORLD,1);
     }
-    if(argv[1] == NULL || argv[2] == NULL || (argc > 3 && argv[3] == NULL)){
+    if(argv[1] == NULL || argv[2] == NULL || argv[3] == NULL || (argc > 4 && argv[4] == NULL)){
         if (rank == 0) fprintf(stderr, "Dataset file and metadata file must be provided\n");
         MPI_Abort(MPI_COMM_WORLD,1);
     }
@@ -56,7 +56,8 @@ int main(int argc, char **argv) {
     // Get filenames from arguments
     const char *filename = argv[1];
     const char *metadata_filename = argv[2];
-    const char *output_labels_file = (argc > 3) ? argv[3] : NULL;
+    const char *execution_info_filename = argv[3];
+    const char *output_labels_file = (argc > 4) ? argv[4] : NULL;
 
     double io_start = MPI_Wtime();
     // Read metadata from metadata file (only by rank 0)
@@ -154,7 +155,7 @@ int main(int argc, char **argv) {
 
     // Report the execution info (only by rank 0)
     if(rank == 0){
-        if(write_execution_info("execution_info.csv", size, N, D, K, MPI_Wtime() - start_time, io_time, compute_time) != 0){
+        if(write_execution_info(execution_info_filename, size, N, D, K, MPI_Wtime() - start_time, io_time, compute_time) != 0){
             fprintf(stderr, "Failed to write execution info to file\n");
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
