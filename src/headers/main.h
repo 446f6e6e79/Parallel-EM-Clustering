@@ -2,6 +2,7 @@
 #define MAIN_H
 
 #include <stdio.h>
+#include <mpi.h>
 
 #include "file_io.h"    
 #include "utils.h"

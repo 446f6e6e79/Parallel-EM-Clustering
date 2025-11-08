@@ -10,6 +10,17 @@
     Usage: ./program <dataset_file> <metadata_file> [output_labels_file]
 */
 int main(int argc, char **argv) { 
+    // Initialize MPI
+    MPI_Init(&argc, &argv);
+    // Id of the current process
+    int rank;
+    // Number of processes
+    int size;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+
     int N;                              // Number of samples
     int D;                              // Number of features
     int K;                              // Number of clusters
@@ -28,29 +39,43 @@ int main(int argc, char **argv) {
     int *predicted_labels = NULL;       // Predicted cluster labels
     int *ground_truth_labels = NULL;    // Ground truth labels
 
+    double start_time = MPI_Wtime();
+    double io_time = 0.0, compute_time = 0.0;
+
     // Check command line arguments
     if(argc < 3 || argc > 4){
-        fprintf(stderr, "Usage: %s <dataset_file> <metadata_file> [output_labels_file]\n", argv[0]);
-        return 1;
+        if (rank == 0) fprintf(stderr, "Usage: %s <dataset_file> <metadata_file> [output_labels_file]\n", argv[0]);
+        MPI_Abort(MPI_COMM_WORLD,1);
     }
     if(argv[1] == NULL || argv[2] == NULL || (argc > 3 && argv[3] == NULL)){
-        fprintf(stderr, "Dataset file and metadata file must be provided\n");
-        return 1;
+        if (rank == 0) fprintf(stderr, "Dataset file and metadata file must be provided\n");
+        MPI_Abort(MPI_COMM_WORLD,1);
     }
+
 
     // Get filenames from arguments
     const char *filename = argv[1];
     const char *metadata_filename = argv[2];
     const char *output_labels_file = (argc > 3) ? argv[3] : NULL;
 
-    // Read metadata from metadata file
-    int meta_status = read_metadata(metadata_filename, &N, &D, &K, &max_line_size);
-    if(meta_status != 0){
-        fprintf(stderr, "Failed to read metadata from file: %s\n", metadata_filename);
-        return 1;
-    }
+    double io_start = MPI_Wtime();
+    // Read metadata from metadata file (only by rank 0)
+    if (rank == 0) {
+        int meta_status = read_metadata(metadata_filename, &N, &D, &K, &max_line_size);
+        if(meta_status != 0){
+            fprintf(stderr, "Failed to read metadata from file: %s\n", metadata_filename);
+            MPI_Abort(MPI_COMM_WORLD,1);
+        }
     printf("Metadata: samples N=%d, features D=%d, clusters K=%d\n", N, D, K);
+    }
+    io_time += MPI_Wtime() - io_start;
 
+    // TODO: Broadcast N, D, K to all process using a single MPI call
+    MPI_Bcast(&N, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&D, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&K, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    
+    //TODO: check that all these malloc are needed by all processes or just by process zero
     // Allocate buffers
     X = malloc(N * D * sizeof(double));
     predicted_labels = malloc(N * sizeof(int));
@@ -67,16 +92,21 @@ int main(int argc, char **argv) {
     if(!X || !predicted_labels || !ground_truth_labels || !mu || !sigma || !pi || !gamma || !N_k || !mu_k || !sigma_k){
         fprintf(stderr, "Memory allocation failed\n");
         safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&gamma,&N_k,&mu_k,&sigma_k);
-        return 1;
+        MPI_Abort(MPI_COMM_WORLD,1);
     }   
 
-    // Read dataset
-    if(read_dataset(filename, D, N, max_line_size, X, ground_truth_labels) != 0){
-        fprintf(stderr, "Failed to read dataset from file: %s\n", filename);
-        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&gamma,&N_k,&mu_k,&sigma_k);
-        return 1;
+    // Read dataset (only by rank 0)
+    io_start = MPI_Wtime();
+    if(rank == 0){
+        if(read_dataset(filename, D, N, max_line_size, X, ground_truth_labels) != 0){
+            fprintf(stderr, "Failed to read dataset from file: %s\n", filename);
+            safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&gamma,&N_k,&mu_k,&sigma_k);
+            MPI_Abort(MPI_COMM_WORLD,1);
+        }
     }
+    io_time += MPI_Wtime() - io_start;
 
+    double compute_start = MPI_Wtime();
     // Initialize parameters
     init_params(X, N, D, K, mu, sigma, pi);
     
@@ -93,29 +123,42 @@ int main(int argc, char **argv) {
     }
     
     // Compute predicted labels from responsibilities
-    compute_predicted_labels(gamma, N, K, predicted_labels);    
+    if (rank == 0) compute_predicted_labels(gamma, N, K, predicted_labels);    
+    compute_time += MPI_Wtime() - compute_start;
 
-    // Print final parameters 
-    for (int k = 0; k < K; k++) {
-        printf("Cluster %d: mu=", k);
-        for (int d = 0; d < D; d++) {
-            printf("%.3f ", mu[k * D + d]);
+
+    io_start = MPI_Wtime();
+    if (rank == 0) {
+        // Print final parameters 
+        for (int k = 0; k < K; k++) {
+            printf("Cluster %d: mu=", k);
+            for (int d = 0; d < D; d++) {
+                printf("%.3f ", mu[k * D + d]);
+            }
+            printf(" sigma=");
+            for (int d = 0; d < D; d++) {
+                printf("%.3f ", sqrt(sigma[k * D + d]));
+            }
+            printf(" pi=%.3f\n", pi[k]);
         }
-        printf(" sigma=");
-        for (int d = 0; d < D; d++) {
-            printf("%.3f ", sqrt(sigma[k * D + d]));
+
+        // Write final cluster assignments to file to validate
+        if (output_labels_file){
+            int write_status = write_labels_info(output_labels_file, predicted_labels, ground_truth_labels, N);
+            if(write_status != 0){
+                fprintf(stderr, "Failed to write labels to file: %s\n", output_labels_file);
+            }
         }
-        printf(" pi=%.3f\n", pi[k]);
     }
+    io_time += MPI_Wtime() - io_start;
 
-    // Write final cluster assignments to file to validate
-    if (output_labels_file){
-        int write_status = write_labels_info(output_labels_file, predicted_labels, ground_truth_labels, N);
-        if(write_status != 0){
-            fprintf(stderr, "Failed to write labels to file: %s\n", output_labels_file);
+    // Report the execution info (only by rank 0)
+    if(rank == 0){
+        if(write_execution_info("execution_info.csv", size, N, D, K, MPI_Wtime() - start_time, io_time, compute_time) != 0){
+            fprintf(stderr, "Failed to write execution info to file\n");
+            MPI_Abort(MPI_COMM_WORLD, 1);
         }
     }
-
     // Free all the allocated memory
     safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&gamma,&N_k,&mu_k,&sigma_k);
     return 0;

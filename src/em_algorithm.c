@@ -13,7 +13,7 @@ inline double gaussian_multi_diag(double *x, double *mu, double *sigma, int D) {
     for (int d = 0; d < D; d++) {
         double var_d = sigma[d];
         // Guard to avoid division by zero
-        if (var_d <= 0.0) var_d = EPS_VAR;
+        if (var_d <= 0.0) var_d = GUARD_VALUE;
         logdet += log(var_d);
         double diff = x[d] - mu[d];
         quad += (diff * diff) / var_d;
@@ -107,7 +107,7 @@ void e_step( double *X, int N, int D, int K, double *mu, double *sigma, double *
             denom += gamma[i*K + k];
         }
         // Guard to avoid division by zero
-        if (denom == 0.0 || isnan(denom)) denom = EPS_VAR;
+        if (denom == 0.0 || isnan(denom)) denom = GUARD_VALUE;
         // Normalize responsibilities
         for (int k = 0; k < K; k++) gamma[i*K + k] /= denom;
     }
@@ -147,7 +147,7 @@ void m_step( double *X, int N, int D, int K, double *gamma, double *mu, double *
     // Finalize the calculation of the weighted means (for each feature) for each cluster
     for (int k = 0; k<K; k++) {
         // Guard to avoid division by zero
-        if (N_k[k] <= 0.0) N_k[k] = EPS_VAR;
+        if (N_k[k] <= 0.0) N_k[k] = GUARD_VALUE;
         // Finalize mu
         for( int d = 0; d < D; d++) {
             mu[k*D + d] = mu_k[k*D +d] / N_k[k];
