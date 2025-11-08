@@ -82,6 +82,106 @@ void compute_predicted_labels(double *gamma, int N, int K, int *predicted_labels
     }
 }
 
+/**
+ *   E-step: Compute responsibilities (gamma)
+ *   Parameters:
+ *    - X: dataset (N x D)
+ *    - N: number of samples
+ *    - D: number of features
+ *    - K: number of clusters
+ *    - mu: (K x D) Matrix of cluster means
+ *    - sigma: (K x D) Matrix of cluster variances
+ *    - pi: (K) Vector of mixture weights
+ *    Output parameters:
+ *    - gamma: (N x K) Responsibilities matrix
+*/
+void e_step( double *X, int N, int D, int K, double *mu, double *sigma, double *pi, double *gamma){
+    for(int i = 0; i < N; i++) {
+        // Initialize denominator for normalization
+        double denom = 0.0;
+        // Pointer to the i-th data point
+        double *x = &X[i*D];
+        for (int k = 0; k < K; k++) {
+            double *mu_k = &mu[k*D];         // Vector mean of cluster k
+            double *sigma_k = &sigma[k*D];   // Vector variance of cluster k
+        
+            // Responsibility of cluster k for data point i
+            gamma[i*K + k] = pi[k] * gaussian_multi_diag(x, mu_k, sigma_k, D);
+            // Accumulate denominator for normalization
+            denom += gamma[i*K + k];
+        }
+        // Guard to avoid division by zero
+        if (denom == 0.0 || isnan(denom)) denom = EPS_VAR;
+        // Normalize responsibilities
+        for (int k = 0; k < K; k++) gamma[i*K + k] /= denom;
+    }
+}
+
+/**
+ *  M-step: Update parameters (mu, sigma, pi) for each cluster
+ *   Parameters:
+ *    - X: dataset (N x D)
+ *    - N: number of samples
+ *    - D: number of features
+ *    - K: number of clusters
+ *    - gamma: (N x K) Responsibilities matrix
+ *    - N_k: (K) Sum of responsibilities per cluster 
+ *    - mu_k: (K x D) Weighted sums for means 
+ *    - sigma_k: (K x D) Weighted sums for variances 
+ *    Output parameters:
+ *    - mu: (K x D) Matrix of cluster means
+ *    - sigma: (K x D) Matrix of cluster variances
+ *    - pi: (K) Vector of mixture weights
+
+*/
+void m_step( double *X, int N, int D, int K, double *gamma, double *mu, double *sigma, double *pi, double *N_k, double *mu_k, double *sigma_k){
+    reset_accumulators(N_k, mu_k, sigma_k, K, D);
+    // Accumulate Nk and mu_num for each cluster
+    for (int i = 0; i < N; i++) {
+        double *x = &X[i*D]; // Vector of features for data point i
+        for (int k = 0; k < K; k++) {
+            N_k[k] += gamma[i*K + k]; // Accumulate responsibilities of a data point to cluster k
+            for (int d = 0; d < D; d++) { 
+                // Weight the data point by its responsibility and accumulate for mean
+                mu_k[k*D + d] += gamma[i*K + k] * x[d];
+            }
+        }
+    }
+
+    // Finalize the calculation of the weighted means (for each feature) for each cluster
+    for (int k = 0; k<K; k++) {
+        // Guard to avoid division by zero
+        if (N_k[k] <= 0.0) N_k[k] = EPS_VAR;
+        // Finalize mu
+        for( int d = 0; d < D; d++) {
+            mu[k*D + d] = mu_k[k*D +d] / N_k[k];
+        }
+    }
+
+    // Accumulate weighted squared differences for variances
+    for (int i = 0; i < N; i++) {
+        double *x = &X[i * D]; // Vector of features for data point i
+        for (int k = 0; k < K; k++) {
+            // For each feature dimension compute (x - mu)^2 and weight it by the responsibility
+            for (int d = 0; d < D; d++) {
+                double diff = x[d] - mu[k * D + d];
+                // Accumulate weighted squared difference
+                sigma_k[k * D + d] += gamma[i * K + k] * diff * diff; 
+            }
+        }
+    }
+
+    // Finalize sigma (variance per-dim) and pi
+    for (int k = 0; k < K; k++) {
+        for (int d = 0; d < D; d++) {
+            // Nk[k] is already guarded
+            // Finalize variance for each dimension
+            sigma[k * D + d] = sigma_k[k * D + d] / N_k[k];
+        }
+        // Update mixture weights
+        pi[k] = N_k[k] / (double)N;
+    }
+}
 /*
     Expection-Maximization Clustering Algorithm
 
@@ -159,82 +259,15 @@ int main(int argc, char **argv) {
     init_params(X, N, D, K, mu, sigma, pi);
     
     /*
-        EM loop:
-            - E-step: compute responsibilities (gamma)
-            - M-step: update parameters (mu, sigma, pi)
+        EM loop
         The loop runs until MAX_ITER is reached
     */
     for (int iter = 0; iter < MAX_ITER; iter++) {
-        
         // E-step
-        for (int i = 0; i < N; i++) {
-            double denom = 0.0;
-            // pointer to the i-th data point
-            double *x = &X[i*D];
-
-            for (int k = 0; k < K; k++) {
-                double *mu_k = &mu[k*D];         // Vector mean of cluster k
-                double *sigma_k = &sigma[k*D];   // Vector variance of cluster k
-            
-                // Responsibility of cluster k for data point i
-                gamma[i*K + k] = pi[k] * gaussian_multi_diag(x, mu_k, sigma_k, D);
-                // Accumulate denominator for normalization
-                denom += gamma[i*K + k];
-            }
-            // Guard to avoid division by zero
-            if (denom == 0.0 || isnan(denom)) denom = EPS_VAR;
-            // Normalize responsibilities
-            for (int k = 0; k < K; k++) gamma[i*K + k] /= denom;
-        }
+        e_step(X, N, D, K, mu, sigma, pi, gamma);
 
         // M-step
-        // Reset accumulators
-        reset_accumulators(N_k, mu_k, sigma_k, K, D);
-        
-        // Accumulate Nk and mu_num for each cluster
-        for (int i = 0; i < N; i++) {
-            double *x = &X[i*D]; // Vector of features for data point i
-            for (int k = 0; k < K; k++) {
-                N_k[k] += gamma[i*K + k]; // Accumulate responsibilities of a data point to cluster k
-                for (int d = 0; d < D; d++) { 
-                    // Weight the data point by its responsibility and accumulate for mean
-                    mu_k[k*D + d] += gamma[i*K + k] * x[d];
-                }
-            }
-        }
-
-        // Finalize the calculation of the weighted means (for each feature) for each cluster
-        for (int k = 0; k<K; k++) {
-            // Guard to avoid division by zero
-            if (N_k[k] <= 0.0) N_k[k] = EPS_VAR;
-            // Finalize mu
-            for( int d = 0; d < D; d++) {
-                mu[k*D + d] = mu_k[k*D +d] / N_k[k];
-            }
-        }
-
-        // Accumulate weighted squared differences for variances
-        for (int i = 0; i < N; i++) {
-            double *x = &X[i * D]; // Vector of features for data point i
-            for (int k = 0; k < K; k++) {
-                // For each feature dimension compute (x - mu)^2 and weight it by the responsibility
-                for (int d = 0; d < D; d++) {
-                    double diff = x[d] - mu[k * D + d];
-                    sigma_k[k * D + d] += gamma[i * K + k] * diff * diff; // accumulate weighted squared difference contribution for cluster k
-                }
-            }
-        }
-
-        // Finalize sigma (variance per-dim) and pi
-        for (int k = 0; k < K; k++) {
-            for (int d = 0; d < D; d++) {
-                // Nk[k] is already guarded
-                // Finalize variance for each dimension
-                sigma[k * D + d] = sigma_k[k * D + d] / N_k[k];
-            }
-            // Update mixture weights
-            pi[k] = N_k[k] / (double)N;
-        }
+        m_step(X, N, D, K, gamma,  mu, sigma, pi, N_k, mu_k, sigma_k);
     }
     
     // Compute predicted labels from responsibilities
