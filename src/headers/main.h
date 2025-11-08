@@ -2,11 +2,10 @@
 #define MAIN_H
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
 
 #include "file_io.h"    
 #include "utils.h"
+#include "em_algorithm.h"
 
 int main(int argc, char **argv);
 
