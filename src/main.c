@@ -69,10 +69,20 @@ int main(int argc, char **argv) {
     }
     io_time += MPI_Wtime() - io_start;
 
-    // TODO: Broadcast N, D, K to all process using a single MPI call
-    MPI_Bcast(&N, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&D, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&K, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    // Broadcast N, D, K to all process using a single MPI call
+    int metadata[3];
+    if(rank == 0) {
+        metadata[0] = N;
+        metadata[1] = D;
+        metadata[2] = K;
+    }
+    MPI_Bcast(metadata, 3, MPI_INT, 0, MPI_COMM_WORLD);
+    if(rank!=0){
+        N = metadata[0];
+        D = metadata[1];
+        K = metadata[2];
+    }
+
     
     //TODO: check that all these malloc are needed by all processes or just by process zero
     // Allocate buffers
