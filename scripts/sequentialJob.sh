@@ -6,7 +6,7 @@
 
 module load mpich-3.2
 mpirun.actual -n 1 Parallel-EM-Clustering/bin/EM_Clustering \
-    ./Parallel-EM-Clustering/data/em_dataset.csv \
-    ./Parallel-EM-Clustering/data/em_metadata.txt \
-    ./Parallel-EM-Clustering/data/execution_info.csv \
-    ./Parallel-EM-Clustering/data/em_validation.csv
+    Parallel-EM-Clustering/data/em_dataset.csv \
+    Parallel-EM-Clustering/data/em_metadata.txt \
+    Parallel-EM-Clustering/data/execution_info.csv \
+    Parallel-EM-Clustering/data/em_validation.csv

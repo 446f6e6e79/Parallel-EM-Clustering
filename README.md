@@ -86,8 +86,8 @@ The list of possible parameters for the script are:
 The generated files can be exported to the cluster via:
 
 ```bash
-scp data/em_dataset.csv YOUR_CLUSTER_ID_HERE
-scp data/em_metadata.txt YOUR_CLUSTER_ID_HERE
+scp data/em_dataset.csv data/em_metadata.txt user@cluster:/path/to/destination
+
 ```
 
 ---
