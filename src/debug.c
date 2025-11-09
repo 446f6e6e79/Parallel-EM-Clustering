@@ -32,11 +32,13 @@ void debug_print_first_samples(int N, int D, double *X, int *ground_truth_labels
  */
 void debug_print_cluster_params(int K, int D, double *mu, double *sigma, double *pi) {
     for (int k = 0; k < K; k++) {
-        printf("Cluster %d: pi=%.6f\n", k, pi[k]);
-        printf("  mu: ");
-        for (int d = 0; d < D; d++) printf("%.6f ", mu[k * D + d]);
-        printf("\n  sigma (std per-dim): ");
-        for (int d = 0; d < D; d++) printf("%.6f ", sqrt(sigma[k * D + d]));
+        printf("Cluster %d: \n", k);
+        printf("\tpi=%.6f\n", pi[k]);
+        printf("\tmu: ");
+        for (int d = 0; d < D; d++) printf("%.3f ", mu[k * D + d]);
+        printf("\n");
+        printf("\tsigma (std per-dim): ");
+        for (int d = 0; d < D; d++) printf("%.3f ", sqrt(sigma[k * D + d]));
         printf("\n");
     }
 }
