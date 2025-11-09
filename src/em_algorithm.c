@@ -179,3 +179,77 @@ void m_step( double *X, int N, int D, int K, double *gamma, double *mu, double *
         pi[k] = N_k[k] / (double)N;
     }
 }
+
+/**
+ *  M-step: Update parameters (mu, sigma, pi) for each cluster
+ *   Parameters:
+ *    - local_X: dataset (local_N x D)
+ *    - N: number of samples
+ *   - local_N: number of samples in the local partition
+ *    - D: number of features
+ *    - K: number of clusters
+ *    - local_gamma: (local_N x K) Responsibilities matrix
+ *    - N_k: (K) Sum of responsibilities per cluster 
+ *    - mu_k: (K x D) Weighted sums for means 
+ *    - sigma_k: (K x D) Weighted sums for variances 
+ *    Output parameters:
+ *    - mu: (K x D) Matrix of cluster means
+ *    - sigma: (K x D) Matrix of cluster variances
+ *    - pi: (K) Vector of mixture weights
+
+*/
+void m_step_parallelized(double *local_X, int N, int local_N, int D, int K, double *local_gamma, double *mu, double *sigma, double *pi, double *N_k, double *mu_k, double *sigma_k){
+    reset_accumulators(N_k, mu_k, sigma_k, K, D);
+    // Accumulate Nk and mu_num for each cluster
+    for (int i = 0; i < local_N; i++) {
+        double *x = &local_X[i*D]; // Vector of features for data point i
+        for (int k = 0; k < K; k++) {
+            N_k[k] += local_gamma[i*K + k]; // Accumulate responsibilities of a data point to cluster k
+            for (int d = 0; d < D; d++) { 
+                // Weight the data point by its responsibility and accumulate for mean
+                mu_k[k*D + d] += local_gamma[i*K + k] * x[d];
+            }
+        }
+    }
+    //TODO: reduce on N_k and mu_k
+
+
+    // Finalize the calculation of the weighted means (for each feature) for each cluster
+    //TODO: only done by rank 0 (IN FUTURE, should be done using openmp???)
+    for (int k = 0; k < K; k++) {
+        // Guard to avoid division by zero
+        if (N_k[k] <= 0.0) N_k[k] = GUARD_VALUE;
+        // Finalize mu
+        for( int d = 0; d < D; d++) {
+            mu[k*D + d] = mu_k[k*D +d] / N_k[k];
+        }
+    }
+    //TODO: broadcast of mu (BROADCAST SHOULD BLOCK UNTIL process zero FINISHES THE CALCULATION)
+
+    // Accumulate weighted squared differences for variances
+    for (int i = 0; i < local_N; i++) {
+        double *x = &local_X[i * D]; // Vector of features for data point i
+        for (int k = 0; k < K; k++) {
+            // For each feature dimension compute (x - mu)^2 and weight it by the responsibility
+            for (int d = 0; d < D; d++) {
+                double diff = x[d] - mu[k * D + d];
+                // Accumulate weighted squared difference
+                sigma_k[k * D + d] += local_gamma[i * K + k] * diff * diff; 
+            }
+        }
+    }
+    //TODO: reduce of signa_k
+
+    // Finalize sigma (variance per-dim) and pi
+    //TODO: only done by rank 0 (IN FUTURE, should be done using openmp???)
+    for (int k = 0; k < K; k++) {
+        for (int d = 0; d < D; d++) {
+            // Nk[k] is already guarded
+            // Finalize variance for each dimension
+            sigma[k * D + d] = sigma_k[k * D + d] / N_k[k];
+        }
+        // Update mixture weights
+        pi[k] = N_k[k] / (double)N;
+    }
+    //TODO: broadcast sigma and pi (BROADCAST SHOULD BLOCK UNTIL process zero FINISHES THE CALCULATION)
+}
