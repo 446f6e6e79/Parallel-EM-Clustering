@@ -86,11 +86,13 @@ int main(int argc, char **argv) {
     }
     data_distribution_time += MPI_Wtime() - data_distribution_start;
     
-    //TODO: check that all these malloc are needed by all processes or just by process zero
     // Allocate buffers
-    X = malloc(N * D * sizeof(double));
-    predicted_labels = malloc(N * sizeof(int));
-    ground_truth_labels = malloc(N * sizeof(int));
+    if(rank == 0){
+        X = malloc(N * D * sizeof(double));
+        predicted_labels = malloc(N * sizeof(int));
+        ground_truth_labels = malloc(N * sizeof(int));
+    }
+    //TODO: check that all these malloc are needed by all processes or just by process zero
     mu = malloc(K * D * sizeof(double)); 
     sigma = malloc(K * D * sizeof(double)); 
     pi = malloc(K * sizeof(double));
@@ -98,7 +100,7 @@ int main(int argc, char **argv) {
     N_k = malloc((size_t)K * sizeof(double));              
     mu_k = malloc((size_t)K * D * sizeof(double));   
     sigma_k = malloc((size_t)K * D * sizeof(double));     
-
+    
     // Check that all allocations were successful
     if(!X || !predicted_labels || !ground_truth_labels || !mu || !sigma || !pi || !gamma || !N_k || !mu_k || !sigma_k){
         fprintf(stderr, "Memory allocation failed\n");
@@ -121,7 +123,7 @@ int main(int argc, char **argv) {
 
     // Prepare for scattering data
     data_distribution_start = MPI_Wtime();
-
+    //TODO: once verified that data distribution time is correctly measured, refactor to a function
     int *sendcounts = NULL;         // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
     int *displs = NULL;             // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i
     
@@ -163,6 +165,12 @@ int main(int argc, char **argv) {
         local_X, local_N, MPI_DOUBLE,
         0, MPI_COMM_WORLD
     );
+    
+    // Free sendcounts and displs as they are no longer needed
+    if (rank == 0) {
+        free(sendcounts);
+        free(displs);
+    }
     data_distribution_time += MPI_Wtime() - data_distribution_start;
 
     double compute_start = MPI_Wtime();

@@ -23,7 +23,7 @@ inline double gaussian_multi_diag(double *x, double *mu, double *sigma, int D) {
 }
 
 /**
- *   Initialize the parameters for the EM algorithm:
+ *   Initialize the parameters mu, sigma, pi for the EM algorithm:
  *    Parameters:
  *     -X: dataset (N x D)
  *     -N: number of samples
