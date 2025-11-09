@@ -14,16 +14,16 @@ def compute_metrics(group):
             - efficiency as speedup / n_processes
     """
     # Get the sequential execution time (1 process)
-    t1 = group[group['n_processes'] == 1]['total_execution_time'].iloc[0]
+    t1 = group[group['n_process'] == 1]['compute_time'].iloc[0]
     
     # Calculate speedup and efficiency
     group = group.copy()
-    group['speedup'] = t1 / group['total_execution_time']
-    group['efficiency'] = group['speedup'] / group['n_processes']
+    group['speedup'] = t1 / group['compute_time']
+    group['efficiency'] = group['speedup'] / group['n_process']
     
     return group
 
-def make_pivot(df, value, index='n_processes', columns='dataset_size',
+def make_pivot(df, value, index='n_process', columns=['n_samples', 'n_features', 'n_clusters'],
                aggfunc='mean', round_decimals=3, fillna=None, process_order=None):
     """
         Create a pivot table from the DataFrame with specified parameters.
@@ -31,7 +31,7 @@ def make_pivot(df, value, index='n_processes', columns='dataset_size',
             df: Input DataFrame
             value: Column name to aggregate
             index: Column to use as index (default 'n_processes')
-            columns: Column to use as columns (default 'dataset_size')
+            columns: Column to use as columns ( defined as the aggregation of n_samples, n_features, n_clusters as default)
             aggfunc: Aggregation function (default 'mean')
             round_decimals: Number of decimals to round the results (default 3)
             fillna: Value to fill NaNs (default None)
@@ -39,13 +39,19 @@ def make_pivot(df, value, index='n_processes', columns='dataset_size',
         Returns:
             Pivot table as a DataFrame
     """
+
+    # Determine process order if not provided
     if process_order is None:
         process_order = sorted(df[index].unique())
+
+    # Pivot with multi-index columns
     pivot = df.pivot_table(index=index, columns=columns, values=value, aggfunc=aggfunc)
+
     if fillna is not None:
         pivot = pivot.fillna(fillna)
     if round_decimals is not None:
         pivot = pivot.round(round_decimals)
+
     pivot = pivot.reindex(process_order)
     return pivot
 
@@ -60,23 +66,27 @@ def format_scientific(size):
     else:
         return f"{size:.0f}"
 
-def plot_metrics(filtered_df, metric):
+def plot_metrics(filtered_df, metric, fixed_parameters=None):
     """
         Create a Speedup figure using Plotly
         Parameters:
             filtered_df: DataFrame filtered for selected datasets
             metric: Metric to plot ('speedup' or 'efficiency')
+            fixed_parameters: List of dataset columns to include in the label
     """
     if metric not in ['speedup', 'efficiency']:
         raise ValueError("Metric must be 'speedup' or 'efficiency'")
     
+    if fixed_parameters is None:
+        fixed_parameters = ['n_samples', 'n_features', 'n_clusters']
+
     # Color palette
     colors = px.colors.qualitative.Set1
     
     # Create Speedup figure
     fig = go.Figure()
 
-    n_proc = np.sort(filtered_df['n_processes'].unique())
+    n_proc = np.sort(filtered_df['n_process'].unique())
     if metric == 'speedup':
         # Draw ideal speedup line
         fig.add_trace(go.Scatter(
@@ -95,12 +105,24 @@ def plot_metrics(filtered_df, metric):
             line=dict(dash='dot', color='red', width=2)
         ))
 
+    filtered_df = filtered_df.copy()
+
+    # Build a dataset label string for plotting.
+    def build_label(row):
+        parts = []
+        for col in fixed_parameters:
+            parts.append(f"{format_scientific(int(row[col]))}")
+        return " - ".join(parts)
+    
+    filtered_df['dataset_label'] = filtered_df.apply(build_label, axis=1)
+    
+    unique_labels = filtered_df['dataset_label'].unique()
+
     # Plot data for each dataset
-    for i, size in enumerate(filtered_df['dataset_size'].unique()):
-        subset = filtered_df[filtered_df['dataset_size'] == size]
-        label = format_scientific(size)
+    for i, label in enumerate(unique_labels):
+        subset = filtered_df[filtered_df['dataset_label'] == label]
         fig.add_trace(go.Scatter(
-            x=subset['n_processes'],
+            x=subset['n_process'],
             y=subset[metric],
             mode='lines+markers',
             name=f"Dataset {label}",
