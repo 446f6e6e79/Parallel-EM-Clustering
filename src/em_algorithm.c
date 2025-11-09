@@ -58,9 +58,10 @@ void init_params(double *X, int N, int D, int K, double *mu, double *sigma, doub
  *     - gamma: (N x K) Responsibilities matrix
  *     - N: Number of samples
  *     - K: Number of clusters
+ *    Output parameters:
  *     - predicted_labels: (N) Output array for predicted labels
  */
-void compute_predicted_labels(double *gamma, int N, int K, int *predicted_labels) {
+void compute_clustering(double *gamma, int N, int K, int *predicted_labels) {
     for (int i = 0; i < N; i++) {
         // Initialize max_resp to the responsibility of the first cluster
         double max_resp = gamma[i * K];
@@ -91,7 +92,7 @@ void compute_predicted_labels(double *gamma, int N, int K, int *predicted_labels
  *    Output parameters:
  *    - gamma: (N x K) Responsibilities matrix
 */
-void e_step( double *X, int N, int D, int K, double *mu, double *sigma, double *pi, double *gamma){
+void e_step(double *X, int N, int D, int K, double *mu, double *sigma, double *pi, double *gamma){
     for(int i = 0; i < N; i++) {
         // Initialize denominator for normalization
         double denom = 0.0;

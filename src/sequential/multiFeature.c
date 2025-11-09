@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
     }
     
     // Compute predicted labels from responsibilities
-    compute_predicted_labels(gamma, N, K, predicted_labels);    
+    compute_clustering(gamma, N, K, predicted_labels);    
 
     // Print final parameters 
     debug_print_cluster_params(K, D, mu, sigma, pi);
