@@ -87,10 +87,14 @@ int main(int argc, char **argv) {
     data_distribution_time += MPI_Wtime() - data_distribution_start;
     
     // Allocate buffers
+    int alloc_fail = 0;
     if(rank == 0){
         X = malloc(N * D * sizeof(double));
         predicted_labels = malloc(N * sizeof(int));
         ground_truth_labels = malloc(N * sizeof(int));
+        if(!X || !predicted_labels || !ground_truth_labels) {
+            alloc_fail = 1;
+        }
     }
     //TODO: check that all these malloc are needed by all processes or just by process zero
     mu = malloc(K * D * sizeof(double)); 
@@ -99,9 +103,11 @@ int main(int argc, char **argv) {
     N_k = malloc((size_t)K * sizeof(double));              
     mu_k = malloc((size_t)K * D * sizeof(double));   
     sigma_k = malloc((size_t)K * D * sizeof(double));     
-    
+    if(!mu || !sigma || !pi || !N_k || !mu_k || !sigma_k){
+        alloc_fail = 1;
+    }
     // Check that all allocations were successful
-    if(!X || !predicted_labels || !ground_truth_labels || !mu || !sigma || !pi || !local_gamma || !N_k || !mu_k || !sigma_k){
+    if(alloc_fail){
         fprintf(stderr, "Memory allocation failed\n");
         safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
         MPI_Abort(MPI_COMM_WORLD,1);
