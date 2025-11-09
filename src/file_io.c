@@ -96,11 +96,11 @@ int read_metadata(const char *metadata_filename, int *samples, int *features, in
 /*
     Write the execution information to the output csv file
     The file format is:
-        n_process,n_samples,n_features,n_clusters,time_seconds,io_time,compute_time
+        n_process,n_samples,n_features,n_clusters,time_seconds,io_time,compute_time,data_distribution_time
     Each execution will append a new line to the file.
     Returns 0 on success, -1 on failure.
 */
-int write_execution_info(const char *filename, int n_process, int n_samples, int n_features, int n_clusters, double time_seconds, double io_time, double compute_time) {
+int write_execution_info(const char *filename, int n_process, int n_samples, int n_features, int n_clusters, double time_seconds, double io_time, double compute_time, double data_distribution_time) {
     // Open the file in append mode
     FILE *fp = fopen(filename, "a");
     if (fp == NULL) {
@@ -127,7 +127,7 @@ int write_execution_info(const char *filename, int n_process, int n_samples, int
     fseek(fp, 0, SEEK_END);
     long file_size = ftell(fp);
     if (file_size == 0) {
-        if (fprintf(fp, "n_process,n_samples,n_features,n_clusters,time_seconds,io_time,compute_time\n") == -1) {
+        if (fprintf(fp, "n_process,n_samples,n_features,n_clusters,time_seconds,io_time,compute_time,data_distribution_time\n") == -1) {
             fprintf(stderr, "Failed to write header to file\n");
             flock(fd, LOCK_UN);
             fclose(fp);
@@ -135,7 +135,7 @@ int write_execution_info(const char *filename, int n_process, int n_samples, int
         }
     }
     // Write the execution info (note: MPI_Offset is typically a long long)
-    if (fprintf(fp, "%d,%d,%d,%d,%.6f,%.6f,%.6f\n", n_process, n_samples, n_features, n_clusters, time_seconds, io_time, compute_time) == -1) {
+    if (fprintf(fp, "%d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f\n", n_process, n_samples, n_features, n_clusters, time_seconds, io_time, compute_time, data_distribution_time) == -1) {
         fprintf(stderr, "Failed to write to file\n");
         flock(fd, LOCK_UN);
         fclose(fp);
