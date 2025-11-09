@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
     int *ground_truth_labels = NULL;    // Ground truth labels
 
     double start_time = MPI_Wtime();    
-    double io_time = 0.0, compute_time = 0.0;
+    double io_time = 0.0, compute_time = 0.0, data_distribution_time = 0.0;
 
     // Check command line arguments
     if(argc < 4 || argc > 5){
@@ -69,7 +69,9 @@ int main(int argc, char **argv) {
     }
     io_time += MPI_Wtime() - io_start;
 
+
     // Broadcast N, D, K to all process using a single MPI call
+    double data_distribution_start = MPI_Wtime();
     int metadata[3];
     if(rank == 0) {
         metadata[0] = N;
@@ -82,7 +84,7 @@ int main(int argc, char **argv) {
         D = metadata[1];
         K = metadata[2];
     }
-
+    data_distribution_time += MPI_Wtime() - data_distribution_start;
     
     //TODO: check that all these malloc are needed by all processes or just by process zero
     // Allocate buffers
@@ -115,8 +117,53 @@ int main(int argc, char **argv) {
         // If correctly read, debug print first few samples
         debug_print_first_samples(N, D, X, ground_truth_labels);
     }
-
     io_time += MPI_Wtime() - io_start;
+
+    // Prepare for scattering data
+    data_distribution_start = MPI_Wtime();
+
+    int *sendcounts = NULL;         // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
+    int *displs = NULL;             // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i
+    
+    // Root process prepares sendcounts and displs arrays
+    if (rank == 0) {
+        // Allocate the two vectors
+        sendcounts = malloc(size * sizeof(int));
+        displs = malloc(size * sizeof(int));
+        int rem = N % size;
+        int offset = 0;
+        // Calculate sendcounts and displs
+        for (int i = 0; i < size; i++) {
+            // Calculate the number of local samples for each process
+            int n_local = N / size;
+            // Distribute the remainder among the first 'rem' processes
+            if (i < rem) n_local++;
+            // Each process gets n_local * D elements
+            sendcounts[i] = n_local * D;
+            // Displacement is the cumulative sum of previous sendcounts
+            displs[i] = offset;
+            offset += n_local * D;
+        }
+    }
+    // Compute the number of local samples for each process
+    int local_N = N / size;
+    // Compute the remainder and distribute it
+    if (rank < N % size) local_N++;
+
+    //Allocate the vectors for local data
+    double *local_X = malloc(local_N * D * sizeof(double));
+    if (!local_X) {
+        fprintf(stderr, "Memory allocation failed\n");
+        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&gamma,&N_k,&mu_k,&sigma_k);
+        MPI_Abort(MPI_COMM_WORLD,1);
+    }
+    // Scatter the data points to all processes
+    MPI_Scatterv(
+        X, sendcounts, displs, MPI_DOUBLE,
+        local_X, local_N, MPI_DOUBLE,
+        0, MPI_COMM_WORLD
+    );
+    data_distribution_time += MPI_Wtime() - data_distribution_start;
 
     double compute_start = MPI_Wtime();
     // Initialize parameters
@@ -156,7 +203,7 @@ int main(int argc, char **argv) {
 
     // Report the execution info (only by rank 0)
     if(rank == 0){
-        if(write_execution_info(execution_info_filename, size, N, D, K, MPI_Wtime() - start_time, io_time, compute_time) != 0){
+        if(write_execution_info(execution_info_filename, size, N, D, K, MPI_Wtime() - start_time, io_time, compute_time, data_distribution_time) != 0){
             fprintf(stderr, "Failed to write execution info to file\n");
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
