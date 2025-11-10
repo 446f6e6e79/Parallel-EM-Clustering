@@ -77,4 +77,5 @@ notes.txt
 bin/EM_Clustering
 data/resultElaboration/.ipynb_checkpoints/elaborate_data-checkpoint.ipynb
 data/resultElaboration/__pycache__/utils.cpython-313.pyc
-/data/ground_truths
+/bin
+/data/datasets

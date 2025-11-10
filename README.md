@@ -23,7 +23,7 @@ The executable will be generated at `bin/EM_Clustering`.
 
 ### 2. Generating the Input Data
 
-Before running the Python script on your personal machine, a virtual environment should be created with all the dependencies:
+Before running the Python scripts on your personal machine, a virtual environment should be created with all the required dependencies:
 
 ```bash
 python3 -m venv .venv
@@ -31,14 +31,22 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install numpy pandas scikit-learn matplotlib
 ```
+#### Automatic dataset generation
+The dataset used in our analysis can be generated using the provided script:
+```bash
+./scripts/dataset_generator.sh
+```
+This script automatically creates several datasets with different configurations (number of examples, features, and clusters).
+Each generated dataset is stored under the `data/datasets` directory.
 
-Then, from the main directory the script can be launched with:
-
+It is also possible to generate new datasets manually, as described below.
+#### Manual dataset generation
+From the main directory of the repository:
 ```bash
 python data/datasetGeneration/data-generator.py
 ```
 
-#### Parameters
+##### Parameters
 
 The list of possible parameters for the script are:
 
@@ -81,13 +89,12 @@ The list of possible parameters for the script are:
 
 ---
 
-#### Import the Dataset to the Cluster
+### Import the Dataset to the Cluster
 
 The generated files can be exported to the cluster via:
 
 ```bash
-scp data/em_dataset.csv data/em_metadata.txt user@cluster:/path/to/destination
-
+scp  -r data/datasets user@cluster:/path/to/destination
 ```
 
 ---
