@@ -46,3 +46,15 @@ void reset_accumulators(double *N_k, double *mu_k, double *sigma_k, int K, int D
     memset(mu_k, 0, (size_t)K * D * sizeof(double));
     memset(sigma_k, 0, (size_t)K * D * sizeof(double));
 }
+
+/*
+    Reset accumulators used in the parallel M-step of the EM algorithm
+*/
+void parallel_reset_accumulators(double *N_k, double *mu_k, double *sigma_k, double *local_N_k, double *local_mu_k, double *local_sigma_k, int K, int D) {
+    memset(N_k, 0, (size_t)K * sizeof(double));
+    memset(mu_k, 0, (size_t)K * D * sizeof(double));
+    memset(sigma_k, 0, (size_t)K * D * sizeof(double));
+    memset(local_N_k, 0, (size_t)K * sizeof(double));
+    memset(local_mu_k, 0, (size_t)K * D * sizeof(double));
+    memset(local_sigma_k, 0, (size_t)K * D * sizeof(double));
+}

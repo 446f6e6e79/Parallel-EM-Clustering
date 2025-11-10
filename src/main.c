@@ -33,6 +33,10 @@ int main(int argc, char **argv) {
     double *mu_k = NULL;                // mu_k[k * D] = Weighted sums for means
     double *sigma_k = NULL;             // sigma_k[k * D] = Weighted sums for variances
 
+    double *local_N_k = NULL;           // Local version of N_k for parallelizing
+    double *local_mu_k = NULL;          // Local version of mu_k for parallelizing
+    double *local_sigma_k = NULL;       // Local version of sigma_k for parallelizing
+
     int *predicted_labels = NULL;       // Predicted cluster labels
     int *local_predicted_labels = NULL; // Local predicted cluster labels
     int *ground_truth_labels = NULL;    // Ground truth labels
@@ -102,7 +106,7 @@ int main(int argc, char **argv) {
     pi = malloc(K * sizeof(double));
     N_k = malloc((size_t)K * sizeof(double));              
     mu_k = malloc((size_t)K * D * sizeof(double));   
-    sigma_k = malloc((size_t)K * D * sizeof(double));     
+    sigma_k = malloc((size_t)K * D * sizeof(double));  
     if(!mu || !sigma || !pi || !N_k || !mu_k || !sigma_k){
         alloc_fail = 1;
     }
@@ -169,9 +173,16 @@ int main(int argc, char **argv) {
     double *local_X = malloc(local_N * D * sizeof(double));
     local_gamma = malloc(local_N * K * sizeof(double));
     local_predicted_labels = malloc(local_N * sizeof(int)); 
-    if (!local_X || !local_gamma || !local_predicted_labels) {
+    local_N_k = malloc((size_t)K * sizeof(double));              
+    local_mu_k = malloc((size_t)K * D * sizeof(double));   
+    local_sigma_k = malloc((size_t)K * D * sizeof(double));
+
+    if (!local_X || !local_gamma || !local_predicted_labels || !local_N_k || !local_mu_k || !local_sigma_k) {
         fprintf(stderr, "Memory allocation failed\n");
         safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
+        free(local_mu_k);
+        free(local_N_k);
+        free(local_sigma_k);
         MPI_Abort(MPI_COMM_WORLD,1);
     }
     // Scatter the data points to all processes
@@ -206,7 +217,7 @@ int main(int argc, char **argv) {
 
         //M-step
         double m_step_start = MPI_Wtime();
-        m_step_parallelized(local_X, N, local_N, D, K, local_gamma,  mu, sigma, pi, N_k, mu_k, sigma_k, rank);
+        m_step_parallelized(local_X, N, local_N, D, K, local_gamma,  mu, sigma, pi, N_k, local_N_k, mu_k, local_mu_k, sigma_k, local_sigma_k, rank);
         m_step_time += MPI_Wtime() - m_step_start;
     }
     
@@ -259,7 +270,10 @@ int main(int argc, char **argv) {
 
     // Free all the allocated memory
     safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
-
+    free(local_mu_k);
+    free(local_N_k);
+    free(local_sigma_k);
+    
     MPI_Finalize();
     return 0;
 }
