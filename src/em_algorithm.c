@@ -196,11 +196,11 @@ void m_step( double *X, int N, int D, int K, double *gamma, double *mu, double *
  *    - mu: (K x D) Matrix of cluster means
  *    - sigma: (K x D) Matrix of cluster variances
  *    - pi: (K) Vector of mixture weights
-
+ *    - rank: Id of the current process
 */
-void m_step_parallelized(double *local_X, int N, int local_N, int D, int K, double *local_gamma, double *mu, double *sigma, double *pi, double *N_k, double *mu_k, double *sigma_k){
+void m_step_parallelized(double *local_X, int N, int local_N, int D, int K, double *local_gamma, double *mu, double *sigma, double *pi, double *N_k, double *mu_k, double *sigma_k, int rank){
     reset_accumulators(N_k, mu_k, sigma_k, K, D);
-    // Accumulate Nk and mu_num for each cluster
+    // Accumulate Nk and mu_num for each cluster, done by every process
     for (int i = 0; i < local_N; i++) {
         double *x = &local_X[i*D]; // Vector of features for data point i
         for (int k = 0; k < K; k++) {
@@ -211,22 +211,27 @@ void m_step_parallelized(double *local_X, int N, int local_N, int D, int K, doub
             }
         }
     }
-    //TODO: reduce on N_k and mu_k
 
+    MPI_Reduce(N_k, N_k, K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(mu_k, mu_k, D*K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    // Finalize the calculation of the weighted means (for each feature) for each cluster
-    //TODO: only done by rank 0 (IN FUTURE, should be done using openmp???)
-    for (int k = 0; k < K; k++) {
-        // Guard to avoid division by zero
-        if (N_k[k] <= 0.0) N_k[k] = GUARD_VALUE;
-        // Finalize mu
-        for( int d = 0; d < D; d++) {
-            mu[k*D + d] = mu_k[k*D +d] / N_k[k];
+    // Finalize the calculation of the weighted means (for each feature) for each cluster, only done by rank 0
+    if(rank == 0){
+        //TODO: (IN FUTURE, should be done using openmp???)
+        for (int k = 0; k < K; k++) {
+            // Guard to avoid division by zero
+            if (N_k[k] <= 0.0) N_k[k] = GUARD_VALUE;
+            // Finalize mu
+            for( int d = 0; d < D; d++) {
+                mu[k*D + d] = mu_k[k*D +d] / N_k[k];
+            }
         }
     }
-    //TODO: broadcast of mu (BROADCAST SHOULD BLOCK UNTIL process zero FINISHES THE CALCULATION)
 
-    // Accumulate weighted squared differences for variances
+    //TODO: Bcast it's alredy blocking
+    MPI_Bcast(mu, K*D, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    // Accumulate weighted squared differences for variances, done by every process
     for (int i = 0; i < local_N; i++) {
         double *x = &local_X[i * D]; // Vector of features for data point i
         for (int k = 0; k < K; k++) {
@@ -238,18 +243,23 @@ void m_step_parallelized(double *local_X, int N, int local_N, int D, int K, doub
             }
         }
     }
-    //TODO: reduce of signa_k
+    
+    MPI_Reduce(sigma_k, sigma_k, K*D, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    // Finalize sigma (variance per-dim) and pi
-    //TODO: only done by rank 0 (IN FUTURE, should be done using openmp???)
-    for (int k = 0; k < K; k++) {
-        for (int d = 0; d < D; d++) {
-            // Nk[k] is already guarded
-            // Finalize variance for each dimension
-            sigma[k * D + d] = sigma_k[k * D + d] / N_k[k];
+    // Finalize sigma (variance per-dim) and pi, only done by rank 0
+    if(rank == 0){
+        //TODO: (IN FUTURE, should be done using openmp???)
+        for (int k = 0; k < K; k++) {
+            for (int d = 0; d < D; d++) {
+                // Nk[k] is already guarded
+                // Finalize variance for each dimension
+                sigma[k * D + d] = sigma_k[k * D + d] / N_k[k];
+            }
+            // Update mixture weights
+            pi[k] = N_k[k] / (double)N;
         }
-        // Update mixture weights
-        pi[k] = N_k[k] / (double)N;
     }
-    //TODO: broadcast sigma and pi (BROADCAST SHOULD BLOCK UNTIL process zero FINISHES THE CALCULATION)
+
+    MPI_Bcast(sigma, K*D, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(pi, K, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }

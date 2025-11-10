@@ -202,10 +202,9 @@ int main(int argc, char **argv) {
         e_step(local_X, local_N, D, K, mu, sigma, pi, local_gamma);
         e_step_time += MPI_Wtime() - e_step_start;
 
-        //TODO: check how to parallelize
         //M-step
         double m_step_start = MPI_Wtime();
-        m_step(X, N, D, K, local_gamma,  mu, sigma, pi, N_k, mu_k, sigma_k);
+        m_step_parallelized(local_X, N, local_N, D, K, local_gamma,  mu, sigma, pi, N_k, mu_k, sigma_k, rank);
         m_step_time += MPI_Wtime() - m_step_start;
     }
     
