@@ -79,13 +79,21 @@ void parallel_reset_accumulators(double *N_k, double *mu_k, double *sigma_k, dou
     factor: multiplier for each element (e.g., D for scatter, 1 for labels)
 */
 void compute_counts_displs(int N, int size, int factor, int *counts, int *displs) {
-    int rem = N % size;
     int offset = 0;
     for (int i = 0; i < size; i++) {
-        int n_local = N / size;
-        if (i < rem) n_local++;
+        int n_local = compute_local_N(N, size, i);
         counts[i] = n_local * factor;
         displs[i] = offset;
         offset += n_local * factor;
     }
+}
+
+/*
+    Computes the number of rows assigned to the local process
+    Parameters:
+
+*/
+int compute_local_N(int N, int size, int rank) {
+    int base = N / size;
+    return base + (rank < N % size);
 }

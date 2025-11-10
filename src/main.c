@@ -4,16 +4,13 @@
 
 /*
     Expection-Maximization Clustering Algorithm
-
     Usage: ./program <dataset_file> <metadata_file> <execution_info_file> [output_labels_file]
 */
 int main(int argc, char **argv) { 
     // Initialize MPI
     MPI_Init(&argc, &argv);
-    // Id of the current process
-    int rank;
-    // Number of processes
-    int size;
+    int rank;       // id of the current process
+    int size;       // Number of processes
     
     // Initialize MPI rank (process ID) and size (total processes)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -48,7 +45,7 @@ int main(int argc, char **argv) {
     int *local_predicted_labels = NULL; // Local predicted cluster labels
     int *ground_truth_labels = NULL;    // Ground truth labels
 
-    // Initializing all times
+    // Initialize the timers
     double start_time = MPI_Wtime();    
     double io_time = 0.0, compute_time = 0.0, e_step_time = 0.0, m_step_time = 0.0, data_distribution_time = 0.0;
 
@@ -67,9 +64,9 @@ int main(int argc, char **argv) {
     const char *metadata_filename = argv[2];
     const char *execution_info_filename = argv[3];
     const char *output_labels_file = (argc > 4) ? argv[4] : NULL;
-
-    double io_start = MPI_Wtime();
+    
     // Read metadata from metadata file (only by rank 0)
+    double io_start = MPI_Wtime();
     if (rank == 0) {
         int meta_status = read_metadata(metadata_filename, &N, &D, &K, &max_line_size);
         if(meta_status != 0){
@@ -131,8 +128,6 @@ int main(int argc, char **argv) {
             safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
             MPI_Abort(MPI_COMM_WORLD,1);
         }
-        // If correctly read, debug print first few samples
-        debug_print_first_samples(N, D, X, ground_truth_labels);
     }
     io_time += MPI_Wtime() - io_start;
     
@@ -145,14 +140,10 @@ int main(int argc, char **argv) {
     MPI_Bcast(sigma, K * D,  MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(pi, K,  MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    // Prepare for scattering data
+    // Distribute data among processes
     data_distribution_start = MPI_Wtime();
+    int local_N = compute_local_N(N, size, rank);
     
-    // Compute the number of local samples for each process
-    int local_N = N / size;
-    // Compute the remainder and distribute it
-    if (rank < N % size) local_N++;
-
     // Allocate the vectors for local data
     local_X = malloc(local_N * D * sizeof(double));
     local_gamma = malloc(local_N * K * sizeof(double));
@@ -171,11 +162,8 @@ int main(int argc, char **argv) {
 
     // Scatter dataset X from rank 0 to all processes; each gets local_N rows in local_X.
     scatter_dataset(X, local_X, N, local_N, D, rank, size);
-
     data_distribution_time += MPI_Wtime() - data_distribution_start;
 
-    // Debug print local data distribution
-    debug_print_scatter(local_N, D, local_X, rank);
     double compute_start = MPI_Wtime();
     
     /*
@@ -197,7 +185,7 @@ int main(int argc, char **argv) {
     // Compute local predicted labels from responsibilities
     compute_clustering(local_gamma, local_N, K, local_predicted_labels);
     compute_time += MPI_Wtime() - compute_start;
-
+    
     // Gather predicted labels from all processes
     gather_dataset(local_predicted_labels, predicted_labels, N, local_N, rank, size);
 

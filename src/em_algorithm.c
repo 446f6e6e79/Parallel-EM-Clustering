@@ -7,6 +7,7 @@
                          + sum_d log(sigma[d])
                          + sum_d (x[d]-mu[d])^2 / sigma[d] ) )
 */
+//TODO: try OPENMP parallelization here
 inline double gaussian_multi_diag(double *x, double *mu, double *sigma, int D) {
     double logdet = 0.0;
     double quad = 0.0;
@@ -266,6 +267,7 @@ void m_step_parallelized(double *local_X, int N, int local_N, int D, int K, doub
 
 }
 
+// TODO: move to utils.c or similar file
 void scatter_dataset(double *X, double *local_X, int N, int local_N, int D, int rank, int size) {
     int *counts = NULL;             // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
     int *displs = NULL;             // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i

@@ -7,7 +7,6 @@
         - D: Number of features
         - X: Dataset buffer
         - ground_truth_labels: Ground truth labels buffer
-
 */
 void debug_print_first_samples(int N, int D, double *X, int *ground_truth_labels) {
     printf("\ndataset read -> %d rows\n", N);
@@ -50,7 +49,6 @@ void debug_print_cluster_params(int K, int D, double *mu, double *sigma, double 
         - D: Number of features
         - local_X: Dataset buffer
         - rank: Rank of the current process
-
 */
 void debug_print_scatter(int local_N, int D, double *local_X, int rank) {
     printf("\nProcess %d: dataset read -> %d rows\n", rank, local_N);
