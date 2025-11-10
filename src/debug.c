@@ -56,7 +56,7 @@ void debug_print_scatter(int local_N, int D, double *local_X, int rank) {
     printf("\nProcess %d: dataset read -> %d rows\n", rank, local_N);
     // test print first few rows
     for(int i = 0; i < 5 && i < local_N; i++){
-        printf("Sample-%d: ", i);
+        printf("Process%d-Sample-%d: ", rank, i);
         for(int f = 0; f < D; f++){
             printf("%lf ", local_X[i * D + f]);
         }

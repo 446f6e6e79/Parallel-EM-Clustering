@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
     }
     data_distribution_time += MPI_Wtime() - data_distribution_start;
     
-    // Allocate buffers
+    // Allocate buffers for master process
     int alloc_fail = 0;
     if(rank == 0){
         X = malloc(N * D * sizeof(double));
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
             alloc_fail = 1;
         }
     }
-    //TODO: check that all these malloc are needed by all processes or just by process zero
+    // Allocate the buffers needed by all processes
     mu = malloc(K * D * sizeof(double)); 
     sigma = malloc(K * D * sizeof(double)); 
     pi = malloc(K * sizeof(double));
@@ -126,18 +126,20 @@ int main(int argc, char **argv) {
     }
     io_time += MPI_Wtime() - io_start;
     
-    printf("Process %d\n", rank);
-
-    //TODO: only rank 0 initializes the parameters, then broadcast to all processes
     //Initialize parameters for the EM algorithm
     if (rank == 0) init_params(X, N, D, K, mu, sigma, pi);
+    
+    // Broadcast initial parameters to all processes
+    //TODO: check if this can be optimized by using a single MPI call using DERIVED datatype
+    MPI_Bcast(mu, K * D,  MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(sigma, K * D,  MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(pi, K,  MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     // Prepare for scattering data
     data_distribution_start = MPI_Wtime();
     //TODO: once verified that data distribution time is correctly measured, refactor to a function
     int *sendcounts = NULL;         // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
     int *displs = NULL;             // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i
-    //TODO: check all the sendcounts, displs and local_n
     // Root process prepares sendcounts and displs arrays
     if (rank == 0) {
         // Allocate the two vectors
