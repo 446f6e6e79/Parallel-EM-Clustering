@@ -200,20 +200,25 @@ void m_step( double *X, int N, int D, int K, double *gamma, double *mu, double *
 */
 void m_step_parallelized(double *local_X, int N, int local_N, int D, int K, double *local_gamma, double *mu, double *sigma, double *pi, double *N_k, double *mu_k, double *sigma_k, int rank){
     reset_accumulators(N_k, mu_k, sigma_k, K, D);
+
+    double *N_k_local = malloc((size_t)K * sizeof(double));
+    double *mu_k_local = malloc((size_t)K * D * sizeof(double));  
+    double *sigma_k_local = malloc((size_t)K * D * sizeof(double));  
+
     // Accumulate Nk and mu_num for each cluster, done by every process
     for (int i = 0; i < local_N; i++) {
         double *x = &local_X[i*D]; // Vector of features for data point i
         for (int k = 0; k < K; k++) {
-            N_k[k] += local_gamma[i*K + k]; // Accumulate responsibilities of a data point to cluster k
+            N_k_local[k] += local_gamma[i*K + k]; // Accumulate responsibilities of a data point to cluster k
             for (int d = 0; d < D; d++) { 
                 // Weight the data point by its responsibility and accumulate for mean
-                mu_k[k*D + d] += local_gamma[i*K + k] * x[d];
+                mu_k_local[k*D + d] += local_gamma[i*K + k] * x[d];
             }
         }
     }
 
-    MPI_Reduce(N_k, N_k, K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(mu_k, mu_k, D*K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(N_k_local, N_k, K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(mu_k_local, mu_k, D*K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
     // Finalize the calculation of the weighted means (for each feature) for each cluster, only done by rank 0
     if(rank == 0){
@@ -239,12 +244,12 @@ void m_step_parallelized(double *local_X, int N, int local_N, int D, int K, doub
             for (int d = 0; d < D; d++) {
                 double diff = x[d] - mu[k * D + d];
                 // Accumulate weighted squared difference
-                sigma_k[k * D + d] += local_gamma[i * K + k] * diff * diff; 
+                sigma_k_local[k * D + d] += local_gamma[i * K + k] * diff * diff; 
             }
         }
     }
     
-    MPI_Reduce(sigma_k, sigma_k, K*D, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(sigma_k_local, sigma_k, K*D, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
     // Finalize sigma (variance per-dim) and pi, only done by rank 0
     if(rank == 0){

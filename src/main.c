@@ -256,7 +256,10 @@ int main(int argc, char **argv) {
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
     }
+
     // Free all the allocated memory
     safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
+
+    MPI_Finalize();
     return 0;
 }
