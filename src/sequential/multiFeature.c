@@ -5,7 +5,7 @@
 /*
     Expection-Maximization Clustering Algorithm
 
-    Usage: ./program <dataset_file> <metadata_file> <execution_info_file> [output_labels_file]
+    Usage: ./program <dataset_file> <metadata_file> [output_labels_file]
 */
 int main(int argc, char **argv) { 
     int N;                              // Number of samples
@@ -28,12 +28,12 @@ int main(int argc, char **argv) {
 
 
     // Check command line arguments
-    if(argc < 4 || argc > 5){
-        if (rank == 0) fprintf(stderr, "Usage: %s <dataset_file> <metadata_file> <execution_info_file> [output_labels_file]\n", argv[0]);
+    if(argc < 3 || argc > 4){
+        fprintf(stderr, "Usage: %s <dataset_file> <metadata_file> <execution_info_file> [output_labels_file]\n", argv[0]);
         return 1;
     }
-    if(argv[1] == NULL || argv[2] == NULL || argv[3] == NULL || (argc > 4 && argv[4] == NULL)){
-        if (rank == 0) fprintf(stderr, "Dataset file, metadata and execution info file must be provided\n");
+    if(argv[1] == NULL || argv[2] == NULL || (argc > 3 && argv[3] == NULL)){
+        fprintf(stderr, "Dataset file, metadata and execution info file must be provided\n");
         return 1;
     }
 
@@ -41,10 +41,9 @@ int main(int argc, char **argv) {
     // Get filenames from arguments
     const char *filename = argv[1];
     const char *metadata_filename = argv[2];
-    const char *execution_info_filename = argv[3];
     const char *output_labels_file = (argc > 4) ? argv[4] : NULL;
 
-    // Read metadata from metadata file (only by rank 0)
+    // Read metadata from metadata file
     int meta_status = read_metadata(metadata_filename, &N, &D, &K, &max_line_size);
     if(meta_status != 0){
         fprintf(stderr, "Failed to read metadata from file: %s\n", metadata_filename);
@@ -96,7 +95,7 @@ int main(int argc, char **argv) {
     }
     
     // Compute predicted labels from responsibilities
-    compute_predicted_labels(gamma, N, K, predicted_labels);    
+    compute_clustering(gamma, N, K, predicted_labels);    
 
     // Print final parameters 
     debug_print_cluster_params(K, D, mu, sigma, pi);

@@ -18,6 +18,13 @@ make
 ```
 
 The executable will be generated at `bin/EM_Clustering`.
+#### Serial version
+The serial version of the algorithm can be compiled using the make file:
+```bash
+module load mpich-3.2
+make sequential
+```
+The executable will be generated at `bin/EM_Sequential`
 
 ---
 

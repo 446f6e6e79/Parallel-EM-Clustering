@@ -7,6 +7,7 @@
                          + sum_d log(sigma[d])
                          + sum_d (x[d]-mu[d])^2 / sigma[d] ) )
 */
+//TODO: try OPENMP parallelization here
 inline double gaussian_multi_diag(double *x, double *mu, double *sigma, int D) {
     double logdet = 0.0;
     double quad = 0.0;
@@ -23,7 +24,7 @@ inline double gaussian_multi_diag(double *x, double *mu, double *sigma, int D) {
 }
 
 /**
- *   Initialize the parameters for the EM algorithm:
+ *   Initialize the parameters mu, sigma, pi for the EM algorithm:
  *    Parameters:
  *     -X: dataset (N x D)
  *     -N: number of samples
@@ -58,9 +59,10 @@ void init_params(double *X, int N, int D, int K, double *mu, double *sigma, doub
  *     - gamma: (N x K) Responsibilities matrix
  *     - N: Number of samples
  *     - K: Number of clusters
+ *    Output parameters:
  *     - predicted_labels: (N) Output array for predicted labels
  */
-void compute_predicted_labels(double *gamma, int N, int K, int *predicted_labels) {
+void compute_clustering(double *gamma, int N, int K, int *predicted_labels) {
     for (int i = 0; i < N; i++) {
         // Initialize max_resp to the responsibility of the first cluster
         double max_resp = gamma[i * K];
@@ -91,7 +93,7 @@ void compute_predicted_labels(double *gamma, int N, int K, int *predicted_labels
  *    Output parameters:
  *    - gamma: (N x K) Responsibilities matrix
 */
-void e_step( double *X, int N, int D, int K, double *mu, double *sigma, double *pi, double *gamma){
+void e_step(double *X, int N, int D, int K, double *mu, double *sigma, double *pi, double *gamma){
     for(int i = 0; i < N; i++) {
         // Initialize denominator for normalization
         double denom = 0.0;
@@ -176,5 +178,147 @@ void m_step( double *X, int N, int D, int K, double *gamma, double *mu, double *
         }
         // Update mixture weights
         pi[k] = N_k[k] / (double)N;
+    }
+}
+
+/**
+ *  M-step: Update parameters (mu, sigma, pi) for each cluster
+ *   Parameters:
+ *    - local_X: dataset (local_N x D)
+ *    - N: number of samples
+ *   - local_N: number of samples in the local partition
+ *    - D: number of features
+ *    - K: number of clusters
+ *    - local_gamma: (local_N x K) Responsibilities matrix
+ *    - N_k: (K) Sum of responsibilities per cluster 
+ *    - mu_k: (K x D) Weighted sums for means 
+ *    - sigma_k: (K x D) Weighted sums for variances 
+ *    Output parameters:
+ *    - mu: (K x D) Matrix of cluster means
+ *    - sigma: (K x D) Matrix of cluster variances
+ *    - pi: (K) Vector of mixture weights
+ *    - rank: Id of the current process
+*/
+void m_step_parallelized(double *local_X, int N, int local_N, int D, int K, double *local_gamma, double *mu, double *sigma, double *pi, double *N_k, double *local_N_k, double *mu_k, double *local_mu_k,double *sigma_k, double *local_sigma_k, int rank){
+    parallel_reset_accumulators(N_k, mu_k, sigma_k, local_N_k, local_mu_k, local_sigma_k, K, D);
+
+    // Accumulate Nk and mu_num for each cluster, done by every process
+    for (int i = 0; i < local_N; i++) {
+        double *x = &local_X[i*D]; // Vector of features for data point i
+        for (int k = 0; k < K; k++) {
+            local_N_k[k] += local_gamma[i*K + k]; // Accumulate responsibilities of a data point to cluster k
+            for (int d = 0; d < D; d++) { 
+                // Weight the data point by its responsibility and accumulate for mean
+                local_mu_k[k*D + d] += local_gamma[i*K + k] * x[d];
+            }
+        }
+    }
+
+    MPI_Reduce(local_N_k, N_k, K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(local_mu_k, mu_k, D*K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    // Finalize the calculation of the weighted means (for each feature) for each cluster, only done by rank 0
+    if(rank == 0){
+        //TODO: (IN FUTURE, should be done using openmp???)
+        for (int k = 0; k < K; k++) {
+            // Guard to avoid division by zero
+            if (N_k[k] <= 0.0) N_k[k] = GUARD_VALUE;
+            // Finalize mu
+            for( int d = 0; d < D; d++) {
+                mu[k*D + d] = mu_k[k*D +d] / N_k[k];
+            }
+        }
+    }
+
+    //TODO: Bcast it's alredy blocking
+    MPI_Bcast(mu, K*D, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    // Accumulate weighted squared differences for variances, done by every process
+    for (int i = 0; i < local_N; i++) {
+        double *x = &local_X[i * D]; // Vector of features for data point i
+        for (int k = 0; k < K; k++) {
+            // For each feature dimension compute (x - mu)^2 and weight it by the responsibility
+            for (int d = 0; d < D; d++) {
+                double diff = x[d] - mu[k * D + d];
+                // Accumulate weighted squared difference
+                local_sigma_k[k * D + d] += local_gamma[i * K + k] * diff * diff; 
+            }
+        }
+    }
+    
+    MPI_Reduce(local_sigma_k, sigma_k, K*D, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    // Finalize sigma (variance per-dim) and pi, only done by rank 0
+    if(rank == 0){
+        //TODO: (IN FUTURE, should be done using openmp???)
+        for (int k = 0; k < K; k++) {
+            for (int d = 0; d < D; d++) {
+                // Nk[k] is already guarded
+                // Finalize variance for each dimension
+                sigma[k * D + d] = sigma_k[k * D + d] / N_k[k];
+            }
+            // Update mixture weights
+            pi[k] = N_k[k] / (double)N;
+        }
+    }
+
+    MPI_Bcast(sigma, K*D, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Bcast(pi, K, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+}
+
+// TODO: move to utils.c or similar file
+void scatter_dataset(double *X, double *local_X, int N, int local_N, int D, int rank, int size) {
+    int *counts = NULL;             // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
+    int *displs = NULL;             // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i
+    
+    if(rank == 0){
+        counts = malloc(size * sizeof(int));
+        displs = malloc(size * sizeof(int));
+        if(!counts || !displs){
+                fprintf(stderr, "Memory allocation failed\n");
+                MPI_Abort(MPI_COMM_WORLD,1);
+        }
+    }
+    if (rank == 0) {
+        compute_counts_displs(N, size, D, counts, displs);
+    }
+    
+    MPI_Scatterv(X, counts, displs, MPI_DOUBLE,
+                 local_X, local_N * D, MPI_DOUBLE, 0, MPI_COMM_WORLD); // local count is ignored by MPI, must match allocation
+
+    if(rank == 0){
+        free(counts);
+        free(displs);
+        counts = NULL;
+        displs = NULL;
+    }
+}
+
+void gather_dataset(int *local_predicted_labels, int *predicted_labels, int N, int local_N, int rank, int size) {
+    int *counts = NULL;             // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
+    int *displs = NULL;             // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i
+    
+    if(rank == 0){
+        counts = malloc(size * sizeof(int));
+        displs = malloc(size * sizeof(int));
+        if(!counts || !displs){
+                fprintf(stderr, "Memory allocation failed\n");
+                MPI_Abort(MPI_COMM_WORLD,1);
+        }
+    }
+    if (rank == 0) {
+        compute_counts_displs(N, size, 1, counts, displs);
+    }
+    
+    MPI_Gatherv(local_predicted_labels, local_N, MPI_INT,
+                predicted_labels, counts, displs, MPI_INT,
+                0, MPI_COMM_WORLD);
+
+    if(rank == 0){
+        free(counts);
+        free(displs);
+        counts = NULL;
+        displs = NULL;
     }
 }

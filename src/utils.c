@@ -39,10 +39,61 @@ void safe_cleanup(
 }
 
 /*
+    Safely frees all allocated memory (passed by address)
+    This version is made up for the parallel version
+*/
+void safe_cleanup_local(
+    double **local_N_k,
+    double **local_mu_k,
+    double **local_sigma_k
+)
+{
+    free_and_null((void**)local_N_k);
+    free_and_null((void**)local_mu_k);
+    free_and_null((void**)local_sigma_k);
+}
+
+/*
     Reset accumulators used in the M-step of the EM algorithm
 */
 void reset_accumulators(double *N_k, double *mu_k, double *sigma_k, int K, int D) {
     memset(N_k, 0, (size_t)K * sizeof(double));
     memset(mu_k, 0, (size_t)K * D * sizeof(double));
     memset(sigma_k, 0, (size_t)K * D * sizeof(double));
+}
+
+/*
+    Reset accumulators used in the parallel M-step of the EM algorithm
+*/
+void parallel_reset_accumulators(double *N_k, double *mu_k, double *sigma_k, double *local_N_k, double *local_mu_k, double *local_sigma_k, int K, int D) {
+    memset(N_k, 0, (size_t)K * sizeof(double));
+    memset(mu_k, 0, (size_t)K * D * sizeof(double));
+    memset(sigma_k, 0, (size_t)K * D * sizeof(double));
+    memset(local_N_k, 0, (size_t)K * sizeof(double));
+    memset(local_mu_k, 0, (size_t)K * D * sizeof(double));
+    memset(local_sigma_k, 0, (size_t)K * D * sizeof(double));
+}
+
+/*
+    Computes counts and displacements for MPI_Scatterv or MPI_Gatherv.
+    factor: multiplier for each element (e.g., D for scatter, 1 for labels)
+*/
+void compute_counts_displs(int N, int size, int factor, int *counts, int *displs) {
+    int offset = 0;
+    for (int i = 0; i < size; i++) {
+        int n_local = compute_local_N(N, size, i);
+        counts[i] = n_local * factor;
+        displs[i] = offset;
+        offset += n_local * factor;
+    }
+}
+
+/*
+    Computes the number of rows assigned to the local process
+    Parameters:
+
+*/
+int compute_local_N(int N, int size, int rank) {
+    int base = N / size;
+    return base + (rank < N % size);
 }
