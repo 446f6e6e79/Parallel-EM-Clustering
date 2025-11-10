@@ -15,32 +15,40 @@ int main(int argc, char **argv) {
     // Number of processes
     int size;
     
+    // Initialize MPI rank (process ID) and size (total processes)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    // Metadata 
     int N;                              // Number of samples
     int D;                              // Number of features
     int K;                              // Number of clusters
     int max_line_size;                  // Maximum number of character in a line in the dataset file
     
+    // Global arrays
     double *X = NULL;                   // X[N * D] Vector of data points
     double *mu = NULL;                  // mu[k * D] Vector of feature means per cluster; mu[k * D + d] is the mean of feature d for cluster k
     double *sigma = NULL;               // sigma[k * D] Vector of variance per each feature per cluster; sigma[k * D + d] is the variance of feature d for cluster k
     double *pi = NULL;                  // pi[k] Vector of mixture weights: prior probability that a random data point belongs to cluster k
     
-    double *local_gamma = NULL;         // local_gamma[local_N * K] Local responsibilities vector for each process. local_gamma[i * K + k] is the responsibility of cluster k for data point i
+    // Global accumulators for m-step
     double *N_k = NULL;                 // N_k[k] = Sum of responsibilities per cluster
     double *mu_k = NULL;                // mu_k[k * D] = Weighted sums for means
     double *sigma_k = NULL;             // sigma_k[k * D] = Weighted sums for variances
 
+    // Local variables for parallel computation
+    double *local_X = NULL;             // Local data points for this MPI process (local_N * D)
+    double *local_gamma = NULL;         // local_gamma[local_N * K] Local responsibilities vector for each process. local_gamma[i * K + k] is the responsibility of cluster k for data point i
     double *local_N_k = NULL;           // Local version of N_k for parallelizing
     double *local_mu_k = NULL;          // Local version of mu_k for parallelizing
     double *local_sigma_k = NULL;       // Local version of sigma_k for parallelizing
 
+    // Label vectors for clustering
     int *predicted_labels = NULL;       // Predicted cluster labels
     int *local_predicted_labels = NULL; // Local predicted cluster labels
     int *ground_truth_labels = NULL;    // Ground truth labels
 
+    // Initializing all times
     double start_time = MPI_Wtime();    
     double io_time = 0.0, compute_time = 0.0, e_step_time = 0.0, m_step_time = 0.0, data_distribution_time = 0.0;
 
@@ -53,7 +61,6 @@ int main(int argc, char **argv) {
         if (rank == 0) fprintf(stderr, "Dataset file, metadata and execution info file must be provided\n");
         MPI_Abort(MPI_COMM_WORLD,1);
     }
-
 
     // Get filenames from arguments
     const char *filename = argv[1];
@@ -73,7 +80,6 @@ int main(int argc, char **argv) {
     }
     io_time += MPI_Wtime() - io_start;
 
-
     // Broadcast N, D, K to all process using a single MPI call
     double data_distribution_start = MPI_Wtime();
     int metadata[3];
@@ -90,8 +96,8 @@ int main(int argc, char **argv) {
     }
     data_distribution_time += MPI_Wtime() - data_distribution_start;
     
+    int alloc_fail = 0;     // Flag to check correctness of all allocations
     // Allocate buffers for master process
-    int alloc_fail = 0;
     if(rank == 0){
         X = malloc(N * D * sizeof(double));
         predicted_labels = malloc(N * sizeof(int));
@@ -130,7 +136,7 @@ int main(int argc, char **argv) {
     }
     io_time += MPI_Wtime() - io_start;
     
-    //Initialize parameters for the EM algorithm
+    //Initialize parameters for the EM algorithm (Done only by rank 0)
     if (rank == 0) init_params(X, N, D, K, mu, sigma, pi);
     
     // Broadcast initial parameters to all processes
@@ -149,6 +155,11 @@ int main(int argc, char **argv) {
         // Allocate the two vectors
         sendcounts = malloc(size * sizeof(int));
         displs = malloc(size * sizeof(int));
+        if(!sendcounts || !displs){
+            fprintf(stderr, "Memory allocation failed\n");
+            safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
+            MPI_Abort(MPI_COMM_WORLD,1);
+        }
         int rem = N % size;
         int offset = 0;
         // Calculate sendcounts and displs
@@ -169,22 +180,21 @@ int main(int argc, char **argv) {
     // Compute the remainder and distribute it
     if (rank < N % size) local_N++;
 
-    //Allocate the vectors for local data
-    double *local_X = malloc(local_N * D * sizeof(double));
+    // Allocate the vectors for local data
+    local_X = malloc(local_N * D * sizeof(double));
     local_gamma = malloc(local_N * K * sizeof(double));
     local_predicted_labels = malloc(local_N * sizeof(int)); 
     local_N_k = malloc((size_t)K * sizeof(double));              
     local_mu_k = malloc((size_t)K * D * sizeof(double));   
     local_sigma_k = malloc((size_t)K * D * sizeof(double));
-
+    // Check that all allocations were successful
     if (!local_X || !local_gamma || !local_predicted_labels || !local_N_k || !local_mu_k || !local_sigma_k) {
         fprintf(stderr, "Memory allocation failed\n");
         safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
-        free(local_mu_k);
-        free(local_N_k);
-        free(local_sigma_k);
+        safe_cleanup_local(&local_N_k,&local_mu_k,&local_sigma_k);
         MPI_Abort(MPI_COMM_WORLD,1);
     }
+
     // Scatter the data points to all processes
     MPI_Scatterv(
         X, sendcounts, displs, MPI_DOUBLE,
@@ -192,7 +202,6 @@ int main(int argc, char **argv) {
         0, MPI_COMM_WORLD
     );
 
-    
     // Free sendcounts and displs as they are no longer needed
     if (rank == 0) {
         free(sendcounts);
@@ -200,7 +209,9 @@ int main(int argc, char **argv) {
         free(displs);
         displs = NULL;
     }
+
     data_distribution_time += MPI_Wtime() - data_distribution_start;
+
     // Debug print local data distribution
     debug_print_scatter(local_N, D, local_X, rank);
     double compute_start = MPI_Wtime();
@@ -230,6 +241,12 @@ int main(int argc, char **argv) {
     if(rank == 0){
         receive_counts = malloc(size * sizeof(int));
         displs = malloc(size * sizeof(int));
+        if(!receive_counts || !displs){
+            fprintf(stderr, "Memory allocation failed\n");
+            safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
+            safe_cleanup_local(&local_N_k,&local_mu_k,&local_sigma_k);
+            MPI_Abort(MPI_COMM_WORLD,1);
+        }
         int rem = N % size;
         int offset = 0;
         for (int i = 0; i < size; i++) {
@@ -240,6 +257,7 @@ int main(int argc, char **argv) {
             offset += n_local;
         }
     }
+
     // Gather predicted labels from all processes
     MPI_Gatherv(local_predicted_labels, local_N, MPI_INT,
                 predicted_labels, receive_counts, displs, MPI_INT,
@@ -249,7 +267,6 @@ int main(int argc, char **argv) {
     if (rank == 0) {
         // Print final parameters 
         debug_print_cluster_params(K, D, mu, sigma, pi);
-
         // Write final cluster assignments to file to validate
         if (output_labels_file){
             int write_status = write_labels_info(output_labels_file, predicted_labels, ground_truth_labels, N);
@@ -270,10 +287,8 @@ int main(int argc, char **argv) {
 
     // Free all the allocated memory
     safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
-    free(local_mu_k);
-    free(local_N_k);
-    free(local_sigma_k);
-    
+    safe_cleanup_local(&local_N_k,&local_mu_k,&local_sigma_k);
+    // Finalize MPI communicator
     MPI_Finalize();
     return 0;
 }

@@ -39,6 +39,21 @@ void safe_cleanup(
 }
 
 /*
+    Safely frees all allocated memory (passed by address)
+    This version is made up for the parallel version
+*/
+void safe_cleanup_local(
+    double **local_N_k,
+    double **local_mu_k,
+    double **local_sigma_k
+)
+{
+    free_and_null((void**)local_N_k);
+    free_and_null((void**)local_mu_k);
+    free_and_null((void**)local_sigma_k);
+}
+
+/*
     Reset accumulators used in the M-step of the EM algorithm
 */
 void reset_accumulators(double *N_k, double *mu_k, double *sigma_k, int K, int D) {
