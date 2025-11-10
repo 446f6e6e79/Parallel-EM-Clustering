@@ -147,34 +147,7 @@ int main(int argc, char **argv) {
 
     // Prepare for scattering data
     data_distribution_start = MPI_Wtime();
-    //TODO: once verified that data distribution time is correctly measured, refactor to a function
-    int *sendcounts = NULL;         // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
-    int *displs = NULL;             // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i
-    // Root process prepares sendcounts and displs arrays
-    if (rank == 0) {
-        // Allocate the two vectors
-        sendcounts = malloc(size * sizeof(int));
-        displs = malloc(size * sizeof(int));
-        if(!sendcounts || !displs){
-            fprintf(stderr, "Memory allocation failed\n");
-            safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
-            MPI_Abort(MPI_COMM_WORLD,1);
-        }
-        int rem = N % size;
-        int offset = 0;
-        // Calculate sendcounts and displs
-        for (int i = 0; i < size; i++) {
-            // Calculate the number of local samples for each process
-            int n_local = N / size;
-            // Distribute the remainder among the first 'rem' processes
-            if (i < rem) n_local++;
-            // Each process gets n_local * D elements
-            sendcounts[i] = n_local * D;
-            // Displacement is the cumulative sum of previous sendcounts
-            displs[i] = offset;
-            offset += n_local * D;
-        }
-    }
+    
     // Compute the number of local samples for each process
     int local_N = N / size;
     // Compute the remainder and distribute it
@@ -187,6 +160,7 @@ int main(int argc, char **argv) {
     local_N_k = malloc((size_t)K * sizeof(double));              
     local_mu_k = malloc((size_t)K * D * sizeof(double));   
     local_sigma_k = malloc((size_t)K * D * sizeof(double));
+
     // Check that all allocations were successful
     if (!local_X || !local_gamma || !local_predicted_labels || !local_N_k || !local_mu_k || !local_sigma_k) {
         fprintf(stderr, "Memory allocation failed\n");
@@ -195,20 +169,8 @@ int main(int argc, char **argv) {
         MPI_Abort(MPI_COMM_WORLD,1);
     }
 
-    // Scatter the data points to all processes
-    MPI_Scatterv(
-        X, sendcounts, displs, MPI_DOUBLE,
-        local_X, local_N * D, MPI_DOUBLE,
-        0, MPI_COMM_WORLD
-    );
-
-    // Free sendcounts and displs as they are no longer needed
-    if (rank == 0) {
-        free(sendcounts);
-        sendcounts = NULL;
-        free(displs);
-        displs = NULL;
-    }
+    // Scatter dataset X from rank 0 to all processes; each gets local_N rows in local_X.
+    scatter_dataset(X, local_X, N, local_N, D, rank, size);
 
     data_distribution_time += MPI_Wtime() - data_distribution_start;
 
@@ -236,32 +198,8 @@ int main(int argc, char **argv) {
     compute_clustering(local_gamma, local_N, K, local_predicted_labels);
     compute_time += MPI_Wtime() - compute_start;
 
-    int *receive_counts = NULL;
-    displs = NULL;
-    if(rank == 0){
-        receive_counts = malloc(size * sizeof(int));
-        displs = malloc(size * sizeof(int));
-        if(!receive_counts || !displs){
-            fprintf(stderr, "Memory allocation failed\n");
-            safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
-            safe_cleanup_local(&local_N_k,&local_mu_k,&local_sigma_k);
-            MPI_Abort(MPI_COMM_WORLD,1);
-        }
-        int rem = N % size;
-        int offset = 0;
-        for (int i = 0; i < size; i++) {
-            int n_local = N / size;
-            if (i < rem) n_local++;
-            receive_counts[i] = n_local;
-            displs[i] = offset;
-            offset += n_local;
-        }
-    }
-
     // Gather predicted labels from all processes
-    MPI_Gatherv(local_predicted_labels, local_N, MPI_INT,
-                predicted_labels, receive_counts, displs, MPI_INT,
-                0, MPI_COMM_WORLD);
+    gather_dataset(local_predicted_labels, predicted_labels, N, local_N, rank, size);
 
     io_start = MPI_Wtime();
     if (rank == 0) {

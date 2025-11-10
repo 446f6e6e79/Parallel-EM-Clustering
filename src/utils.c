@@ -73,3 +73,19 @@ void parallel_reset_accumulators(double *N_k, double *mu_k, double *sigma_k, dou
     memset(local_mu_k, 0, (size_t)K * D * sizeof(double));
     memset(local_sigma_k, 0, (size_t)K * D * sizeof(double));
 }
+
+/*
+    Computes counts and displacements for MPI_Scatterv or MPI_Gatherv.
+    factor: multiplier for each element (e.g., D for scatter, 1 for labels)
+*/
+void compute_counts_displs(int N, int size, int factor, int *counts, int *displs) {
+    int rem = N % size;
+    int offset = 0;
+    for (int i = 0; i < size; i++) {
+        int n_local = N / size;
+        if (i < rem) n_local++;
+        counts[i] = n_local * factor;
+        displs[i] = offset;
+        offset += n_local * factor;
+    }
+}

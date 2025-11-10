@@ -16,5 +16,7 @@ void e_step(double *X, int N, int D, int K, double *mu, double *sigma, double *p
 void init_params(double *X, int N, int D, int K, double *mu, double *sigma, double *pi);
 double gaussian_multi_diag(double *x, double *mu, double *sigma, int D);  
 void compute_clustering(double *gamma, int N, int K, int *predicted_labels);
+void scatter_dataset(double *X, double *local_X, int N, int local_N, int D, int rank, int size);
+void gather_dataset(int *local_predicted_labels, int *predicted_labels, int N, int local_N, int rank, int size);
 
 #endif

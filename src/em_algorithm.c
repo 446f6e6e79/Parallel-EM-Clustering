@@ -265,3 +265,58 @@ void m_step_parallelized(double *local_X, int N, int local_N, int D, int K, doub
     MPI_Bcast(pi, K, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 }
+
+void scatter_dataset(double *X, double *local_X, int N, int local_N, int D, int rank, int size) {
+    int *counts = NULL;             // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
+    int *displs = NULL;             // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i
+    
+    if(rank == 0){
+        counts = malloc(size * sizeof(int));
+        displs = malloc(size * sizeof(int));
+        if(!counts || !displs){
+                fprintf(stderr, "Memory allocation failed\n");
+                MPI_Abort(MPI_COMM_WORLD,1);
+        }
+    }
+    if (rank == 0) {
+        compute_counts_displs(N, size, D, counts, displs);
+    }
+    
+    MPI_Scatterv(X, counts, displs, MPI_DOUBLE,
+                 local_X, local_N * D, MPI_DOUBLE, 0, MPI_COMM_WORLD); // local count is ignored by MPI, must match allocation
+
+    if(rank == 0){
+        free(counts);
+        free(displs);
+        counts = NULL;
+        displs = NULL;
+    }
+}
+
+void gather_dataset(int *local_predicted_labels, int *predicted_labels, int N, int local_N, int rank, int size) {
+    int *counts = NULL;             // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
+    int *displs = NULL;             // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i
+    
+    if(rank == 0){
+        counts = malloc(size * sizeof(int));
+        displs = malloc(size * sizeof(int));
+        if(!counts || !displs){
+                fprintf(stderr, "Memory allocation failed\n");
+                MPI_Abort(MPI_COMM_WORLD,1);
+        }
+    }
+    if (rank == 0) {
+        compute_counts_displs(N, size, 1, counts, displs);
+    }
+    
+    MPI_Gatherv(local_predicted_labels, local_N, MPI_INT,
+                predicted_labels, counts, displs, MPI_INT,
+                0, MPI_COMM_WORLD);
+
+    if(rank == 0){
+        free(counts);
+        free(displs);
+        counts = NULL;
+        displs = NULL;
+    }
+}
