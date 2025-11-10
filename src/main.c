@@ -126,16 +126,18 @@ int main(int argc, char **argv) {
     }
     io_time += MPI_Wtime() - io_start;
     
+    printf("Process %d\n", rank);
+
     //TODO: only rank 0 initializes the parameters, then broadcast to all processes
     //Initialize parameters for the EM algorithm
-    init_params(X, N, D, K, mu, sigma, pi);
+    if (rank == 0) init_params(X, N, D, K, mu, sigma, pi);
 
     // Prepare for scattering data
     data_distribution_start = MPI_Wtime();
     //TODO: once verified that data distribution time is correctly measured, refactor to a function
     int *sendcounts = NULL;         // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
     int *displs = NULL;             // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i
-    
+    //TODO: check all the sendcounts, displs and local_n
     // Root process prepares sendcounts and displs arrays
     if (rank == 0) {
         // Allocate the two vectors
@@ -173,9 +175,10 @@ int main(int argc, char **argv) {
     // Scatter the data points to all processes
     MPI_Scatterv(
         X, sendcounts, displs, MPI_DOUBLE,
-        local_X, local_N, MPI_DOUBLE,
+        local_X, local_N * D, MPI_DOUBLE,
         0, MPI_COMM_WORLD
     );
+
     
     // Free sendcounts and displs as they are no longer needed
     if (rank == 0) {
@@ -185,7 +188,8 @@ int main(int argc, char **argv) {
         displs = NULL;
     }
     data_distribution_time += MPI_Wtime() - data_distribution_start;
-
+    // Debug print local data distribution
+    debug_print_scatter(local_N, D, local_X, rank);
     double compute_start = MPI_Wtime();
     
     /*
