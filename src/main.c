@@ -134,11 +134,8 @@ int main(int argc, char **argv) {
     //Initialize parameters for the EM algorithm (Done only by rank 0)
     if (rank == 0) init_params(X, N, D, K, mu, sigma, pi);
     
-    // Broadcast initial parameters to all processes
-    //TODO: check if this can be optimized by using a single MPI call using DERIVED datatype
-    MPI_Bcast(mu, K * D,  MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(sigma, K * D,  MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(pi, K,  MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    // Broadcast in a single time initial parameters to all processes
+    broadcast_clusters_parameters(mu, sigma, pi, K, D);
 
     // Distribute data among processes
     data_distribution_start = MPI_Wtime();

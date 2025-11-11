@@ -4,7 +4,7 @@ CFLAGS   ?= -std=gnu11 -O2 -Wall -Wextra -I./src -D_GNU_SOURCE
 LDFLAGS  ?= -lm
 
 # Commons source codes
-COMMON_SRC := src/file_io.c src/utils.c src/debug.c src/em_algorithm.c
+COMMON_SRC := src/file_io.c src/utils.c src/debug.c src/em_algorithm.c src/mpi_utils.c
 
 # Directory for objects and dependencies
 OBJDIR := src/obj
