@@ -12,8 +12,13 @@ mkdir -p "$DATA_DIR"
 # === Dataset combinations ===
 # Each line has: n_examples n_features n_clusters
 COMBOS=(
-  "1000 2 3"
-  "5000 5 4"
+  "10000000 50 15"
+  "5000000 50 15"
+  "2500000 50 15"
+  "1250000 50 15"
+  "625000 50 15"
+  "312500 50 15"
+  "156250 50 15"
 )
 
 # === Main loop ===
