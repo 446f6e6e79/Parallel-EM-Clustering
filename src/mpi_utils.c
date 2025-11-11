@@ -2,6 +2,15 @@
 
 
 /*
+    Computes the number of rows assigned to the local process
+    Parameters:
+*/
+int compute_local_N(int N, int size, int rank) {
+    int base = N / size;
+    return base + (rank < N % size);
+}
+
+/*
     Computes counts and displacements for MPI_Scatterv or MPI_Gatherv.
     factor: multiplier for each element (e.g., D for scatter, 1 for labels)
 */
@@ -71,6 +80,36 @@ void gather_dataset(int *local_predicted_labels, int *predicted_labels, int N, i
         free(displs);
         counts = NULL;
         displs = NULL;
+    }
+}
+
+
+/**
+ *   Broadcast metadata (N, D, K) from root process to all other processes
+ *    using a single MPI_Bcast operation for efficiency.
+ *    
+ *    Parameters:
+ *     - N: Pointer to number of samples (input on root, output on all processes)
+ *     - D: Pointer to number of features (input on root, output on all processes)  
+ *     - K: Pointer to number of clusters (input on root, output on all processes)
+ */
+void broadcast_metadata(int *N, int *D, int *K, int rank) {
+    int metadata[3];
+    // Root process packs the metadata
+    if (rank == 0) {
+        metadata[0] = *N;
+        metadata[1] = *D;
+        metadata[2] = *K;
+    }
+    
+    // Single MPI call to broadcast all metadata
+    MPI_Bcast(metadata, 3, MPI_INT, 0, MPI_COMM_WORLD);
+    
+    // All processes unpack the metadata
+    if(rank != 0){
+        *N = metadata[0];
+        *D = metadata[1];
+        *K = metadata[2];
     }
 }
 

@@ -73,12 +73,3 @@ void parallel_reset_accumulators(double *N_k, double *mu_k, double *sigma_k, dou
     memset(local_mu_k, 0, (size_t)K * D * sizeof(double));
     memset(local_sigma_k, 0, (size_t)K * D * sizeof(double));
 }
-
-/*
-    Computes the number of rows assigned to the local process
-    Parameters:
-*/
-int compute_local_N(int N, int size, int rank) {
-    int base = N / size;
-    return base + (rank < N % size);
-}

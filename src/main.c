@@ -77,21 +77,12 @@ int main(int argc, char **argv) {
     }
     io_time += MPI_Wtime() - io_start;
 
+
     // Broadcast N, D, K to all process using a single MPI call
     double data_distribution_start = MPI_Wtime();
-    int metadata[3];
-    if(rank == 0) {
-        metadata[0] = N;
-        metadata[1] = D;
-        metadata[2] = K;
-    }
-    MPI_Bcast(metadata, 3, MPI_INT, 0, MPI_COMM_WORLD);
-    if(rank!=0){
-        N = metadata[0];
-        D = metadata[1];
-        K = metadata[2];
-    }
+    broadcast_metadata(&N, &D, &K, rank);
     data_distribution_time += MPI_Wtime() - data_distribution_start;
+
     
     int alloc_fail = 0;     // Flag to check correctness of all allocations
     // Allocate buffers for master process
