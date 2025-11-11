@@ -73,3 +73,27 @@ void parallel_reset_accumulators(double *N_k, double *mu_k, double *sigma_k, dou
     memset(local_mu_k, 0, (size_t)K * D * sizeof(double));
     memset(local_sigma_k, 0, (size_t)K * D * sizeof(double));
 }
+
+/*
+    Saves in t the start time
+*/
+void start_timer(double *t) {
+    *t = MPI_Wtime();
+}
+/*
+    Stops the timer and accumulates the elapsed time in accumulator
+*/
+void stop_timer(double *t, double *accumulator) {
+    *accumulator += MPI_Wtime() - *t;
+}
+/*
+    Initializes all timers accumulator in the Timers struct to zero
+*/
+void initialize_timers(Timers_t *timers) {
+    timers->total_time = 0.0;
+    timers->io_time = 0.0;
+    timers->compute_time = 0.0;
+    timers->e_step_time = 0.0;
+    timers->m_step_time = 0.0;
+    timers->data_distribution_time = 0.0;
+}

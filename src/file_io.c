@@ -100,11 +100,11 @@ int read_metadata(const char *metadata_filename, int *samples, int *features, in
     Each execution will append a new line to the file.
     Returns 0 on success, -1 on failure.
 */
-int write_execution_info(const char *filename, int n_process, int n_samples, int n_features, int n_clusters, double time_seconds, double io_time, double compute_time, double e_step_time, double m_step_time, double data_distribution_time) {
+int write_execution_info(const char *filename, int n_process, int n_samples, int n_features, int n_clusters, Timers_t *timers){
     // Open the file in append mode
     FILE *fp = fopen(filename, "a");
     if (fp == NULL) {
-        fprintf(stderr, "File size is not a multiple of IP address size\n");
+        fprintf(stderr, "Error opening execution info file\n");
         return -1;
     }
 
@@ -135,7 +135,7 @@ int write_execution_info(const char *filename, int n_process, int n_samples, int
         }
     }
     // Write the execution info (note: MPI_Offset is typically a long long)
-    if (fprintf(fp, "%d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n", n_process, n_samples, n_features, n_clusters, time_seconds, io_time, compute_time, e_step_time, m_step_time, data_distribution_time) == -1) {
+    if (fprintf(fp, "%d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n", n_process, n_samples, n_features, n_clusters, timers->total_time, timers->io_time, timers->compute_time, timers->e_step_time, timers->m_step_time, timers->data_distribution_time) == -1) {
         fprintf(stderr, "Failed to write to file\n");
         flock(fd, LOCK_UN);
         fclose(fp);

@@ -46,9 +46,10 @@ int main(int argc, char **argv) {
     int *ground_truth_labels = NULL;    // Ground truth labels
 
     // Initialize the timers
-    double start_time = MPI_Wtime();    
-    double io_time = 0.0, compute_time = 0.0, e_step_time = 0.0, m_step_time = 0.0, data_distribution_time = 0.0;
+    Timers_t timers;
+    initialize_timers(&timers);
 
+    start_timer(&timers.start_time);
     // Check command line arguments
     if(argc < 4 || argc > 5){
         if (rank == 0) fprintf(stderr, "Usage: %s <dataset_file> <metadata_file> <execution_info_file> [output_labels_file]\n", argv[0]);
@@ -66,7 +67,7 @@ int main(int argc, char **argv) {
     const char *output_labels_file = (argc > 4) ? argv[4] : NULL;
     
     // Read metadata from metadata file (only by rank 0)
-    double io_start = MPI_Wtime();
+    start_timer(&timers.io_start);
     if (rank == 0) {
         int meta_status = read_metadata(metadata_filename, &N, &D, &K, &max_line_size);
         if(meta_status != 0){
@@ -75,15 +76,14 @@ int main(int argc, char **argv) {
         }
         printf("Metadata: samples N=%d, features D=%d, clusters K=%d\n", N, D, K);
     }
-    io_time += MPI_Wtime() - io_start;
+    stop_timer(&timers.io_start, &timers.io_time);
 
 
     // Broadcast N, D, K to all process using a single MPI call
-    double data_distribution_start = MPI_Wtime();
+    start_timer(&timers.data_distribution_start);
     broadcast_metadata(&N, &D, &K, rank);
-    data_distribution_time += MPI_Wtime() - data_distribution_start;
+    stop_timer(&timers.data_distribution_start, &timers.data_distribution_time);
 
-    
     int alloc_fail = 0;     // Flag to check correctness of all allocations
     // Allocate buffers for master process
     if(rank == 0){
@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
     }   
 
     // Read dataset (only by rank 0)
-    io_start = MPI_Wtime();
+    start_timer(&timers.io_start);
     if(rank == 0){
         if(read_dataset(filename, D, N, max_line_size, X, ground_truth_labels) != 0){
             fprintf(stderr, "Failed to read dataset from file: %s\n", filename);
@@ -120,16 +120,16 @@ int main(int argc, char **argv) {
             MPI_Abort(MPI_COMM_WORLD,1);
         }
     }
-    io_time += MPI_Wtime() - io_start;
+    stop_timer(&timers.io_start, &timers.io_time);
     
     //Initialize parameters for the EM algorithm (Done only by rank 0)
     if (rank == 0) init_params(X, N, D, K, mu, sigma, pi);
     
     // Broadcast in a single time initial parameters to all processes
+    start_timer(&timers.data_distribution_start);
     broadcast_clusters_parameters(mu, sigma, pi, K, D);
 
     // Distribute data among processes
-    data_distribution_start = MPI_Wtime();
     int local_N = compute_local_N(N, size, rank);
     
     // Allocate the vectors for local data
@@ -150,34 +150,34 @@ int main(int argc, char **argv) {
 
     // Scatter dataset X from rank 0 to all processes; each gets local_N rows in local_X.
     scatter_dataset(X, local_X, N, local_N, D, rank, size);
-    data_distribution_time += MPI_Wtime() - data_distribution_start;
-
-    double compute_start = MPI_Wtime();
+    stop_timer(&timers.data_distribution_start, &timers.data_distribution_time);
     
     /*
         EM loop
         The loop runs until MAX_ITER is reached
     */
+   start_timer(&timers.compute_start);
     for (int iter = 0; iter < MAX_ITER; iter++) {
         // E-step
-        double e_step_start = MPI_Wtime();
+        start_timer(&timers.e_step_start);
         e_step(local_X, local_N, D, K, mu, sigma, pi, local_gamma);
-        e_step_time += MPI_Wtime() - e_step_start;
+        stop_timer(&timers.e_step_start, &timers.e_step_time);
 
         //M-step
-        double m_step_start = MPI_Wtime();
+        start_timer(&timers.m_step_start);
         m_step_parallelized(local_X, N, local_N, D, K, local_gamma,  mu, sigma, pi, N_k, local_N_k, mu_k, local_mu_k, sigma_k, local_sigma_k, rank);
-        m_step_time += MPI_Wtime() - m_step_start;
+        stop_timer(&timers.m_step_start, &timers.m_step_time);
     }
     
     // Compute local predicted labels from responsibilities
     compute_clustering(local_gamma, local_N, K, local_predicted_labels);
-    compute_time += MPI_Wtime() - compute_start;
+    stop_timer(&timers.compute_start, &timers.compute_time);
     
     // Gather predicted labels from all processes
     gather_dataset(local_predicted_labels, predicted_labels, N, local_N, rank, size);
 
-    io_start = MPI_Wtime();
+    // Write the execution output
+    start_timer(&timers.io_start);
     if (rank == 0) {
         // Print final parameters 
         debug_print_cluster_params(K, D, mu, sigma, pi);
@@ -189,11 +189,13 @@ int main(int argc, char **argv) {
             }
         }
     }
-    io_time += MPI_Wtime() - io_start;
-
+    stop_timer(&timers.io_start, &timers.io_time);
+    
+    // Stop total execution timer
+    stop_timer(&timers.start_time, &timers.total_time);
     // Report the execution info (only by rank 0)
     if(rank == 0){
-        if(write_execution_info(execution_info_filename, size, N, D, K, MPI_Wtime() - start_time, io_time, compute_time, e_step_time, m_step_time, data_distribution_time) != 0){
+        if(write_execution_info(execution_info_filename, size, N, D, K, &timers) != 0){
             fprintf(stderr, "Failed to write execution info to file\n");
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
