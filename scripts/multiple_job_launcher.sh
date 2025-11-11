@@ -10,6 +10,10 @@ EXECUTABLE="${BASE_DIR}/bin/EM_Clustering"  # Path to executable
 TEMPLATE="${BASE_DIR}/scripts/job_template.sh"
 DATASETS_DIR="${BASE_DIR}/data/datasets"
 
+# Create an output dir to place the generated jobs
+OUTPUT_DIR="${BASE_DIR}/jobs"
+mkdir -p "$OUTPUT_DIR"
+
 # === Automatically detect dataset directories ===
 # We assume each dataset is in a directory named d_1, d_2, ...
 DATASETS=($(find "$DATASETS_DIR" -maxdepth 1 -type d -name "d_*" | sort))
@@ -36,7 +40,7 @@ for run in {1..5}; do
 
   for DATA_DIR in "${DATASETS[@]}"; do
     dataset_name=$(basename "$DATA_DIR")
-    PARAMETERS="${DATA_DIR}/em_dataset.csv ${DATA_DIR}/em_metadata.txt ${DATA_DIR}/execution_info.csv"
+    PARAMETERS="${DATA_DIR}/em_dataset.csv ${DATA_DIR}/em_metadata.txt $BASE_DIR/data/execution_info.csv"
 
     echo "Processing dataset: ${dataset_name} (Run $run)"
 
@@ -54,24 +58,24 @@ for run in {1..5}; do
 
       JOB_SCRIPT="${OUTPUT_DIR}/job_${dataset_name}run${run}${NODES}n_${NCPUS}c.sh"
 
-      sed "s|_EXECUTABLE_|$EXECUTABLE|g; \
-           s|_PLACEMENT_|$PLACEMENT|g; \
-           s|_NODES_|$NODES|g; \
-           s|_NCPUS_|$NCPUS|g; \
-           s|_MEM_|$MEM|g; \
-           s|_WALLTIME_|$WALLTIME|g; \
-           s|_QUEUE_|$QUEUE|g; \
-           s|_NP_|$NP|g; \
-           s|_PARAMETERS_|$PARAMETERS|g" \
+      sed "s|__EXECUTABLE__|$EXECUTABLE|g; \
+           s|__PLACEMENT__|$PLACEMENT|g; \
+           s|__NODES__|$NODES|g; \
+           s|__NCPUS__|$NCPUS|g; \
+           s|__MEM__|$MEM|g; \
+           s|__WALLTIME__|$WALLTIME|g; \
+           s|__QUEUE__|$QUEUE|g; \
+           s|__NP__|$NP|g; \
+           s|__PARAMETERS__|$PARAMETERS|g" \
            "$TEMPLATE" > "$JOB_SCRIPT"
 
       chmod +x "$JOB_SCRIPT"
 
       echo "Generated $JOB_SCRIPT (Run=$run, Dataset=$dataset_name, NODES=$NODES, NCPUS=$NCPUS, NP=$NP)"
 
-      #qsub "$JOB_SCRIPT"
+      qsub "$JOB_SCRIPT"
 
-      #rm "$JOB_SCRIPT"
+      rm "$JOB_SCRIPT"
     done
   done
 done
