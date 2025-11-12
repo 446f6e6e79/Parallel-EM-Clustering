@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
     local_X = malloc(local_N * metadata.D * sizeof(double));
     local_gamma = malloc(local_N * metadata.K * sizeof(double));
     local_predicted_labels = malloc(local_N * sizeof(int)); 
-    int local_acc_alloc_status =  alloc_accumulators(&cluster_acc, &metadata); 
+    int local_acc_alloc_status =  alloc_accumulators(&local_cluster_acc, &metadata); 
 
     // Check that all allocations were successful
     if (!local_X || !local_gamma || !local_predicted_labels || local_acc_alloc_status != 0) {
