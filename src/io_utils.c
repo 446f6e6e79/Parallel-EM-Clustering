@@ -7,9 +7,10 @@
 
     Parameters:
         - filename: Path to the dataset file.
-        - num_features: Number of features per sample.
-        - num_samples: Number of samples to read.
-        - max_line_size: Maximum number of characters in a line.
+        - metadata contains:
+            - num_features: Number of features per sample.
+            - num_samples: Number of samples to read.
+            - max_line_size: Maximum number of characters in a line.
     Output parameters:
         - examples_buffer: Array to store feature values.
         - labels_buffer: Array to store labels.
@@ -17,7 +18,7 @@
     Returns:
         0 on success, -1 on failure.
 */
-int read_dataset(const char *filename, int num_features, int num_samples,  int max_line_size, double *examples_buffer, int *labels_buffer) {
+int read_dataset(const char *filename, Metadata *metadata, double *examples_buffer, int *labels_buffer) {
     // Open the dataset file
     FILE *fp = fopen(filename, "r");
     if(!fp){
@@ -25,7 +26,7 @@ int read_dataset(const char *filename, int num_features, int num_samples,  int m
         return -1;
     }
     // Size of the allocated reading buffer. We should take into account the \n and \0 characters
-    int BUFFER_SIZE = max_line_size + 3;
+    int BUFFER_SIZE = metadata->max_line_size + 3;
     // Creating reading buffer. We have to take into account the \n and \0 characters
     char *line_buffer = malloc(BUFFER_SIZE * sizeof(char));
     int readed_rows = 0;
@@ -34,12 +35,12 @@ int read_dataset(const char *filename, int num_features, int num_samples,  int m
     if(!fgets(line_buffer, BUFFER_SIZE, fp)) return -1;
 
     // Read each line and parse the values
-    while(readed_rows < num_samples && fgets(line_buffer, BUFFER_SIZE, fp) != NULL){
+    while(readed_rows < metadata->N && fgets(line_buffer, BUFFER_SIZE, fp) != NULL){
         // Parse the line, extracting features and label
         char *ptr = line_buffer;
         // For each feature, add to the examples buffer
-        for(int f = 0; f < num_features; f++){
-            examples_buffer[readed_rows * num_features + f] = strtod(ptr,&ptr);
+        for(int f = 0; f < metadata->D; f++){
+            examples_buffer[readed_rows * metadata->D + f] = strtod(ptr,&ptr);
             if(*ptr == ',') ptr++;
         }
         // Add the ground truth labels
@@ -50,7 +51,7 @@ int read_dataset(const char *filename, int num_features, int num_samples,  int m
     fclose(fp);
 
     // Return 0 if successfully read
-    return readed_rows == num_samples ? 0 : -1;
+    return readed_rows == metadata->N ? 0 : -1;
 }
 
 /*
@@ -97,7 +98,7 @@ int read_metadata(const char *metadata_filename, Metadata *metadata) {
     Each execution will append a new line to the file.
     Returns 0 on success, -1 on failure.
 */
-int write_execution_info(const char *filename, int n_process, int n_samples, int n_features, int n_clusters, Timers_t *timers){
+int write_execution_info(const char *filename, int n_process, Metadata *metadata, Timers_t *timers){
     // Open the file in append mode
     FILE *fp = fopen(filename, "a");
     if (fp == NULL) {
@@ -132,7 +133,7 @@ int write_execution_info(const char *filename, int n_process, int n_samples, int
         }
     }
     // Write the execution info (note: MPI_Offset is typically a long long)
-    if (fprintf(fp, "%d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n", n_process, n_samples, n_features, n_clusters, timers->total_time, timers->io_time, timers->compute_time, timers->e_step_time, timers->m_step_time, timers->data_distribution_time) == -1) {
+    if (fprintf(fp, "%d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n", n_process, metadata->N, metadata->D, metadata->K, timers->total_time, timers->io_time, timers->compute_time, timers->e_step_time, timers->m_step_time, timers->data_distribution_time) == -1) {
         fprintf(stderr, "Failed to write to file\n");
         flock(fd, LOCK_UN);
         fclose(fp);
@@ -187,13 +188,13 @@ int write_labels_info(const char *filename, int *predicted_labels, int *real_lab
         - X: Dataset buffer
         - ground_truth_labels: Ground truth labels buffer
 */
-void debug_print_first_samples(int N, int D, double *X, int *ground_truth_labels) {
-    printf("\ndataset read -> %d rows\n", N);
+void debug_print_first_samples(Metadata *metadata, double *X, int *ground_truth_labels) {
+    printf("\ndataset read -> %d rows\n", metadata->N);
     // test print first few rows
-    for(int i = 0; i < 5 && i < N; i++){
+    for(int i = 0; i < 5 && i < metadata->N; i++){
         printf("Sample-%d: ", i);
-        for(int f = 0; f < D; f++){
-            printf("%lf ", X[i * D + f]);
+        for(int f = 0; f < metadata->D; f++){
+            printf("%lf ", X[i * metadata->D + f]);
         }
         printf("Label=%d\n", ground_truth_labels[i]);
     }
@@ -208,15 +209,15 @@ void debug_print_first_samples(int N, int D, double *X, int *ground_truth_labels
    -sigma: (K x D) Matrix of cluster variances
    -pi: (K) Vector of mixture weights
  */
-void debug_print_cluster_params(int K, int D, double *mu, double *sigma, double *pi) {
-    for (int k = 0; k < K; k++) {
+void debug_print_cluster_params(Metadata *metadata, double *mu, double *sigma, double *pi) {
+    for (int k = 0; k < metadata->K; k++) {
         printf("Cluster %d: \n", k);
         printf("\tpi=%.6f\n", pi[k]);
         printf("\tmu: ");
-        for (int d = 0; d < D; d++) printf("%.3f ", mu[k * D + d]);
+        for (int d = 0; d < metadata->D; d++) printf("%.3f ", mu[k * metadata->D + d]);
         printf("\n");
         printf("\tsigma (std per-dim): ");
-        for (int d = 0; d < D; d++) printf("%.3f ", sqrt(sigma[k * D + d]));
+        for (int d = 0; d < metadata->D; d++) printf("%.3f ", sqrt(sigma[k * metadata->D + d]));
         printf("\n");
     }
 }

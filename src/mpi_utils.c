@@ -28,7 +28,7 @@ void compute_counts_displs(int N, int size, int factor, int *counts, int *displs
 
 
 */
-void scatter_dataset(double *X, double *local_X, int N, int local_N, int D, int rank, int size) {
+void scatter_dataset(double *X, double *local_X, int local_N, Metadata *metadata, int rank, int size) {
     int *counts = NULL;             // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
     int *displs = NULL;             // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i
     
@@ -41,11 +41,11 @@ void scatter_dataset(double *X, double *local_X, int N, int local_N, int D, int 
         }
     }
     if (rank == 0) {
-        compute_counts_displs(N, size, D, counts, displs);
+        compute_counts_displs(metadata->N, size, metadata->D, counts, displs);
     }
     
     MPI_Scatterv(X, counts, displs, MPI_DOUBLE,
-                 local_X, local_N * D, MPI_DOUBLE, 0, MPI_COMM_WORLD); // local count is ignored by MPI, must match allocation
+                 local_X, local_N * metadata->D, MPI_DOUBLE, 0, MPI_COMM_WORLD); // local count is ignored by MPI, must match allocation
 
     if(rank == 0){
         free(counts);
@@ -120,12 +120,13 @@ void broadcast_metadata(Metadata *metadata, int rank) {
  *     - mu: (K x D) Matrix of cluster means
  *     - sigma: (K x D) Matrix of cluster variances  
  *     - pi: (K) Vector of mixture weights
- *     - K: Number of clusters
- *     - D: Number of features
+ *     - metadata:
+ *       - K: Number of clusters
+ *       - D: Number of features
  */
-void broadcast_clusters_parameters(double *mu, double *sigma, double *pi, int K, int D) {
+void broadcast_clusters_parameters(double *mu, double *sigma, double *pi, Metadata *metadata) {
     MPI_Datatype mpi_param_type;
-    int blocklengths[3] = {K * D, K * D, K};
+    int blocklengths[3] = {metadata->K * metadata->D, metadata->K * metadata->D, metadata->K};
     MPI_Aint displacements[3];
     MPI_Datatype types[3] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE};
 
