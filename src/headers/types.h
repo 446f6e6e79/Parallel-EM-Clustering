@@ -28,5 +28,11 @@ typedef struct
     double m_step_time;
 } Timers_t;
 
+typedef struct {
+    int N;                              // Number of samples
+    int D;                              // Number of features
+    int K;                              // Number of clusters
+    int max_line_size;                  // Maximum number of character in a line in the dataset file
+} Metadata;
 
 #endif
