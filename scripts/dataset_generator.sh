@@ -10,7 +10,7 @@ DATA_DIR="${BASE_DIR}/data/datasets"
 mkdir -p "$DATA_DIR"
 
 # Where the testing datasets will go
-TESTING_DIR="${BASE_DIR}/test/datasets"
+TESTING_DIR="${BASE_DIR}/test"
 mkdir -p "$TESTING_DIR"
 
 # === Argument parsing ===
@@ -46,7 +46,7 @@ COMBOS=(
 TESTING_COMBOS=(
   "200 1 3 30 -30 0"
   "200 1 2 30 -30"
-  "200 2 3 30,0 -30,0 0,30"
+  "200 2 3 30,0 30,-30 0,30"
 )
 
 # === Main logic ===
@@ -102,8 +102,8 @@ elif [[ "$MODE" == "test" ]]; then
       -s "$N_EXAMPLES" \
       -f "$N_FEATURES" \
       -k "$N_CLUSTERS" \
-      -o "${TEST_SUBDIR}/em_test_dataset.csv" \
-      -m "${TEST_SUBDIR}/em_test_metadata.txt" \
+      -o "${TEST_SUBDIR}/em_dataset.csv" \
+      -m "${TEST_SUBDIR}/em_metadata.txt" \
       --means "${MEANS[@]}"
 
     if [ $? -ne 0 ]; then

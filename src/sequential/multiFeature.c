@@ -6,6 +6,7 @@
     Expection-Maximization Clustering Algorithm
 
     Usage: ./program <dataset_file> <metadata_file> [output_labels_file]
+    TODO: fix all the missing updates
 */
 int main(int argc, char **argv) { 
     Metadata metadata;                  // Contains number of samples, number of features, number of clusters and max line size
@@ -23,24 +24,16 @@ int main(int argc, char **argv) {
     int *ground_truth_labels = NULL;    // Ground truth labels
 
     // Check command line arguments
-    if(argc < 3 || argc > 4){
-        fprintf(stderr, "Usage: %s <dataset_file> <metadata_file> [output_labels_file]\n", argv[0]);
+    InputParams_t inputParams;
+    if (parseParameter(argc, argv, &inputParams) != 0) {
+        fprintf(stderr, "Error parsing input parameters.\n");
         return 1;
     }
-    if(argv[1] == NULL || argv[2] == NULL || (argc > 3 && argv[3] == NULL)){
-        fprintf(stderr, "Dataset file, metadata and execution info file must be provided\n");
-        return 1;
-    }
-
-    // Get filenames from arguments
-    const char *filename = argv[1];
-    const char *metadata_filename = argv[2];
-    const char *output_labels_file = (argc > 3) ? argv[3] : NULL;
 
     // Read metadata from metadata file into Metadata struct
-    int meta_status = read_metadata(metadata_filename, &metadata);
+    int meta_status = read_metadata(inputParams.metadata_filename, &metadata);
     if(meta_status != 0){
-        fprintf(stderr, "Failed to read metadata from file: %s\n", metadata_filename);
+        fprintf(stderr, "Failed to read metadata from file: %s\n", inputParams.metadata_filename);
         return 1;
     }
     printf("Metadata: samples N=%d, features D=%d, clusters K=%d\n", metadata.N, metadata.D, metadata.K);
@@ -63,8 +56,8 @@ int main(int argc, char **argv) {
     }   
 
     // Read dataset
-    if(read_dataset(filename, &metadata, X, ground_truth_labels) != 0){
-        fprintf(stderr, "Failed to read dataset from file: %s\n", filename);
+    if(read_dataset(inputParams.dataset_filename, &metadata, X, ground_truth_labels) != 0){
+        fprintf(stderr, "Failed to read dataset from file: %s\n", inputParams.dataset_filename);
         safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&gamma,&N_k,&mu_k,&sigma_k);
         return 1;
     }
@@ -91,10 +84,10 @@ int main(int argc, char **argv) {
     debug_print_cluster_params(&metadata, &cluster_params);
 
     // Write final cluster assignments to file to validate
-    if (output_labels_file){
-        int write_status = write_labels_info(output_labels_file, predicted_labels, ground_truth_labels, metadata.N);
+    if (inputParams.output_filename){
+        int write_status = write_labels_info(inputParams.output_filename, predicted_labels, ground_truth_labels, metadata.N);
         if(write_status != 0){
-            fprintf(stderr, "Failed to write labels to file: %s\n", output_labels_file);
+            fprintf(stderr, "Failed to write labels to file: %s\n", inputParams.output_filename);
         }
     }
     

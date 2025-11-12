@@ -1,7 +1,5 @@
 #include <headers/utils.h>
 
-
-
 /*
     Helper function to free a pointer and set it to NULL
 */
@@ -60,6 +58,7 @@ void free_accumulators(Accumulators *acc) {
 
 /*
     Safely frees all allocated memory (passed by address)
+    TODO: change order. First struct then arrays. ADD all parameters
 */
 void safe_cleanup(
     double **X,
@@ -139,6 +138,12 @@ void initialize_timers(Timers_t *timers) {
 */
 int parseParameter(int argc, char **argv, InputParams_t *inputParams) {
     int opt;
+    // Initialize all parameters to NULL
+    inputParams->dataset_filename = NULL;
+    inputParams->metadata_filename = NULL;
+    inputParams->benchmarks_filename = NULL;
+    inputParams->output_filename = NULL;
+    
     while ((opt = getopt(argc, argv, "i:m:b:o:")) != -1) {
         switch (opt) {
         case 'i':

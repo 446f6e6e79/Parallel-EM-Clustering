@@ -128,12 +128,10 @@ def generate_em_dataset(n_samples, n_features, n_clusters, cluster_std, centers,
             X: array of shape (n_samples, n_features) - generated samples
             y_true: array of shape (n_samples,) - true cluster labels
     """
-    centers_arg = centers if n_samples is None or isinstance(n_samples, int) else None
-    # Generate the dataset
     X, y_true = make_blobs(
         n_samples=n_samples,
         n_features=n_features,
-        centers=centers_arg,
+        centers=centers,
         cluster_std=cluster_std,
         random_state=random_state
     )

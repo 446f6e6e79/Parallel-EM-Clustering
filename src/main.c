@@ -24,12 +24,12 @@ int main(int argc, char **argv) {
     ClusterParams cluster_params;           // Contains cluster parameters: mu (D * K), sigma (D * K), pi (K)
 
     // Global accumulators for m-step
-    Accumulators cluster_acc;        // Contains accumulators for m-step: N_k (K), mu_k (D * K), sigma_k (D * K)
+    Accumulators cluster_acc;               // Contains accumulators for m-step: N_k (K), mu_k (D * K), sigma_k (D * K)
 
     // Local variables for parallel computation
     double *local_X = NULL;                 // Local data points for this MPI process (local_N * D)
     double *local_gamma = NULL;             // local_gamma[local_N * K] Local responsibilities vector for each process. local_gamma[i * K + k] is the responsibility of cluster k for data point i
-    Accumulators local_cluster_acc;  // Local accumulators for m-step: local_N_k (K), local_mu_k (D * K), local_sigma_k (D * K)
+    Accumulators local_cluster_acc;         // Local accumulators for m-step: local_N_k (K), local_mu_k (D * K), local_sigma_k (D * K)
 
     // Label vectors for clustering
     int *predicted_labels = NULL;           // Predicted cluster labels
