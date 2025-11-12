@@ -4,10 +4,9 @@
 #include <stdio.h>
 #include <mpi.h>
 
-#include "file_io.h"    
+#include "io_utils.h"    
 #include "utils.h"
 #include "em_algorithm.h"
-#include "debug.h"
 #include "mpi_utils.h"
 
 int main(int argc, char **argv);
