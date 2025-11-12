@@ -36,6 +36,29 @@ void free_cluster_params(ClusterParams *params) {
 }
 
 /*
+    Allocates memory for cluster accumulators N_k, mu_k, sigma_k
+*/
+int alloc_accumulators(Accumulators *acc, Metadata *metadata) {
+    acc->N_k = malloc(metadata->K * sizeof(double)); 
+    acc->mu_k = malloc(metadata->K * metadata->D * sizeof(double)); 
+    acc->sigma_k = malloc(metadata->K * metadata->D * sizeof(double));
+    if (!acc->N_k || !acc->mu_k || !acc->sigma_k) {
+        fprintf(stderr, "Memory allocation failed for cluster accumulators\n");
+        return -1; // Allocation failed
+    }
+    return 0; // Success
+}
+
+/*
+    Frees memory allocated for cluster accumulators N_k, mu_k, sigma_k
+*/
+void free_accumulators(Accumulators *acc) {
+    free_and_null((void**)&acc->N_k);
+    free_and_null((void**)&acc->mu_k);
+    free_and_null((void**)&acc->sigma_k);
+}
+
+/*
     Safely frees all allocated memory (passed by address)
 */
 void safe_cleanup(
@@ -43,56 +66,37 @@ void safe_cleanup(
     int **predicted_labels,
     int **ground_truth_labels,
     ClusterParams *cluster_params,
-    double **resp,
-    double **N_k,
-    double **mu_k,
-    double **sigma_k
+    Accumulators *cluster_acc,
+    double **resp
 )
 {
     free_and_null((void**)X);
     free_and_null((void**)predicted_labels);
     free_and_null((void**)ground_truth_labels);
     free_cluster_params(cluster_params);
+    free_accumulators(cluster_acc);
     free_and_null((void**)resp);
-    free_and_null((void**)N_k);
-    free_and_null((void**)mu_k);
-    free_and_null((void**)sigma_k);
-}
-
-/*
-    Safely frees all allocated memory (passed by address)
-    This version is made up for the parallel version
-*/
-void safe_cleanup_local(
-    double **local_N_k,
-    double **local_mu_k,
-    double **local_sigma_k
-)
-{
-    free_and_null((void**)local_N_k);
-    free_and_null((void**)local_mu_k);
-    free_and_null((void**)local_sigma_k);
 }
 
 /*
     Reset accumulators used in the M-step of the EM algorithm
 */
-void reset_accumulators(double *N_k, double *mu_k, double *sigma_k, Metadata *metadata) {
-    memset(N_k, 0, (size_t)metadata->K * sizeof(double));
-    memset(mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
-    memset(sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
+void reset_accumulators(Accumulators *acc, Metadata *metadata) {
+    memset(acc->N_k, 0, (size_t)metadata->K * sizeof(double));
+    memset(acc->mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
+    memset(acc->sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
 }
 
 /*
     Reset accumulators used in the parallel M-step of the EM algorithm
 */
-void parallel_reset_accumulators(double *N_k, double *mu_k, double *sigma_k, double *local_N_k, double *local_mu_k, double *local_sigma_k, Metadata *metadata) {
-    memset(N_k, 0, (size_t)metadata->K * sizeof(double));
-    memset(mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
-    memset(sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
-    memset(local_N_k, 0, (size_t)metadata->K * sizeof(double));
-    memset(local_mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
-    memset(local_sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
+void parallel_reset_accumulators(Accumulators *acc, Accumulators *local_acc, Metadata *metadata) {
+    memset(acc->N_k, 0, (size_t)metadata->K * sizeof(double));
+    memset(acc->mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
+    memset(acc->sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
+    memset(local_acc->N_k, 0, (size_t)metadata->K * sizeof(double));
+    memset(local_acc->mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
+    memset(local_acc->sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
 }
 
 /*

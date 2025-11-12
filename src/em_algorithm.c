@@ -121,32 +121,33 @@ void e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_params,
 /**
  *  M-step: Update parameters (mu, sigma, pi) for each cluster
  *   Parameters:
- *    - X: dataset (N x D)
- *    - metadata:
+ *   - X: dataset (N x D)
+ *   - metadata:
  *          - N: number of samples
  *          - D: number of features
  *          - K: number of clusters
  *    - gamma: (N x K) Responsibilities matrix
- *    - N_k: (K) Sum of responsibilities per cluster 
- *    - mu_k: (K x D) Weighted sums for means 
- *    - sigma_k: (K x D) Weighted sums for variances 
+ *    - acc (accumulators):
+ *          - N_k: (K) Sum of responsibilities per cluster 
+ *          - mu_k: (K x D) Weighted sums for means 
+ *          - sigma_k: (K x D) Weighted sums for variances 
  *    Output parameters:
  *    -cluster_params:
  *          - mu: (K x D) Matrix of cluster means
  *          - sigma: (K x D) Matrix of cluster variances
  *          - pi: (K) Vector of mixture weights
-
+ * 
 */
-void m_step( double *X, Metadata *metadata, double *gamma, ClusterParams *cluster_params, double *N_k, double *mu_k, double *sigma_k){
-    reset_accumulators(N_k, mu_k, sigma_k, metadata);
+void m_step( double *X, Metadata *metadata, double *gamma, ClusterParams *cluster_params, Accumulators *acc){
+    reset_accumulators(acc, metadata);
     // Accumulate Nk and mu_num for each cluster
     for (int i = 0; i < metadata->N; i++) {
         double *x = &X[i*metadata->D]; // Vector of features for data point i
         for (int k = 0; k < metadata->K; k++) {
-            N_k[k] += gamma[i*metadata->K + k]; // Accumulate responsibilities of a data point to cluster k
+            acc->N_k[k] += gamma[i*metadata->K + k]; // Accumulate responsibilities of a data point to cluster k
             for (int d = 0; d < metadata->D; d++) { 
                 // Weight the data point by its responsibility and accumulate for mean
-                mu_k[k*metadata->D + d] += gamma[i*metadata->K + k] * x[d];
+                acc->mu_k[k*metadata->D + d] += gamma[i*metadata->K + k] * x[d];
             }
         }
     }
@@ -154,10 +155,10 @@ void m_step( double *X, Metadata *metadata, double *gamma, ClusterParams *cluste
     // Finalize the calculation of the weighted means (for each feature) for each cluster
     for (int k = 0; k<metadata->K; k++) {
         // Guard to avoid division by zero
-        if (N_k[k] <= 0.0) N_k[k] = GUARD_VALUE;
+        if (acc->N_k[k] <= 0.0) acc->N_k[k] = GUARD_VALUE;
         // Finalize mu
         for( int d = 0; d < metadata->D; d++) {
-            cluster_params->mu[k*metadata->D + d] = mu_k[k*metadata->D +d] / N_k[k];
+            cluster_params->mu[k*metadata->D + d] = acc->mu_k[k*metadata->D +d] / acc->N_k[k];
         }
     }
 
@@ -169,7 +170,7 @@ void m_step( double *X, Metadata *metadata, double *gamma, ClusterParams *cluste
             for (int d = 0; d < metadata->D; d++) {
                 double diff = x[d] - cluster_params->mu[k * metadata->D + d];
                 // Accumulate weighted squared difference
-                sigma_k[k * metadata->D + d] += gamma[i * metadata->K + k] * diff * diff; 
+                acc->sigma_k[k * metadata->D + d] += gamma[i * metadata->K + k] * diff * diff; 
             }
         }
     }
@@ -179,61 +180,65 @@ void m_step( double *X, Metadata *metadata, double *gamma, ClusterParams *cluste
         for (int d = 0; d < metadata->D; d++) {
             // Nk[k] is already guarded
             // Finalize variance for each dimension
-            cluster_params->sigma[k * metadata->D + d] = sigma_k[k * metadata->D + d] / N_k[k];
+            cluster_params->sigma[k * metadata->D + d] = acc->sigma_k[k * metadata->D + d] / acc->N_k[k];
         }
         // Update mixture weights
-        cluster_params->pi[k] = N_k[k] / (double)metadata->N;
+        cluster_params->pi[k] = acc->N_k[k] / (double)metadata->N;
     }
 }
 
 /**
- *  M-step: Update parameters (mu, sigma, pi) for each cluster
+ *  Parallel M-step: Update parameters (mu, sigma, pi) for each cluster
  *   Parameters:
- *   - local_X: dataset (local_N x D)
- *   - local_N: number of samples in the local partition
+ *   - local_X: local dataset chunk (local_N x D)
+ *   - local_N: number of samples in the local chunk
  *   - metadata:
  *          - N: number of samples
  *          - D: number of features
  *          - K: number of clusters
- *    - local_gamma: (local_N x K) Responsibilities matrix
- *    - N_k: (K) Sum of responsibilities per cluster 
- *    - mu_k: (K x D) Weighted sums for means 
- *    - sigma_k: (K x D) Weighted sums for variances 
- *    - rank: Id of the current process
- *    Output parameters:
- *    -cluster_params:
+ *    - local_gamma: (local_N x K) Local responsibilities matrix
+ *    - cluster_params: ClusterParams structure containing mu, sigma, and pi
  *          - mu: (K x D) Matrix of cluster means
  *          - sigma: (K x D) Matrix of cluster variances
  *          - pi: (K) Vector of mixture weights
+ *    - cluster_acc (global accumulators):
+ *          - N_k: (K) Sum of responsibilities per cluster 
+ *          - mu_k: (K x D) Weighted sums for means 
+ *          - sigma_k: (K x D) Weighted sums for variances 
+ *    - local_cluster_acc (local accumulators):
+ *          - N_k: (K) Sum of responsibilities per cluster 
+ *          - mu_k: (K x D) Weighted sums for means 
+ *          - sigma_k: (K x D) Weighted sums for variances 
+ *    - rank: MPI rank of the current process
  * 
 */
-void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, double *local_gamma, ClusterParams *cluster_params, double *N_k, double *local_N_k, double *mu_k, double *local_mu_k,double *sigma_k, double *local_sigma_k, int rank){
-    parallel_reset_accumulators(N_k, mu_k, sigma_k, local_N_k, local_mu_k, local_sigma_k, metadata);
+void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, double *local_gamma, ClusterParams *cluster_params, Accumulators *cluster_acc, Accumulators *local_cluster_acc, int rank){
+    parallel_reset_accumulators(cluster_acc, local_cluster_acc, metadata);
 
     // Accumulate Nk and mu_num for each cluster, done by every process
     for (int i = 0; i < local_N; i++) {
         double *x = &local_X[i*metadata->D]; // Vector of features for data point i
         for (int k = 0; k < metadata->K; k++) {
-            local_N_k[k] += local_gamma[i*metadata->K + k]; // Accumulate responsibilities of a data point to cluster k
+            local_cluster_acc->N_k[k] += local_gamma[i*metadata->K + k]; // Accumulate responsibilities of a data point to cluster k
             for (int d = 0; d < metadata->D; d++) { 
                 // Weight the data point by its responsibility and accumulate for mean
-                local_mu_k[k*metadata->D + d] += local_gamma[i*metadata->K + k] * x[d];
+                local_cluster_acc->mu_k[k*metadata->D + d] += local_gamma[i*metadata->K + k] * x[d];
             }
         }
     }
 
-    MPI_Reduce(local_N_k, N_k, metadata->K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(local_mu_k, mu_k, metadata->D*metadata->K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(local_cluster_acc->N_k, cluster_acc->N_k, metadata->K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(local_cluster_acc->mu_k, cluster_acc->mu_k, metadata->D*metadata->K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
     // Finalize the calculation of the weighted means (for each feature) for each cluster, only done by rank 0
     if(rank == 0){
         //TODO: (IN FUTURE, should be done using openmp???)
         for (int k = 0; k < metadata->K; k++) {
             // Guard to avoid division by zero
-            if (N_k[k] <= 0.0) N_k[k] = GUARD_VALUE;
+            if (cluster_acc->N_k[k] <= 0.0) cluster_acc->N_k[k] = GUARD_VALUE;
             // Finalize mu
             for( int d = 0; d < metadata->D; d++) {
-               cluster_params->mu[k*metadata->D + d] = mu_k[k*metadata->D +d] / N_k[k];
+               cluster_params->mu[k*metadata->D + d] = cluster_acc->mu_k[k*metadata->D +d] / cluster_acc->N_k[k];
             }
         }
     }
@@ -248,12 +253,12 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, doubl
             for (int d = 0; d < metadata->D; d++) {
                 double diff = x[d] - cluster_params->mu[k * metadata->D + d];
                 // Accumulate weighted squared difference
-                local_sigma_k[k * metadata->D + d] += local_gamma[i * metadata->K + k] * diff * diff; 
+                local_cluster_acc->sigma_k[k * metadata->D + d] += local_gamma[i * metadata->K + k] * diff * diff; 
             }
         }
     }
     
-    MPI_Reduce(local_sigma_k, sigma_k, metadata->K*metadata->D, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(local_cluster_acc->sigma_k, cluster_acc->sigma_k, metadata->K*metadata->D, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
     // Finalize sigma (variance per-dim) and pi, only done by rank 0
     if(rank == 0){
@@ -262,14 +267,13 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, doubl
             for (int d = 0; d < metadata->D; d++) {
                 // Nk[k] is already guarded
                 // Finalize variance for each dimension
-                cluster_params->sigma[k * metadata->D + d] = sigma_k[k * metadata->D + d] / N_k[k];
+                cluster_params->sigma[k * metadata->D + d] = cluster_acc->sigma_k[k * metadata->D + d] / cluster_acc->N_k[k];
             }
             // Update mixture weights
-            cluster_params->pi[k] = N_k[k] / (double)metadata->N;
+            cluster_params->pi[k] = cluster_acc->N_k[k] / (double)metadata->N;
         }
     }
 
     MPI_Bcast(cluster_params->sigma, metadata->K*metadata->D, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(cluster_params->pi, metadata->K, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
 }

@@ -17,28 +17,24 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     // Metadata 
-    Metadata metadata;                  // Contains number of samples, number of features, number of clusters and max line size
+    Metadata metadata;                      // Contains number of samples, number of features, number of clusters and max line size
     
     // Global to all processes
-    double *X = NULL;                   // X[N * D] Vector of data points
-    ClusterParams cluster_params;       // Cluster parameters: mu (D * K), sigma (D * K), pi (K)
+    double *X = NULL;                       // X[N * D] Vector of data points
+    ClusterParams cluster_params;           // Contains cluster parameters: mu (D * K), sigma (D * K), pi (K)
 
     // Global accumulators for m-step
-    double *N_k = NULL;                 // N_k[k] = Sum of responsibilities per cluster
-    double *mu_k = NULL;                // mu_k[k * D] = Weighted sums for means
-    double *sigma_k = NULL;             // sigma_k[k * D] = Weighted sums for variances
+    Accumulators cluster_acc;        // Contains accumulators for m-step: N_k (K), mu_k (D * K), sigma_k (D * K)
 
     // Local variables for parallel computation
-    double *local_X = NULL;             // Local data points for this MPI process (local_N * D)
-    double *local_gamma = NULL;         // local_gamma[local_N * K] Local responsibilities vector for each process. local_gamma[i * K + k] is the responsibility of cluster k for data point i
-    double *local_N_k = NULL;           // Local version of N_k for parallelizing
-    double *local_mu_k = NULL;          // Local version of mu_k for parallelizing
-    double *local_sigma_k = NULL;       // Local version of sigma_k for parallelizing
+    double *local_X = NULL;                 // Local data points for this MPI process (local_N * D)
+    double *local_gamma = NULL;             // local_gamma[local_N * K] Local responsibilities vector for each process. local_gamma[i * K + k] is the responsibility of cluster k for data point i
+    Accumulators local_cluster_acc;  // Local accumulators for m-step: local_N_k (K), local_mu_k (D * K), local_sigma_k (D * K)
 
     // Label vectors for clustering
-    int *predicted_labels = NULL;       // Predicted cluster labels
-    int *local_predicted_labels = NULL; // Local predicted cluster labels
-    int *ground_truth_labels = NULL;    // Ground truth labels
+    int *predicted_labels = NULL;           // Predicted cluster labels
+    int *local_predicted_labels = NULL;     // Local predicted cluster labels
+    int *ground_truth_labels = NULL;        // Ground truth labels
 
     // Initialize the timers
     Timers_t timers;
@@ -87,16 +83,14 @@ int main(int argc, char **argv) {
 
     // Allocate the buffers needed by all processes
     int cluster_alloc_status = alloc_cluster_params(&cluster_params, &metadata);
-    N_k = malloc((size_t)metadata.K * sizeof(double));              
-    mu_k = malloc((size_t)metadata.K * metadata.D * sizeof(double));   
-    sigma_k = malloc((size_t)metadata.K * metadata.D * sizeof(double));  
-    if(cluster_alloc_status != 0 || !N_k || !mu_k || !sigma_k){
+    int acc_alloc_status =  alloc_accumulators(&cluster_acc, &metadata); 
+    if(cluster_alloc_status != 0 || acc_alloc_status != 0){
         alloc_fail = 1;
     }
     // Check that all allocations were successful
     if(alloc_fail){
         fprintf(stderr, "Memory allocation failed\n");
-        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&local_gamma,&N_k,&mu_k,&sigma_k);
+        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&cluster_acc,&local_gamma);
         MPI_Abort(MPI_COMM_WORLD,1);
     }   
 
@@ -105,7 +99,7 @@ int main(int argc, char **argv) {
     if(rank == 0){
         if(read_dataset(inputParams.dataset_filename, &metadata, X, ground_truth_labels) != 0){
             fprintf(stderr, "Failed to read dataset from file: %s\n", inputParams.dataset_filename);
-            safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&local_gamma,&N_k,&mu_k,&sigma_k);
+            safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&cluster_acc,&local_gamma);
             MPI_Abort(MPI_COMM_WORLD,1);
         }
     }
@@ -125,15 +119,13 @@ int main(int argc, char **argv) {
     local_X = malloc(local_N * metadata.D * sizeof(double));
     local_gamma = malloc(local_N * metadata.K * sizeof(double));
     local_predicted_labels = malloc(local_N * sizeof(int)); 
-    local_N_k = malloc((size_t)metadata.K * sizeof(double));              
-    local_mu_k = malloc((size_t)metadata.K * metadata.D * sizeof(double));   
-    local_sigma_k = malloc((size_t)metadata.K * metadata.D * sizeof(double));
+    int local_acc_alloc_status =  alloc_accumulators(&cluster_acc, &metadata); 
 
     // Check that all allocations were successful
-    if (!local_X || !local_gamma || !local_predicted_labels || !local_N_k || !local_mu_k || !local_sigma_k) {
-        fprintf(stderr, "Memory allocation failed\n");
-        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&local_gamma,&N_k,&mu_k,&sigma_k);
-        safe_cleanup_local(&local_N_k,&local_mu_k,&local_sigma_k);
+    if (!local_X || !local_gamma || !local_predicted_labels || local_acc_alloc_status != 0) {
+        fprintf(stderr, "Local variable memory allocation failed\n");
+        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&cluster_acc, &local_gamma);
+        free_accumulators(&local_cluster_acc);
         MPI_Abort(MPI_COMM_WORLD,1);
     }
 
@@ -154,7 +146,7 @@ int main(int argc, char **argv) {
 
         //M-step
         start_timer(&timers.m_step_start);
-        m_step_parallelized(local_X, local_N, &metadata, local_gamma, &cluster_params, N_k, local_N_k, mu_k, local_mu_k, sigma_k, local_sigma_k, rank);
+        m_step_parallelized(local_X, local_N, &metadata, local_gamma, &cluster_params, &cluster_acc, &local_cluster_acc, rank);
         stop_timer(&timers.m_step_start, &timers.m_step_time);
     }
     
@@ -191,8 +183,8 @@ int main(int argc, char **argv) {
     }
 
     // Free all the allocated memory
-    safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&local_gamma,&N_k,&mu_k,&sigma_k);
-    safe_cleanup_local(&local_N_k,&local_mu_k,&local_sigma_k);
+    safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&cluster_acc,&local_gamma);
+    free_accumulators(&local_cluster_acc);
     // Finalize MPI communicator
     MPI_Finalize();
     return 0;

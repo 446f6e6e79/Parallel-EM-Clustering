@@ -21,6 +21,15 @@ typedef struct {
 } ClusterParams;
 
 /*
+    Cluster parameters accumulators structure
+*/
+typedef struct {
+    double *N_k;                        // N_k[k] = Sum of responsibilities per cluster
+    double *mu_k;                       // mu_k[k * D] = Weighted sums for means
+    double *sigma_k;                    // sigma_k[k * D] = Weighted sums for variances
+} Accumulators;
+
+/*
     Timers structure to keep track of different execution times
 */
 typedef struct
