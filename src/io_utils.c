@@ -203,21 +203,23 @@ void debug_print_first_samples(Metadata *metadata, double *X, int *ground_truth_
 /*
   Print the parameters of each cluster
    Parameters:
-   -K: Number of clusters
-   -D: Number of features
-   -mu: (K x D) Matrix of cluster means
-   -sigma: (K x D) Matrix of cluster variances
-   -pi: (K) Vector of mixture weights
+   -metadata:
+        -K: Number of clusters
+        -D: Number of features
+   -cluster_params: 
+        -mu: (K x D) Matrix of cluster means
+        -sigma: (K x D) Matrix of cluster variances
+        -pi: (K) Vector of mixture weights
  */
-void debug_print_cluster_params(Metadata *metadata, double *mu, double *sigma, double *pi) {
+void debug_print_cluster_params(Metadata *metadata, ClusterParams *cluster_params) {
     for (int k = 0; k < metadata->K; k++) {
         printf("Cluster %d: \n", k);
-        printf("\tpi=%.6f\n", pi[k]);
+        printf("\tpi=%.6f\n", cluster_params->pi[k]);
         printf("\tmu: ");
-        for (int d = 0; d < metadata->D; d++) printf("%.3f ", mu[k * metadata->D + d]);
+        for (int d = 0; d < metadata->D; d++) printf("%.3f ", cluster_params->mu[k * metadata->D + d]);
         printf("\n");
         printf("\tsigma (std per-dim): ");
-        for (int d = 0; d < metadata->D; d++) printf("%.3f ", sqrt(sigma[k * metadata->D + d]));
+        for (int d = 0; d < metadata->D; d++) printf("%.3f ", sqrt(cluster_params->sigma[k * metadata->D + d]));
         printf("\n");
     }
 }

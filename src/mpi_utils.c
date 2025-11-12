@@ -153,7 +153,7 @@ void broadcast_metadata(Metadata *metadata, int rank) {
  *     - pi: (K) Vector of mixture weights
  *     - metadata: Metadata structure containing N, D, and K
  */
-void broadcast_clusters_parameters(double *mu, double *sigma, double *pi, Metadata *metadata) {
+void broadcast_clusters_parameters(ClusterParams cluster_params, Metadata *metadata) {
     // Create MPI derived datatype for cluster parameters
     MPI_Datatype mpi_param_type;
     // Define block lengths, displacements, and types
@@ -162,9 +162,9 @@ void broadcast_clusters_parameters(double *mu, double *sigma, double *pi, Metada
     MPI_Datatype types[3] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE};
     // Calculate displacements
     MPI_Aint base_address;
-    MPI_Get_address(mu, &base_address);
-    MPI_Get_address(sigma, &displacements[1]);
-    MPI_Get_address(pi, &displacements[2]);
+    MPI_Get_address(cluster_params.mu, &base_address);
+    MPI_Get_address(cluster_params.sigma, &displacements[1]);
+    MPI_Get_address(cluster_params.pi, &displacements[2]);
     // Adjust displacements relative to base address
     displacements[0] = 0;
     displacements[1] -= base_address;
@@ -174,7 +174,7 @@ void broadcast_clusters_parameters(double *mu, double *sigma, double *pi, Metada
     MPI_Type_commit(&mpi_param_type);
 
     // Broadcast from process 0
-    MPI_Bcast(mu, 1, mpi_param_type, 0, MPI_COMM_WORLD);
+    MPI_Bcast(cluster_params.mu, 1, mpi_param_type, 0, MPI_COMM_WORLD);
 
     // Free the derived datatype
     MPI_Type_free(&mpi_param_type);

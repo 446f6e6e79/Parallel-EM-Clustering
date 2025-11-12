@@ -20,6 +20,6 @@ int write_execution_info(const char *filename, int n_process, Metadata *metadata
 int write_labels_info(const char *filename, int *predicted_labels, int *real_labels, int num_samples);
 void debug_print_first_samples(Metadata *metadata, double *X, int *ground_truth_labels);
 void debug_print_scatter(int local_N, int D, double *local_X, int rank);
-void debug_print_cluster_params(Metadata *metadata, double *mu, double *sigma, double *pi);
+void debug_print_cluster_params(Metadata *metadata, ClusterParams *cluster_params);
 
 #endif

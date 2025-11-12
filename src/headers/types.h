@@ -12,6 +12,15 @@ typedef struct {
 } Metadata;
 
 /*
+    Cluster parameters structure
+*/
+typedef struct {
+    double *mu;                         // mu[k * D] = Mean of cluster k for each feature
+    double *sigma;                      // sigma[k * D] = Variance of cluster k for each feature
+    double *pi;                         // pi[k] = Mixture weight of cluster k
+} ClusterParams;
+
+/*
     Timers structure to keep track of different execution times
 */
 typedef struct

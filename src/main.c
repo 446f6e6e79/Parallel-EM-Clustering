@@ -19,12 +19,10 @@ int main(int argc, char **argv) {
     // Metadata 
     Metadata metadata;                  // Contains number of samples, number of features, number of clusters and max line size
     
-    // Global arrays
+    // Global to all processes
     double *X = NULL;                   // X[N * D] Vector of data points
-    double *mu = NULL;                  // mu[k * D] Vector of feature means per cluster; mu[k * D + d] is the mean of feature d for cluster k
-    double *sigma = NULL;               // sigma[k * D] Vector of variance per each feature per cluster; sigma[k * D + d] is the variance of feature d for cluster k
-    double *pi = NULL;                  // pi[k] Vector of mixture weights: prior probability that a random data point belongs to cluster k
-    
+    ClusterParams cluster_params;       // Cluster parameters: mu (D * K), sigma (D * K), pi (K)
+
     // Global accumulators for m-step
     double *N_k = NULL;                 // N_k[k] = Sum of responsibilities per cluster
     double *mu_k = NULL;                // mu_k[k * D] = Weighted sums for means
@@ -91,20 +89,19 @@ int main(int argc, char **argv) {
             alloc_fail = 1;
         }
     }
+
     // Allocate the buffers needed by all processes
-    mu = malloc(metadata.K * metadata.D * sizeof(double)); 
-    sigma = malloc(metadata.K * metadata.D * sizeof(double)); 
-    pi = malloc(metadata.K * sizeof(double));
+    int cluster_alloc_status = alloc_cluster_params(&cluster_params, &metadata);
     N_k = malloc((size_t)metadata.K * sizeof(double));              
     mu_k = malloc((size_t)metadata.K * metadata.D * sizeof(double));   
     sigma_k = malloc((size_t)metadata.K * metadata.D * sizeof(double));  
-    if(!mu || !sigma || !pi || !N_k || !mu_k || !sigma_k){
+    if(cluster_alloc_status != 0 || !N_k || !mu_k || !sigma_k){
         alloc_fail = 1;
     }
     // Check that all allocations were successful
     if(alloc_fail){
         fprintf(stderr, "Memory allocation failed\n");
-        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
+        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&local_gamma,&N_k,&mu_k,&sigma_k);
         MPI_Abort(MPI_COMM_WORLD,1);
     }   
 
@@ -113,18 +110,18 @@ int main(int argc, char **argv) {
     if(rank == 0){
         if(read_dataset(filename, &metadata, X, ground_truth_labels) != 0){
             fprintf(stderr, "Failed to read dataset from file: %s\n", filename);
-            safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
+            safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&local_gamma,&N_k,&mu_k,&sigma_k);
             MPI_Abort(MPI_COMM_WORLD,1);
         }
     }
     stop_timer(&timers.io_start, &timers.io_time);
     
     //Initialize parameters for the EM algorithm (Done only by rank 0)
-    if (rank == 0) init_params(X, &metadata, mu, sigma, pi);
+    if (rank == 0) init_params(X, &metadata, &cluster_params);
     
     // Broadcast in a single time initial parameters to all processes
     start_timer(&timers.data_distribution_start);
-    broadcast_clusters_parameters(mu, sigma, pi, &metadata);
+    broadcast_clusters_parameters(cluster_params, &metadata);
 
     // Distribute data among processes
     int local_N = compute_local_N(metadata.N, size, rank);
@@ -140,7 +137,7 @@ int main(int argc, char **argv) {
     // Check that all allocations were successful
     if (!local_X || !local_gamma || !local_predicted_labels || !local_N_k || !local_mu_k || !local_sigma_k) {
         fprintf(stderr, "Memory allocation failed\n");
-        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
+        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&local_gamma,&N_k,&mu_k,&sigma_k);
         safe_cleanup_local(&local_N_k,&local_mu_k,&local_sigma_k);
         MPI_Abort(MPI_COMM_WORLD,1);
     }
@@ -157,12 +154,12 @@ int main(int argc, char **argv) {
     for (int iter = 0; iter < MAX_ITER; iter++) {
         // E-step
         start_timer(&timers.e_step_start);
-        e_step(local_X, local_N, &metadata, mu, sigma, pi, local_gamma);
+        e_step(local_X, local_N, &metadata, &cluster_params, local_gamma);
         stop_timer(&timers.e_step_start, &timers.e_step_time);
 
         //M-step
         start_timer(&timers.m_step_start);
-        m_step_parallelized(local_X, local_N, &metadata, local_gamma,  mu, sigma, pi, N_k, local_N_k, mu_k, local_mu_k, sigma_k, local_sigma_k, rank);
+        m_step_parallelized(local_X, local_N, &metadata, local_gamma, &cluster_params, N_k, local_N_k, mu_k, local_mu_k, sigma_k, local_sigma_k, rank);
         stop_timer(&timers.m_step_start, &timers.m_step_time);
     }
     
@@ -177,7 +174,7 @@ int main(int argc, char **argv) {
     start_timer(&timers.io_start);
     if (rank == 0) {
         // Print final parameters 
-        debug_print_cluster_params(&metadata, mu, sigma, pi);
+        debug_print_cluster_params(&metadata, &cluster_params);
         // Write final cluster assignments to file to validate
         if (output_labels_file){
             int write_status = write_labels_info(output_labels_file, predicted_labels, ground_truth_labels, metadata.N);
@@ -199,7 +196,7 @@ int main(int argc, char **argv) {
     }
 
     // Free all the allocated memory
-    safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&local_gamma,&N_k,&mu_k,&sigma_k);
+    safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&local_gamma,&N_k,&mu_k,&sigma_k);
     safe_cleanup_local(&local_N_k,&local_mu_k,&local_sigma_k);
     // Finalize MPI communicator
     MPI_Finalize();

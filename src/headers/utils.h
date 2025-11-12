@@ -12,7 +12,9 @@
 /* Cleanup helper */
 void reset_accumulators(double *N_k, double *mu_k, double *sigma_k, Metadata *metadata);
 void parallel_reset_accumulators(double *N_k, double *mu_k, double *sigma_k, double *local_N_k, double *local_mu_k, double *local_sigma_k, Metadata *metadata);
-void safe_cleanup(double **X, int **predicted_labels, int **ground_truth_labels, double **mu, double **sigma, double **pi, double **resp, double **N_k, double **mu_k, double **sigma_k);
+int alloc_cluster_params(ClusterParams *params, Metadata *metadata);
+void free_cluster_params(ClusterParams *params);
+void safe_cleanup(double **X, int **predicted_labels, int **ground_truth_labels, ClusterParams *cluster_params, double **resp, double **N_k, double **mu_k, double **sigma_k);
 void safe_cleanup_local(double **local_N_k, double **local_mu_k, double **local_sigma_k);
 void start_timer(double *t);
 void stop_timer(double *t, double *accumulator);

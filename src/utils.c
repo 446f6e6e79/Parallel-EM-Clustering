@@ -1,5 +1,7 @@
 #include <headers/utils.h>
 
+
+
 /*
     Helper function to free a pointer and set it to NULL
 */
@@ -11,15 +13,36 @@ static inline void free_and_null(void **p) {
 }
 
 /*
+    Allocates memory for cluster parameters mu, sigma, pi
+*/
+int alloc_cluster_params(ClusterParams *params, Metadata *metadata) {
+    params->mu = malloc(metadata->K * metadata->D * sizeof(double)); 
+    params->sigma = malloc(metadata->K * metadata->D * sizeof(double)); 
+    params->pi = malloc(metadata->K * sizeof(double));
+    if (!params->mu || !params->sigma || !params->pi) {
+        fprintf(stderr, "Memory allocation failed for cluster parameters\n");
+        return -1; // Allocation failed
+    }
+    return 0; // Success
+}
+
+/*
+    Frees memory allocated for cluster parameters mu, sigma, pi
+*/
+void free_cluster_params(ClusterParams *params) {
+    free_and_null((void**)&params->mu);
+    free_and_null((void**)&params->sigma);
+    free_and_null((void**)&params->pi);
+}
+
+/*
     Safely frees all allocated memory (passed by address)
 */
 void safe_cleanup(
     double **X,
     int **predicted_labels,
     int **ground_truth_labels,
-    double **mu,
-    double **sigma,
-    double **pi,
+    ClusterParams *cluster_params,
     double **resp,
     double **N_k,
     double **mu_k,
@@ -29,9 +52,7 @@ void safe_cleanup(
     free_and_null((void**)X);
     free_and_null((void**)predicted_labels);
     free_and_null((void**)ground_truth_labels);
-    free_and_null((void**)mu);
-    free_and_null((void**)sigma);
-    free_and_null((void**)pi);
+    free_cluster_params(cluster_params);
     free_and_null((void**)resp);
     free_and_null((void**)N_k);
     free_and_null((void**)mu_k);
