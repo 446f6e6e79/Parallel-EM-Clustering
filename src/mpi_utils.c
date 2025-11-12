@@ -89,27 +89,26 @@ void gather_dataset(int *local_predicted_labels, int *predicted_labels, int N, i
  *    using a single MPI_Bcast operation for efficiency.
  *    
  *    Parameters:
- *     - N: Pointer to number of samples (input on root, output on all processes)
- *     - D: Pointer to number of features (input on root, output on all processes)  
- *     - K: Pointer to number of clusters (input on root, output on all processes)
+ *     - metadata:
+ *     - rank:
  */
-void broadcast_metadata(int *N, int *D, int *K, int rank) {
-    int metadata[3];
+void broadcast_metadata(Metadata *metadata, int rank) {
+    int meta_array[3];
     // Root process packs the metadata
     if (rank == 0) {
-        metadata[0] = *N;
-        metadata[1] = *D;
-        metadata[2] = *K;
+        meta_array[0] = metadata->N;
+        meta_array[1] = metadata->D;
+        meta_array[2] = metadata->K;
     }
-    
-    // Single MPI call to broadcast all metadata
-    MPI_Bcast(metadata, 3, MPI_INT, 0, MPI_COMM_WORLD);
-    
-    // All processes unpack the metadata
-    if(rank != 0){
-        *N = metadata[0];
-        *D = metadata[1];
-        *K = metadata[2];
+
+    // Broadcast all metadata in one MPI call
+    MPI_Bcast(meta_array, 3, MPI_INT, 0, MPI_COMM_WORLD);
+
+    // All other processes unpack the metadata
+    if (rank != 0) {
+        metadata->N = meta_array[0];
+        metadata->D = meta_array[1];
+        metadata->K = meta_array[2];
     }
 }
 

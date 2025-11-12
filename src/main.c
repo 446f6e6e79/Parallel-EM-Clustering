@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
 
     // Broadcast N, D, K to all process using a single MPI call
     start_timer(&timers.data_distribution_start);
-    broadcast_metadata(&metadata.N, &metadata.D, &metadata.K, rank);
+    broadcast_metadata(&metadata, rank);
     stop_timer(&timers.data_distribution_start, &timers.data_distribution_time);
 
     int alloc_fail = 0;     // Flag to check correctness of all allocations
