@@ -35,7 +35,7 @@ for run in {1..3}; do
 
   for DATA_DIR in "${DATASETS[@]}"; do
     dataset_name=$(basename "$DATA_DIR")
-    PARAMETERS="${DATA_DIR}/em_dataset.csv ${DATA_DIR}/em_metadata.txt $BASE_DIR/data/execution_info.csv"
+    PARAMETERS="-i ${DATA_DIR}/em_dataset.csv -m ${DATA_DIR}/em_metadata.txt -b $BASE_DIR/data/execution_info.csv"
 
     # Skip if any required file is missing
     missing=false

@@ -164,8 +164,7 @@ int main(int argc, char **argv) {
         debug_print_cluster_params(&metadata, &cluster_params);
         // Write final cluster assignments to file to validate
         if (inputParams.output_filename){
-            int write_status = write_labels_info(inputParams.output_filename, predicted_labels, ground_truth_labels, metadata.N);
-            if(write_status != 0){
+            if(write_labels_info(inputParams.output_filename, predicted_labels, ground_truth_labels, metadata.N) != 0){
                 fprintf(stderr, "Failed to write labels to file: %s\n", inputParams.output_filename);
             }
         }
@@ -176,12 +175,14 @@ int main(int argc, char **argv) {
     stop_timer(&timers.start_time, &timers.total_time);
     // Report the execution info (only by rank 0)
     if(rank == 0){
-        if(write_execution_info(inputParams.benchmarks_filename, size, &metadata, &timers) != 0){
-            fprintf(stderr, "Failed to write execution info to file\n");
-            MPI_Abort(MPI_COMM_WORLD, 1);
+        if(inputParams.benchmarks_filename){
+            if(write_execution_info(inputParams.benchmarks_filename, size, &metadata, &timers) != 0){
+                fprintf(stderr, "Failed to write benchmarks info to file: %s\n", inputParams.benchmarks_filename);
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
         }
     }
-
+    
     // Free all the allocated memory
     safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&cluster_acc,&local_gamma);
     free_accumulators(&local_cluster_acc);

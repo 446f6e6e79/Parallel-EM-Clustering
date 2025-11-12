@@ -60,7 +60,7 @@ typedef struct
 } Timers_t;
 
 /*
-
+    Structure to hold input parameters
 */
 typedef struct {
     // Path to the input file containing the dataset

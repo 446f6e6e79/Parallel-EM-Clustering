@@ -129,7 +129,14 @@ This script:
 - Submits them via `qsub` to the job queue of the cluster.
 
 ---
-### Tesing the correctness of the parallel version
+### 4. Testing the correctness of the parallel version
+During the development of the parallel version of our application, we needed to ensure that its results remained consistent with those of the serial version.
+
+To achieve this, we created a dedicated test dataset suite, allowing us to perform reproducible correctness checks between the two implementations.
+These test datasets can be generated at any time using the following command:
+```bash
+./scripts/dataset_generator.sh --mode test
+```
 
 ## Outputs
 
