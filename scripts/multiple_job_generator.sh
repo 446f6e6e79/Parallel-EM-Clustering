@@ -4,7 +4,7 @@
 BASE_DIR="$HOME/Parallel-EM-Clustering"
 WALLTIME="06:00:00"
 QUEUE="short_cpuQ"
-MEM="16gb"
+MEM="64gb"
 PLACEMENT="pack:excl"
 EXECUTABLE="${BASE_DIR}/bin/EM_Clustering"
 TEMPLATE="${BASE_DIR}/scripts/job_template.sh"

@@ -1,10 +1,10 @@
 # MPI compiler and flags
 MPICC    ?= mpicc
-CFLAGS   ?= -std=gnu11 -O2 -Wall -Wextra -I./src -D_GNU_SOURCE
+CFLAGS   ?= -std=gnu11 -O2 -Wall -Wextra -I./src -I./src/headers -D_GNU_SOURCE
 LDFLAGS  ?= -lm
 
 # Commons source codes
-COMMON_SRC := src/io_utils.c src/utils.c src/em_algorithm.c src/mpi_utils.c
+COMMON_SRC := src/io_utils.c src/utils.c src/em_algorithm.c src/mpi_utils.c 
 
 # Directory for objects and dependencies
 OBJDIR := src/obj

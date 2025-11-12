@@ -63,14 +63,11 @@ int read_dataset(const char *filename, int num_features, int num_samples,  int m
     Parameters:
         - metadata_filename: Path to the metadata file.
     Output parameters:
-        - samples*: Pointer to store the number of samples.
-        - features*: Pointer to store the number of features.
-        - clusters*: Pointer to store the number of clusters.
-        - max_line_size*: Pointer to store the maximum line size.
+        - metadata: Struct containing number of samples, number of features, number of clusters and max line size
     Returns:
         0 on success, -1 on failure.
 */
-int read_metadata(const char *metadata_filename, int *samples, int *features, int *clusters, int *max_line_size) {
+int read_metadata(const char *metadata_filename, Metadata *metadata) {
     // Open the metadata file
     FILE *meta_fp = fopen(metadata_filename, "r");
     if(!meta_fp){
@@ -81,15 +78,15 @@ int read_metadata(const char *metadata_filename, int *samples, int *features, in
     // Read metadata lines
     char line[READING_BUFFER_SIZE];
     while(fgets(line, sizeof(line), meta_fp) != NULL) {
-        if(sscanf(line, "samples: %d", samples) == 1) continue;
-        if(sscanf(line, "features: %d", features) == 1) continue;
-        if(sscanf(line, "clusters: %d", clusters) == 1) continue;
-        if(sscanf(line, "max_line_size: %d", max_line_size) == 1) continue;
+        if(sscanf(line, "samples: %d", &metadata->N) == 1) continue;
+        if(sscanf(line, "features: %d", &metadata->D) == 1) continue;
+        if(sscanf(line, "clusters: %d", &metadata->K) == 1) continue;
+        if(sscanf(line, "max_line_size: %d", &metadata->max_line_size) == 1) continue;
     }
 
     fclose(meta_fp);
     // Check that all metadata values were correctly read and valid
-    if(*samples <= 0 || *features <= 0 || *clusters <= 0 || *max_line_size<=0) return -1;
+    if(metadata->N <= 0 || metadata->D <= 0 || metadata->K <= 0 || metadata->max_line_size<=0) return -1;
     return 0;
 }
 
