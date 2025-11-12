@@ -1,6 +1,19 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+/*
+    Metadata structure to hold dataset parameters
+*/
+typedef struct {
+    int N;                              // Number of samples
+    int D;                              // Number of features
+    int K;                              // Number of clusters
+    int max_line_size;                  // Maximum number of character in a line in the dataset file
+} Metadata;
+
+/*
+    Timers structure to keep track of different execution times
+*/
 typedef struct
 {
     // Total execution time of the program
@@ -27,12 +40,5 @@ typedef struct
     double m_step_start;
     double m_step_time;
 } Timers_t;
-
-typedef struct {
-    int N;                              // Number of samples
-    int D;                              // Number of features
-    int K;                              // Number of clusters
-    int max_line_size;                  // Maximum number of character in a line in the dataset file
-} Metadata;
 
 #endif

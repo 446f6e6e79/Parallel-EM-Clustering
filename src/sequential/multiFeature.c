@@ -8,10 +8,7 @@
     Usage: ./program <dataset_file> <metadata_file> [output_labels_file]
 */
 int main(int argc, char **argv) { 
-    int N;                              // Number of samples
-    int D;                              // Number of features
-    int K;                              // Number of clusters
-    int max_line_size;                  // Maximum number of character in a line in the dataset file
+    Metadata metadata;                      // Contains number of samples, number of features, number of clusters and max line size
     
     double *X = NULL;                   // X[N * D] Vector of data points
     double *mu = NULL;                  // mu[k * D] Vector of feature means per cluster; mu[k * D + d] is the mean of feature d for cluster k
@@ -26,10 +23,9 @@ int main(int argc, char **argv) {
     int *predicted_labels = NULL;       // Predicted cluster labels
     int *ground_truth_labels = NULL;    // Ground truth labels
 
-
     // Check command line arguments
     if(argc < 3 || argc > 4){
-        fprintf(stderr, "Usage: %s <dataset_file> <metadata_file> <execution_info_file> [output_labels_file]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <dataset_file> <metadata_file> [output_labels_file]\n", argv[0]);
         return 1;
     }
     if(argv[1] == NULL || argv[2] == NULL || (argc > 3 && argv[3] == NULL)){
@@ -37,32 +33,30 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-
     // Get filenames from arguments
     const char *filename = argv[1];
     const char *metadata_filename = argv[2];
-    const char *output_labels_file = (argc > 4) ? argv[4] : NULL;
+    const char *output_labels_file = (argc > 3) ? argv[3] : NULL;
 
-    // Read metadata from metadata file
-    int meta_status = read_metadata(metadata_filename, &N, &D, &K, &max_line_size);
+    // Read metadata from metadata file into Metadata struct
+    int meta_status = read_metadata(metadata_filename, &metadata);
     if(meta_status != 0){
         fprintf(stderr, "Failed to read metadata from file: %s\n", metadata_filename);
         return 1;
     }
-    printf("Metadata: samples N=%d, features D=%d, clusters K=%d\n", N, D, K);
+    printf("Metadata: samples N=%d, features D=%d, clusters K=%d\n", metadata.N, metadata.D, metadata.K);
     
-
     // Allocate buffers
-    X = malloc(N * D * sizeof(double));
-    predicted_labels = malloc(N * sizeof(int));
-    ground_truth_labels = malloc(N * sizeof(int));
-    mu = malloc(K * D * sizeof(double)); 
-    sigma = malloc(K * D * sizeof(double)); 
-    pi = malloc(K * sizeof(double));
-    gamma = malloc(N * K * sizeof(double));
-    N_k = malloc((size_t)K * sizeof(double));              
-    mu_k = malloc((size_t)K * D * sizeof(double));   
-    sigma_k = malloc((size_t)K * D * sizeof(double));     
+    X = malloc(metadata.N * metadata.D * sizeof(double));
+    predicted_labels = malloc(metadata.N * sizeof(int));
+    ground_truth_labels = malloc(metadata.N * sizeof(int));
+    mu = malloc(metadata.K * metadata.D * sizeof(double)); 
+    sigma = malloc(metadata.K * metadata.D * sizeof(double)); 
+    pi = malloc(metadata.K * sizeof(double));
+    gamma = malloc(metadata.N * metadata.K * sizeof(double));
+    N_k = malloc((size_t)metadata.K * sizeof(double));              
+    mu_k = malloc((size_t)metadata.K * metadata.D * sizeof(double));   
+    sigma_k = malloc((size_t)metadata.K * metadata.D * sizeof(double));     
 
     // Check that all allocations were successful
     if(!X || !predicted_labels || !ground_truth_labels || !mu || !sigma || !pi || !gamma || !N_k || !mu_k || !sigma_k){
@@ -72,7 +66,7 @@ int main(int argc, char **argv) {
     }   
 
     // Read dataset
-    if(read_dataset(filename, D, N, max_line_size, X, ground_truth_labels) != 0){
+    if(read_dataset(filename, &metadata, X, ground_truth_labels) != 0){
         fprintf(stderr, "Failed to read dataset from file: %s\n", filename);
         safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&mu,&sigma,&pi,&gamma,&N_k,&mu_k,&sigma_k);
         return 1;
@@ -80,7 +74,7 @@ int main(int argc, char **argv) {
     
 
     // Initialize parameters
-    init_params(X, N, D, K, mu, sigma, pi);
+    init_params(X, &metadata, mu, sigma, pi);
     
     /*
         EM loop
@@ -88,21 +82,20 @@ int main(int argc, char **argv) {
     */
     for (int iter = 0; iter < MAX_ITER; iter++) {
         // E-step
-        e_step(X, N, D, K, mu, sigma, pi, gamma);
+        e_step(X, metadata.N, &metadata, mu, sigma, pi, gamma);
 
         // M-step
-        m_step(X, N, D, K, gamma,  mu, sigma, pi, N_k, mu_k, sigma_k);
+        m_step(X, &metadata, gamma,  mu, sigma, pi, N_k, mu_k, sigma_k);
     }
     
     // Compute predicted labels from responsibilities
-    compute_clustering(gamma, N, K, predicted_labels);    
-
+    compute_clustering(gamma, metadata.N, metadata.K, predicted_labels);    
     // Print final parameters 
-    debug_print_cluster_params(K, D, mu, sigma, pi);
+    debug_print_cluster_params(&metadata, mu, sigma, pi);
 
     // Write final cluster assignments to file to validate
     if (output_labels_file){
-        int write_status = write_labels_info(output_labels_file, predicted_labels, ground_truth_labels, N);
+        int write_status = write_labels_info(output_labels_file, predicted_labels, ground_truth_labels, metadata.N);
         if(write_status != 0){
             fprintf(stderr, "Failed to write labels to file: %s\n", output_labels_file);
         }
