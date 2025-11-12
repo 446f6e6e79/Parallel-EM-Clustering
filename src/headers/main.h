@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "em_algorithm.h"
 #include "mpi_utils.h"
+#include "types.h"
 
 int main(int argc, char **argv);
 

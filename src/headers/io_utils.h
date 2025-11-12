@@ -10,6 +10,7 @@
 #include <math.h>
 
 #include "utils.h"
+#include "types.h"
 
 #define READING_BUFFER_SIZE 256
 
