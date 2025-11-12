@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <mpi.h>
@@ -19,4 +20,5 @@ void safe_cleanup_local(double **local_N_k, double **local_mu_k, double **local_
 void start_timer(double *t);
 void stop_timer(double *t, double *accumulator);
 void initialize_timers(Timers_t *timers);
+int parseParameter(int argc, char **argv, InputParams_t *inputParams);
 #endif

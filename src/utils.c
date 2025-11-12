@@ -118,3 +118,47 @@ void initialize_timers(Timers_t *timers) {
     timers->m_step_time = 0.0;
     timers->data_distribution_time = 0.0;
 }
+
+/*
+    Parse the parameters of the program.
+    Parameters:
+        - argc: number of command line arguments
+        - argv: array of command line arguments. The allowed arguments are:
+            - -i <fileName>: input dataset file (required)
+            - -m <fileName>: metadata file (required)
+            - -b <fileName>: benchmarks output file (optional)
+            - -o <fileName>: predicted labels output file (optional)
+    Output:
+        - inputParams: struct containing the parsed parameters
+    Returns:
+        - 0 on success, -1 on failure
+*/
+int parseParameter(int argc, char **argv, InputParams_t *inputParams) {
+    int opt;
+    while ((opt = getopt(argc, argv, "i:m:b:o:")) != -1) {
+        switch (opt) {
+        case 'i':
+            inputParams->dataset_filename = optarg;
+            break;
+        case 'm':
+            inputParams->metadata_filename = optarg;
+            break;
+        case 'b':
+            inputParams->benchmarks_filename = optarg;
+            break;
+        case 'o':
+            inputParams->output_filename = optarg;
+            break;
+        // If an unknown option is provided print the usage
+        default:
+            fprintf(stderr, "Usage: %s -i input_file -m metadata_file -b benchmarks_file -o output_file\n", argv[0]);
+            return -1;
+        }
+    }
+    // Check for required parameters
+    if (inputParams->dataset_filename == NULL || inputParams->metadata_filename == NULL) {
+        fprintf(stderr, "Usage: %s -i input_file -m metadata_file -b benchmarks_file -o output_file\n", argv[0]);
+        return -1;
+    }
+    return 0;
+}

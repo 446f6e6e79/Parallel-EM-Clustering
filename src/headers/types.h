@@ -50,4 +50,18 @@ typedef struct
     double m_step_time;
 } Timers_t;
 
+/*
+
+*/
+typedef struct {
+    // Path to the input file containing the dataset
+    const char *dataset_filename;
+    // Path to the metadata file
+    const char *metadata_filename;
+    // Path to the output file containing execution information (optional)
+    const char *benchmarks_filename;
+    // Path to the output file for predicted labels (optional)
+    const char *output_filename;
+} InputParams_t;
+
 #endif
