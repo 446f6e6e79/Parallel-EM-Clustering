@@ -17,5 +17,5 @@
 int read_metadata(const char *meta_data_file_path, Metadata *metadata);
 int read_dataset(const char *filename, Metadata *metadata, double *examples_buffer, int *labels_buffer);
 int write_execution_info(const char *filename, int n_process, Metadata *metadata, Timers_t *timers);
-int write_labels_info(const char *filename, double *X, int *predicted_labels, int *real_labels, Metadata *metadata, ClusterParams *cluster_params, int iteration);
+int write_labels_info(const char *filename, double *X, int *predicted_labels, int *real_labels, Metadata *metadata, ClusterParams *cluster_params, int iteration, char mode);
 #endif

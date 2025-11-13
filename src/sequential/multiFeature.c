@@ -75,6 +75,12 @@ int main(int argc, char **argv) {
         // M-step
         m_step(X, &metadata, &cluster_params, &cluster_acc, gamma);
 
+        // Write to the debug file intermediate results if debug file path is provided
+        if(inputParams.debug_file_path){
+            compute_clustering(gamma, metadata.N, metadata.K, predicted_labels);    
+            write_labels_info(inputParams.debug_file_path, X, predicted_labels, ground_truth_labels, &metadata, &cluster_params, iter, 'a');
+        }
+        
         // Compute log-likelihood for convergence check (if threshold is set)
         if (inputParams.threshold > 0.0) {
             if(check_convergence(&prev_log_likelihood, &curr_log_likelihood, inputParams.threshold)) {
@@ -91,7 +97,7 @@ int main(int argc, char **argv) {
 
     // Write final cluster assignments to file to validate
     if (inputParams.output_file_path){
-        int write_status = write_labels_info(inputParams.output_file_path, X, predicted_labels, ground_truth_labels, &metadata, &cluster_params, MAX_ITER);
+        int write_status = write_labels_info(inputParams.output_file_path, X, predicted_labels, ground_truth_labels, &metadata, &cluster_params, MAX_ITER, 'w');
         if(write_status != 0){
             fprintf(stderr, "Failed to write labels to file: %s\n", inputParams.output_file_path);
         }

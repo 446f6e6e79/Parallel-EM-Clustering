@@ -166,9 +166,9 @@ def clustering_accuracy(csv_file):
     """
     # Read the CSV file
     df = pd.read_csv(csv_file)
-    y_pred = df['predicted'].to_numpy()
-    y_true = df['real'].to_numpy()
-    
+    y_pred = df['predicted_cluster'].to_numpy()
+    y_true = df['real_cluster'].to_numpy()
+
     # Build confusion matrix
     cm = confusion_matrix(y_true, y_pred)
     

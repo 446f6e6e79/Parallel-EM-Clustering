@@ -169,7 +169,7 @@ int parseParameter(int argc, char **argv, InputParams_t *inputParams) {
             break;
         // If an unknown option is provided print the usage
         default:
-            fprintf(stderr, "Usage: %s -i input_file -m metadata_file -b benchmarks_file -o output_file\n", argv[0]);
+            fprintf(stderr, "Usage: %s -i input_file -m metadata_file -b benchmarks_file -o output_file -d debug_file -t threshold\n", argv[0]);
             return -1;
         }
     }

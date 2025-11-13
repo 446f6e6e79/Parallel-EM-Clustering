@@ -189,7 +189,7 @@ int main(int argc, char **argv) {
         debug_print_cluster_params(&metadata, &cluster_params);
         // Write final cluster assignments to file to validate
         if (inputParams.output_file_path){
-            if(write_labels_info(inputParams.output_file_path, X, predicted_labels, ground_truth_labels, &metadata, &cluster_params, MAX_ITER) != 0){
+            if(write_labels_info(inputParams.output_file_path, X, predicted_labels, ground_truth_labels, &metadata, &cluster_params, MAX_ITER, 'w') != 0){
                 fprintf(stderr, "Failed to write labels to file: %s\n", inputParams.output_file_path);
             }
         }

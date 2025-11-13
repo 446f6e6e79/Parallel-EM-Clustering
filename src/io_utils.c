@@ -150,7 +150,7 @@ int write_execution_info(const char *filename, int n_process, Metadata *metadata
 }
 
 /*
-    Write predicted and real labels to a CSV file for validation.
+    Write predicted and real labels to a CSV file for validation, in the the specified mode.
     The CSV file will have the following format:
         feature_1, ..., feature_D, real_cluster, predicted_cluster, mu_1, ..., mu_D, sigma_1, ..., sigma_D, pi, iteration
 
@@ -160,30 +160,36 @@ int write_execution_info(const char *filename, int n_process, Metadata *metadata
         - real_labels: Array of real labels.
         - metadata: Metadata structure containing dataset information.
         - cluster_params: Cluster parameters structure containing cluster information.
-
+        - iteration: Current iteration number.
+        - mode: 'w' to write (overwrite) or 'a' to append to the file.
     Returns:
         0 on success, -1 on failure.
 */
-int write_labels_info(const char *filename, double *X, int *predicted_labels, int *real_labels, Metadata *metadata, ClusterParams *cluster_params, int iteration) {
-    // Open the file for writing
-    FILE *f = fopen(filename, "w");
+int write_labels_info(const char *filename, double *X, int *predicted_labels, int *real_labels, Metadata *metadata, ClusterParams *cluster_params, int iteration, char mode) {
+    // Open the file in the specified mode
+    FILE *f = fopen(filename, mode == 'a' ? "a" : "w");
     if(!f){
         perror("fopen");
         return -1;
     }
-    // Write the CSV header to the file
-    for(int d = 0; d < metadata->D; d++){
-        fprintf(f, "feature_%d,", d+1);
+    // Get the size of the file
+    fseek(f, 0, SEEK_END);
+    long file_size = ftell(f);
+    
+    // If the file is empty, write the header
+    if (file_size == 0) {
+        for(int d = 0; d < metadata->D; d++){
+            fprintf(f, "feature_%d,", d+1);
+        }
+        fprintf(f, "real_cluster,predicted_cluster,");
+        for(int d = 0; d < metadata->D; d++){
+            fprintf(f, "mu_k_%d,sigma_k_%d,", d+1, d+1);
+        }
+        fprintf(f, "pi_k,iteration\n");
     }
-    //TODO: check the python script to compute the accuracy if the column names should be updated
-    fprintf(f, "real_cluster,predicted_cluster,");
-    for(int k = 0; k < metadata->K; k++){
-        fprintf(f, "mu_%d,sigma_%d,", k+1, k+1);
-    }
-    fprintf(f, "pi,iteration\n");
 
     // For each sample, write features, predicted label, real label, and cluster parameters
-    for(int i=0; i<metadata->N; i++){
+    for(int i = 0; i < metadata->N; i++){
         // Write features
         for(int d = 0; d < metadata->D; d++){
             fprintf(f, "%f,", X[i * metadata->D + d]);
