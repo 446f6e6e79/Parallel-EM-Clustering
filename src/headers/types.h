@@ -15,9 +15,9 @@ typedef struct {
     Cluster parameters structure
 */
 typedef struct {
-    double *mu;                         // mu[k * D] = Mean of cluster k for each feature
-    double *sigma;                      // sigma[k * D] = Variance of cluster k for each feature
-    double *pi;                         // pi[k] = Mixture weight of cluster k
+    double *mu;                         // mu[k * D] = Mean of cluster k for each feature. mu[k * D + d] is the mean of feature d of cluster k
+    double *sigma;                      // sigma[k * D] = Variance of cluster k for each feature. sigma[k * D + d] is the variance of feature d of cluster k
+    double *pi;                         // pi[k] = Mixture weight of cluster k. pi[k] is the mixture weight of cluster k
 } ClusterParams;
 
 /*
@@ -64,13 +64,18 @@ typedef struct
 */
 typedef struct {
     // Path to the input file containing the dataset
-    const char *dataset_filename;
+    const char *dataset_file_path;
     // Path to the metadata file
-    const char *metadata_filename;
+    const char *meta_data_file_path;
     // Path to the output file containing execution information (optional)
-    const char *benchmarks_filename;
+    const char *benchmarks_file_path;
     // Path to the output file for predicted labels (optional)
-    const char *output_filename;
+    const char *output_file_path;
+    // Path to the debug information file (optional)
+    const char *debug_file_path;
+    // Convergence threshold (optional)
+    //TODO: implement threshold stopping in the main loop
+    double threshold;
 } InputParams_t;
 
 #endif

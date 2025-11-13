@@ -131,6 +131,8 @@ void initialize_timers(Timers_t *timers) {
             - -m <fileName>: metadata file (required)
             - -b <fileName>: benchmarks output file (optional)
             - -o <fileName>: predicted labels output file (optional)
+            - -d <fileName>: debug information file (optional)
+            - -t <value>: convergence threshold (optional)
     Output:
         - inputParams: struct containing the parsed parameters
     Returns:
@@ -139,24 +141,32 @@ void initialize_timers(Timers_t *timers) {
 int parseParameter(int argc, char **argv, InputParams_t *inputParams) {
     int opt;
     // Initialize all parameters to NULL
-    inputParams->dataset_filename = NULL;
-    inputParams->metadata_filename = NULL;
-    inputParams->benchmarks_filename = NULL;
-    inputParams->output_filename = NULL;
-    
-    while ((opt = getopt(argc, argv, "i:m:b:o:")) != -1) {
+    inputParams->dataset_file_path = NULL;
+    inputParams->meta_data_file_path = NULL;
+    inputParams->benchmarks_file_path = NULL;
+    inputParams->output_file_path = NULL;
+    inputParams->debug_file_path = NULL;
+    inputParams->threshold = 0.0;
+
+    while ((opt = getopt(argc, argv, "i:m:b:o:d:t:")) != -1) {
         switch (opt) {
         case 'i':
-            inputParams->dataset_filename = optarg;
+            inputParams->dataset_file_path = optarg;
             break;
         case 'm':
-            inputParams->metadata_filename = optarg;
+            inputParams->meta_data_file_path = optarg;
             break;
         case 'b':
-            inputParams->benchmarks_filename = optarg;
+            inputParams->benchmarks_file_path = optarg;
             break;
         case 'o':
-            inputParams->output_filename = optarg;
+            inputParams->output_file_path = optarg;
+            break;
+        case 'd':
+            inputParams->debug_file_path = optarg;
+            break;
+        case 't':
+            inputParams->threshold = atof(optarg);
             break;
         // If an unknown option is provided print the usage
         default:
@@ -165,7 +175,7 @@ int parseParameter(int argc, char **argv, InputParams_t *inputParams) {
         }
     }
     // Check for required parameters
-    if (inputParams->dataset_filename == NULL || inputParams->metadata_filename == NULL) {
+    if (inputParams->dataset_file_path == NULL || inputParams->meta_data_file_path == NULL) {
         fprintf(stderr, "Usage: %s -i input_file -m metadata_file -b benchmarks_file -o output_file\n", argv[0]);
         return -1;
     }

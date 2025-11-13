@@ -55,9 +55,9 @@ int main(int argc, char **argv) {
     // Read metadata from metadata file (only by rank 0)
     start_timer(&timers.io_start);
     if (rank == 0) {
-        int meta_status = read_metadata(inputParams.metadata_filename, &metadata);
+        int meta_status = read_metadata(inputParams.meta_data_file_path, &metadata);
         if(meta_status != 0){
-            fprintf(stderr, "Failed to read metadata from file: %s\n", inputParams.metadata_filename);
+            fprintf(stderr, "Failed to read metadata from file: %s\n", inputParams.meta_data_file_path);
             MPI_Abort(MPI_COMM_WORLD,1);
         }
         printf("Metadata: samples N=%d, features D=%d, clusters K=%d\n", metadata.N, metadata.D, metadata.K);
@@ -97,8 +97,8 @@ int main(int argc, char **argv) {
     // Read dataset (only by rank 0)
     start_timer(&timers.io_start);
     if(rank == 0){
-        if(read_dataset(inputParams.dataset_filename, &metadata, X, ground_truth_labels) != 0){
-            fprintf(stderr, "Failed to read dataset from file: %s\n", inputParams.dataset_filename);
+        if(read_dataset(inputParams.dataset_file_path, &metadata, X, ground_truth_labels) != 0){
+            fprintf(stderr, "Failed to read dataset from file: %s\n", inputParams.dataset_file_path);
             safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&cluster_acc,&local_gamma);
             MPI_Abort(MPI_COMM_WORLD,1);
         }
@@ -138,6 +138,7 @@ int main(int argc, char **argv) {
         The loop runs until MAX_ITER is reached
     */
    start_timer(&timers.compute_start);
+    //TODO: add check for early stopping if defined
     for (int iter = 0; iter < MAX_ITER; iter++) {
         // E-step
         start_timer(&timers.e_step_start);
@@ -148,6 +149,7 @@ int main(int argc, char **argv) {
         start_timer(&timers.m_step_start);
         m_step_parallelized(local_X, local_N, &metadata, local_gamma, &cluster_params, &cluster_acc, &local_cluster_acc, rank);
         stop_timer(&timers.m_step_start, &timers.m_step_time);
+        //TODO: add call to debug intermidiate results
     }
     
     // Compute local predicted labels from responsibilities
@@ -163,9 +165,9 @@ int main(int argc, char **argv) {
         // Print final parameters 
         debug_print_cluster_params(&metadata, &cluster_params);
         // Write final cluster assignments to file to validate
-        if (inputParams.output_filename){
-            if(write_labels_info(inputParams.output_filename, predicted_labels, ground_truth_labels, metadata.N) != 0){
-                fprintf(stderr, "Failed to write labels to file: %s\n", inputParams.output_filename);
+        if (inputParams.output_file_path){
+            if(write_labels_info(inputParams.output_file_path, X, predicted_labels, ground_truth_labels, &metadata, &cluster_params, MAX_ITER) != 0){
+                fprintf(stderr, "Failed to write labels to file: %s\n", inputParams.output_file_path);
             }
         }
     }
@@ -175,9 +177,9 @@ int main(int argc, char **argv) {
     stop_timer(&timers.start_time, &timers.total_time);
     // Report the execution info (only by rank 0)
     if(rank == 0){
-        if(inputParams.benchmarks_filename){
-            if(write_execution_info(inputParams.benchmarks_filename, size, &metadata, &timers) != 0){
-                fprintf(stderr, "Failed to write benchmarks info to file: %s\n", inputParams.benchmarks_filename);
+        if(inputParams.benchmarks_file_path){
+            if(write_execution_info(inputParams.benchmarks_file_path, size, &metadata, &timers) != 0){
+                fprintf(stderr, "Failed to write benchmarks info to file: %s\n", inputParams.benchmarks_file_path);
                 MPI_Abort(MPI_COMM_WORLD, 1);
             }
         }

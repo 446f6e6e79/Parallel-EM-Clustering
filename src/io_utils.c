@@ -62,15 +62,15 @@ int read_dataset(const char *filename, Metadata *metadata, double *examples_buff
         clusters: <number_of_clusters>
 
     Parameters:
-        - metadata_filename: Path to the metadata file.
+        - meta_data_file_path: Path to the metadata file.
     Output parameters:
         - metadata: Struct containing number of samples, number of features, number of clusters and max line size
     Returns:
         0 on success, -1 on failure.
 */
-int read_metadata(const char *metadata_filename, Metadata *metadata) {
+int read_metadata(const char *meta_data_file_path, Metadata *metadata) {
     // Open the metadata file
-    FILE *meta_fp = fopen(metadata_filename, "r");
+    FILE *meta_fp = fopen(meta_data_file_path, "r");
     if(!meta_fp){
         fprintf(stderr, "Error opening metadata file \n");
         return -1;
@@ -151,30 +151,51 @@ int write_execution_info(const char *filename, int n_process, Metadata *metadata
 
 /*
     Write predicted and real labels to a CSV file for validation.
-    The CSV file will have two columns: "predicted" and "real".
+    The CSV file will have the following format:
+        feature_1, ..., feature_D, real_cluster, predicted_cluster, mu_1, ..., mu_D, sigma_1, ..., sigma_D, pi, iteration
 
     Parameters:
         - filename: Path to the output CSV file.
         - predicted_labels: Array of predicted cluster labels.
         - real_labels: Array of real labels.
-        - num_samples: Number of samples (length of the label arrays).
+        - metadata: Metadata structure containing dataset information.
+        - cluster_params: Cluster parameters structure containing cluster information.
 
     Returns:
         0 on success, -1 on failure.
 */
-int write_labels_info(const char *filename, int *predicted_labels, int *real_labels, int num_samples){
+int write_labels_info(const char *filename, double *X, int *predicted_labels, int *real_labels, Metadata *metadata, ClusterParams *cluster_params, int iteration) {
     // Open the file for writing
     FILE *f = fopen(filename, "w");
     if(!f){
         perror("fopen");
         return -1;
     }
-    // Print CSV header
-    fprintf(f, "predicted,real\n");
+    // Write the CSV header to the file
+    for(int d = 0; d < metadata->D; d++){
+        fprintf(f, "feature_%d,", d+1);
+    }
+    //TODO: check the python script to compute the accuracy if the column names should be updated
+    fprintf(f, "real_cluster,predicted_cluster,");
+    for(int k = 0; k < metadata->K; k++){
+        fprintf(f, "mu_%d,sigma_%d,", k+1, k+1);
+    }
+    fprintf(f, "pi,iteration\n");
 
-    // Write each label pair
-    for(int i=0; i<num_samples; i++){
-        fprintf(f, "%d,%d\n", predicted_labels[i], real_labels[i]);
+    // For each sample, write features, predicted label, real label, and cluster parameters
+    for(int i=0; i<metadata->N; i++){
+        // Write features
+        for(int d = 0; d < metadata->D; d++){
+            fprintf(f, "%f,", X[i * metadata->D + d]);
+        }
+        // Write predicted and real labels
+        fprintf(f, "%d,%d,", real_labels[i], predicted_labels[i]);
+        // Write cluster parameters of the predicted cluster
+        int k = predicted_labels[i];
+        for(int d = 0; d < metadata->D; d++){
+            fprintf(f, "%f,%f,", cluster_params->mu[k * metadata->D + d], cluster_params->sigma[k * metadata->D + d]);
+        }
+        fprintf(f, "%f,%d\n", cluster_params->pi[k], iteration);
     }
     fclose(f);
     return 0;
