@@ -35,7 +35,19 @@ for run in {1..3}; do
 
   for DATA_DIR in "${DATASETS[@]}"; do
     dataset_name=$(basename "$DATA_DIR")
-    PARAMETERS="-i ${DATA_DIR}/em_dataset.csv -m ${DATA_DIR}/em_metadata.txt -b $BASE_DIR/data/execution_info.csv"
+    
+    # Define the needed file parameters path
+    input="${DATA_DIR}/em_dataset.csv"
+    meta="${DATA_DIR}/em_metadata.txt"
+    info="$BASE_DIR/data/execution_info.csv"
+    
+    # Check if the all input file exists
+    if [ ! -f "$input" ] || [ ! -f "$meta" ] || [ ! -f "$info" ]; then
+      echo "Missing required file(s) for $dataset_name — skipping"
+      continue
+    fi
+
+    PARAMETERS="-i $input -m $meta -b $info"
 
     # Skip if any required file is missing
     missing=false

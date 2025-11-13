@@ -3,8 +3,14 @@ MPICC    ?= mpicc
 CFLAGS   ?= -std=gnu11 -O2 -Wall -Wextra -I./src -I./src/headers -D_GNU_SOURCE
 LDFLAGS  ?= -lm
 
+# Enable debug mode if DEBUG=1 is passed
+DEBUG ?= 0
+ifeq ($(DEBUG),1)
+  CFLAGS += -DDEBUG
+endif
+
 # Commons source codes
-COMMON_SRC := src/io_utils.c src/utils.c src/em_algorithm.c src/mpi_utils.c 
+COMMON_SRC := src/io_utils.c src/utils.c src/em_algorithm.c src/mpi_utils.c src/debug.c
 
 # Directory for objects and dependencies
 OBJDIR := src/obj
@@ -22,8 +28,6 @@ TARGET_SEQ := bin/EM_Sequential
 LIB_NAME   := libem.a
 LIB_PATH   := bin/$(LIB_NAME)
 
-
-
 # Objects files
 OBJ_COMMON := $(COMMON_SRC:src/%.c=$(OBJDIR)/%.o)
 OBJ_MPI    := $(MPI_MAIN:src/%.c=$(OBJDIR)/%.o)
@@ -34,7 +38,7 @@ DEPS_COMMON := $(COMMON_SRC:src/%.c=$(DEPDIR)/%.d)
 DEPS_MPI    := $(MPI_MAIN:src/%.c=$(DEPDIR)/%.d)
 DEPS_SEQ    := $(SEQ_MAIN:src/%.c=$(DEPDIR)/%.d)
 
-.PHONY: all mpi sequential clean
+.PHONY: all mpi sequential clean debug sequential-debug
 
 # Default: build MPI parallel version
 all: mpi
@@ -42,6 +46,13 @@ all: mpi
 mpi: $(TARGET_MPI)
 
 sequential: $(LIB_PATH) $(TARGET_SEQ)
+
+# Target comodi per build in debug
+debug:
+	@$(MAKE) DEBUG=1 mpi
+
+sequential-debug:
+	@$(MAKE) DEBUG=1 sequential
 
 # Static library
 $(LIB_PATH): $(OBJ_COMMON)

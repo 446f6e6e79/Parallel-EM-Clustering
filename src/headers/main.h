@@ -9,6 +9,7 @@
 #include "em_algorithm.h"
 #include "mpi_utils.h"
 #include "types.h"
+#include "debug.h"
 
 int main(int argc, char **argv);
 

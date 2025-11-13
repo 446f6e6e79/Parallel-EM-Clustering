@@ -26,6 +26,8 @@ make sequential
 ```
 The executable will be generated at `bin/EM_Sequential`
 
+#### Debug Mode
+
 ---
 
 ### 2. Generating the Input Data
