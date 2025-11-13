@@ -1,5 +1,4 @@
 #include "headers/em_algorithm.h"
-
 /*
     Multivariate Gaussian probability density function with diagonal covariance matrix.
     p(x | mu, Sigma_diag) =
@@ -334,10 +333,9 @@ int check_convergence(double prev_log_likelihood, double *curr_log_likelihood, i
     // Compute absolute difference between current and previous log-likelihood
     double diff = fabs(*curr_log_likelihood - prev_log_likelihood);
 
-    // If threshold is set and convergence criterion is met, return 1 (converged)
-    if (threshold > 0.0 && diff < threshold) {
-        printf("Converged with log-likelihood: %.8lf\n", *curr_log_likelihood);
-        return 1;   // Converged
-    }
-    return 0;       // Not converged
+    // If convergence criterion is met, return 1 (converged)
+    if (diff < threshold) return 1;
+
+    // Otherwise, return 0 (not converged)
+    return 0;       
 }

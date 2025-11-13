@@ -44,9 +44,9 @@ COMBOS=(
 
 # Each line: n_examples n_features n_clusters mean1 mean2 mean3
 TESTING_COMBOS=(
-  "200 1 3 30 -30 0"
-  "200 1 2 30 -30"
-  "200 2 3 30,0 30,-30 0,30"
+  "2000 1 3 30 -30 0"
+  "2000 1 2 30 -30"
+  "10000 2 3 30,0 30,-30 0,30"
 )
 
 # === Main logic ===

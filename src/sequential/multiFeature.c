@@ -77,7 +77,8 @@ int main(int argc, char **argv) {
         // Compute log-likelihood for convergence check (if threshold is set)
         if (inputParams.threshold > 0.0) {
             if (check_convergence(prev_log_likelihood, &curr_log_likelihood, inputParams.threshold, X, &metadata, &cluster_params)) {
-                break; // Converged
+                debug_println("Convergence reached at iteration %d with log-likelihood: %.8lf", iter + 1, curr_log_likelihood);
+                break;
             }
             prev_log_likelihood = curr_log_likelihood;
         }

@@ -9,20 +9,6 @@ ifeq ($(DEBUG),1)
   CFLAGS += -DDEBUG
 endif
 
-# Binary suffix based on debug mode
-BIN_SUFFIX := $(if $(filter 1,$(DEBUG)),_debug,)
-
-# Base names
-BASE_TARGET_MPI := EM_Clustering
-BASE_TARGET_SEQ := EM_Sequential
-BASE_LIB_NAME   := libem
-
-# Final paths
-TARGET_MPI := bin/$(BASE_TARGET_MPI)$(BIN_SUFFIX)
-TARGET_SEQ := bin/$(BASE_TARGET_SEQ)$(BIN_SUFFIX)
-LIB_NAME   := $(BASE_LIB_NAME)$(BIN_SUFFIX).a
-LIB_PATH   := bin/$(LIB_NAME)
-
 # Commons source codes
 COMMON_SRC := src/io_utils.c src/utils.c src/em_algorithm.c src/mpi_utils.c src/debug.c
 
@@ -31,9 +17,16 @@ OBJDIR := src/obj
 DEPDIR := src/dep
 
 # parallel main version
-MPI_MAIN := src/main.c
+MPI_MAIN   := src/main.c
+TARGET_MPI := bin/EM_Clustering
+
 # sequential main version
-SEQ_MAIN := src/sequential/multiFeature.c
+SEQ_MAIN   := src/sequential/multiFeature.c
+TARGET_SEQ := bin/EM_Sequential
+
+# Libreria statica
+LIB_NAME   := libem.a
+LIB_PATH   := bin/$(LIB_NAME)
 
 # Objects files
 OBJ_COMMON := $(COMMON_SRC:src/%.c=$(OBJDIR)/%.o)
@@ -47,13 +40,14 @@ DEPS_SEQ    := $(SEQ_MAIN:src/%.c=$(DEPDIR)/%.d)
 
 .PHONY: all mpi sequential clean debug sequential-debug
 
-# Default: build MPI
+# Default: build MPI parallel version
 all: mpi
 
 mpi: $(TARGET_MPI)
 
 sequential: $(LIB_PATH) $(TARGET_SEQ)
 
+# Target comodi per build in debug
 debug:
 	@$(MAKE) DEBUG=1 mpi
 
@@ -85,7 +79,4 @@ $(OBJDIR)/%.o: src/%.c
 -include $(DEPS_COMMON) $(DEPS_MPI) $(DEPS_SEQ)
 
 clean:
-	rm -rf $(OBJDIR) $(DEPDIR) \
-	       bin/$(BASE_TARGET_MPI) bin/$(BASE_TARGET_MPI)_debug \
-	       bin/$(BASE_TARGET_SEQ) bin/$(BASE_TARGET_SEQ)_debug \
-	       bin/$(BASE_LIB_NAME).a bin/$(BASE_LIB_NAME)_debug.a
+	rm -rf $(OBJDIR) $(DEPDIR) $(TARGET_MPI) $(TARGET_SEQ) $(LIB_PATH)

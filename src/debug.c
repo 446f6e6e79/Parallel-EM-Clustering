@@ -1,8 +1,21 @@
 #ifdef DEBUG
 #include <stdio.h>
+#include <stdarg.h>
 #include <math.h>
 #include "headers/debug.h"
 #include "headers/io_utils.h"
+
+/*
+    Helper function for debug printing with newline 
+*/
+void debug_println(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stdout, fmt, ap);
+    fputc('\n', stdout);
+    fflush(stdout); // useful with MPI
+    va_end(ap);
+}
 
 /*
     Print the first few samples of the dataset for debugging the read process.

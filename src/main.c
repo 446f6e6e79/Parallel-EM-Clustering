@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, "Failed to read metadata from file: %s\n", inputParams.meta_data_file_path);
             MPI_Abort(MPI_COMM_WORLD,1);
         }
-        printf("Metadata: samples N=%d, features D=%d, clusters K=%d\n", metadata.N, metadata.D, metadata.K);
+        debug_println("Metadata: samples N=%d, features D=%d, clusters K=%d\n", metadata.N, metadata.D, metadata.K);
     }
     stop_timer(&timers.io_start, &timers.io_time);
 
@@ -106,8 +106,11 @@ int main(int argc, char **argv) {
     stop_timer(&timers.io_start, &timers.io_time);
     
     //Initialize parameters for the EM algorithm (Done only by rank 0)
-    if (rank == 0) init_params(X, &metadata, &cluster_params);
-    
+    if (rank == 0){
+        init_params(X, &metadata, &cluster_params);
+        debug_println("Initial cluster parameters:");
+        debug_print_cluster_params(&metadata, &cluster_params);
+    }
     // Broadcast in a single time initial parameters to all processes
     start_timer(&timers.data_distribution_start);
     broadcast_clusters_parameters(cluster_params, &metadata);
@@ -132,6 +135,7 @@ int main(int argc, char **argv) {
     // Scatter dataset X from rank 0 to all processes; each gets local_N rows in local_X.
     scatter_dataset(X, local_X, local_N, &metadata, rank, size);
     stop_timer(&timers.data_distribution_start, &timers.data_distribution_time);
+    debug_print_scatter(local_N, metadata.D, local_X, rank);
     
     /*
         EM loop
@@ -149,7 +153,6 @@ int main(int argc, char **argv) {
         start_timer(&timers.m_step_start);
         m_step_parallelized(local_X, local_N, &metadata, &cluster_params, &cluster_acc, &local_cluster_acc, local_gamma, rank);
         stop_timer(&timers.m_step_start, &timers.m_step_time);
-        //TODO: add call to debug intermidiate results
     }
     
     // Compute local predicted labels from responsibilities
