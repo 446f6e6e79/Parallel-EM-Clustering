@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
 
         //M-step
         start_timer(&timers.m_step_start);
-        m_step_parallelized(local_X, local_N, &metadata, local_gamma, &cluster_params, &cluster_acc, &local_cluster_acc, rank);
+        m_step_parallelized(local_X, local_N, &metadata, &cluster_params, &cluster_acc, &local_cluster_acc, local_gamma, rank);
         stop_timer(&timers.m_step_start, &timers.m_step_time);
         //TODO: add call to debug intermidiate results
     }

@@ -126,11 +126,11 @@ void e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_params,
  *          - N: number of samples
  *          - D: number of features
  *          - K: number of clusters
- *    - gamma: (N x K) Responsibilities matrix
  *    - acc (accumulators):
  *          - N_k: (K) Sum of responsibilities per cluster 
  *          - mu_k: (K x D) Weighted sums for means 
  *          - sigma_k: (K x D) Weighted sums for variances 
+ *    - gamma: (N x K) Responsibilities matrix
  *    Output parameters:
  *    -cluster_params:
  *          - mu: (K x D) Matrix of cluster means
@@ -138,7 +138,7 @@ void e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_params,
  *          - pi: (K) Vector of mixture weights
  * 
 */
-void m_step( double *X, Metadata *metadata, double *gamma, ClusterParams *cluster_params, Accumulators *acc){
+void m_step( double *X, Metadata *metadata, ClusterParams *cluster_params, Accumulators *acc, double *gamma){
     reset_accumulators(acc, metadata);
     // Accumulate Nk and mu_num for each cluster
     for (int i = 0; i < metadata->N; i++) {
@@ -196,7 +196,6 @@ void m_step( double *X, Metadata *metadata, double *gamma, ClusterParams *cluste
  *          - N: number of samples
  *          - D: number of features
  *          - K: number of clusters
- *    - local_gamma: (local_N x K) Local responsibilities matrix
  *    - cluster_params: ClusterParams structure containing mu, sigma, and pi
  *          - mu: (K x D) Matrix of cluster means
  *          - sigma: (K x D) Matrix of cluster variances
@@ -209,10 +208,11 @@ void m_step( double *X, Metadata *metadata, double *gamma, ClusterParams *cluste
  *          - N_k: (K) Sum of responsibilities per cluster 
  *          - mu_k: (K x D) Weighted sums for means 
  *          - sigma_k: (K x D) Weighted sums for variances 
+ *    - local_gamma: (local_N x K) Local responsibilities matrix
  *    - rank: MPI rank of the current process
  * 
 */
-void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, double *local_gamma, ClusterParams *cluster_params, Accumulators *cluster_acc, Accumulators *local_cluster_acc, int rank){
+void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, ClusterParams *cluster_params, Accumulators *cluster_acc, Accumulators *local_cluster_acc, double *local_gamma, int rank){
     parallel_reset_accumulators(cluster_acc, local_cluster_acc, metadata);
 
     // Accumulate Nk and mu_num for each cluster, done by every process
