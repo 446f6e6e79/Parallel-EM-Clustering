@@ -12,11 +12,10 @@
 
 void m_step( double *X, Metadata *metadata, ClusterParams *cluster_params, Accumulators *acc, double *gamma);
 void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, ClusterParams *cluster_params, Accumulators *cluster_acc, Accumulators *local_cluster_acc, double *local_gamma, int rank);
-void e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_params, double *gamma);
+double e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_params, double *gamma);
 void init_params(double *X, Metadata *metadata, ClusterParams *cluster_params);
 double gaussian_multi_diag(double *x, double *mu, double *sigma, int D);  
 void compute_clustering(double *gamma, int N, int K, int *predicted_labels);
-double compute_log_likelihood(double *X, Metadata *metadata, ClusterParams *cluster_params);
-int check_convergence(double prev_log_likelihood, double *curr_log_likelihood, int threshold, double *X, Metadata *metadata, ClusterParams *cluster_params);
+int check_convergence(double *prev_log_likelihood, double *curr_log_likelihood, double threshold);
 
 #endif

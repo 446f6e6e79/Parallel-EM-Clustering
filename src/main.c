@@ -137,22 +137,42 @@ int main(int argc, char **argv) {
     stop_timer(&timers.data_distribution_start, &timers.data_distribution_time);
     debug_print_scatter(local_N, metadata.D, local_X, rank);
     
+    // Log-likelihood variables for convergence check
+    double prev_log_likelihood = -INFINITY;
+    double curr_log_likelihood = 0.0;
+    double local_curr_log_likelihood = 0.0;
+    int converged = 0;
     /*
         EM loop
-        The loop runs until MAX_ITER is reached
+        The loop runs until MAX_ITER is reached or convergence is achieved based on the threshold (if provided)
     */
    start_timer(&timers.compute_start);
     //TODO: add check for early stopping if defined
     for (int iter = 0; iter < MAX_ITER; iter++) {
         // E-step
         start_timer(&timers.e_step_start);
-        e_step(local_X, local_N, &metadata, &cluster_params, local_gamma);
+        local_curr_log_likelihood = e_step(local_X, local_N, &metadata, &cluster_params, local_gamma);
         stop_timer(&timers.e_step_start, &timers.e_step_time);
 
         //M-step
         start_timer(&timers.m_step_start);
         m_step_parallelized(local_X, local_N, &metadata, &cluster_params, &cluster_acc, &local_cluster_acc, local_gamma, rank);
         stop_timer(&timers.m_step_start, &timers.m_step_time);
+
+        // Check for convergence (if threshold is set)
+        if(inputParams.threshold > 0.0){
+            // Reduce local log-likelihoods to global log-likelihood
+            MPI_Allreduce(&local_curr_log_likelihood, &curr_log_likelihood, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            if(rank == 0 && check_convergence(&prev_log_likelihood, &curr_log_likelihood, inputParams.threshold)) {
+                debug_println("Converged at iteration %d with log-likelihood: %.8lf\n", iter, curr_log_likelihood);
+                // Broadcast convergence info to all processes
+                converged = 1;
+            }
+            prev_log_likelihood = curr_log_likelihood;
+            MPI_Bcast(&converged, 1, MPI_INT, 0, MPI_COMM_WORLD);
+            if (converged) break;
+        }
+
     }
     
     // Compute local predicted labels from responsibilities

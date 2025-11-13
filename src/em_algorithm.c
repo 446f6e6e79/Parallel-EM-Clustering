@@ -96,7 +96,9 @@ void compute_clustering(double *gamma, int N, int K, int *predicted_labels) {
  *    Output parameters:
  *    - gamma: (N x K) Responsibilities matrix
 */
-void e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_params, double *gamma){
+double e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_params, double *gamma){
+
+    double log_likelihood = 0.0;
     for(int i = 0; i < N; i++) {
         // Initialize denominator for normalization
         double denom = 0.0;
@@ -114,7 +116,10 @@ void e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_params,
         if (denom == 0.0 || isnan(denom)) denom = GUARD_VALUE;
         // Normalize responsibilities
         for (int k = 0; k < metadata->K; k++) gamma[i*metadata->K + k] /= denom;
+        // Accumulate log-likelihood
+        log_likelihood += log(denom);
     }
+    return log_likelihood;
 }
 
 /**
@@ -278,64 +283,16 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
 }
 
 /*
- * Compute the log-likelihood of the data given the current cluster parameters
- * Parameters:
- *   - X: The data points (N x D matrix)
- *   - metadata: 
- *      - N: Number of samples
- *      - D: Number of features
- *      - K: Number of clusters
- *   - cluster_params: 
- *      - mu: (K x D) Matrix of cluster means
- *      - sigma: (K x D) Matrix of cluster variances
- *      - pi: (K) Vector of mixture weights
- *   Output:
- *     - log_likelihood: The computed log-likelihood value
- *        
- */
-double compute_log_likelihood(double *X, Metadata *metadata, ClusterParams *cluster_params) {
-    double log_likelihood = 0.0;
-    for (int i = 0; i < metadata->N; i++) {
-        // Compute the likelihood of data point i
-        double point_likelihood = 0.0;
-        double *x = &X[i * metadata->D];
-        for (int k = 0; k < metadata->K; k++) {
-            double *mu_k = &cluster_params->mu[k * metadata->D];
-            double *sigma_k = &cluster_params->sigma[k * metadata->D];
-            // Accumulate weighted likelihood from each cluster
-            point_likelihood += cluster_params->pi[k] * gaussian_multi_diag(x, mu_k, sigma_k, metadata->D);
-        }
-        // Guard to avoid log(0)
-        if (point_likelihood <= 0.0) point_likelihood = GUARD_VALUE;
-        // Accumulate log-likelihood
-        log_likelihood += log(point_likelihood);
-    }
-    return log_likelihood;
-}
-
-/*
-*   Check for convergence based on log-likelihood difference
+*   Check for convergence based on log-likelihood change
 *   Parameters:
-*     - prev_log_likelihood: Log-likelihood from the previous iteration
-*     - curr_log_likelihood: Pointer to store the current log-likelihood
-*     - inputParams: InputParams_t structure containing convergence threshold
-*     - X: dataset (N x D)
-*     - metadata: Metadata structure containing N, D, and K
-*     - cluster_params: ClusterParams structure containing mu, sigma, and pi
-*   Output:
-*     - Returns 1 if converged, 0 otherwise
+*    - prev_log_likelihood: Log-likelihood from the previous iteration
+*    - curr_log_likelihood: Pointer to the current log-likelihood
 */
-int check_convergence(double prev_log_likelihood, double *curr_log_likelihood, int threshold,
-                      double *X, Metadata *metadata, ClusterParams *cluster_params) {
-    // Compute current log-likelihood
-    *curr_log_likelihood = compute_log_likelihood(X, metadata, cluster_params);
-
-    // Compute absolute difference between current and previous log-likelihood
-    double diff = fabs(*curr_log_likelihood - prev_log_likelihood);
-
-    // If convergence criterion is met, return 1 (converged)
-    if (diff < threshold) return 1;
-
-    // Otherwise, return 0 (not converged)
-    return 0;       
+int check_convergence(double *prev_log_likelihood, double *curr_log_likelihood, double threshold) {
+    // Check if the log-likelihood has converged (no change)
+    if (fabs(*curr_log_likelihood - *prev_log_likelihood) < threshold) {
+        return 1; // Converged
+    }
+    *prev_log_likelihood = *curr_log_likelihood;
+    return 0; // Not converged
 }
