@@ -58,22 +58,21 @@ void free_accumulators(Accumulators *acc) {
 
 /*
     Safely frees all allocated memory (passed by address)
-    TODO: change order. First struct then arrays. ADD all parameters
 */
 void safe_cleanup(
+    ClusterParams *cluster_params,
+    Accumulators *cluster_acc,
     double **X,
     int **predicted_labels,
     int **ground_truth_labels,
-    ClusterParams *cluster_params,
-    Accumulators *cluster_acc,
     double **resp
 )
 {
+    free_cluster_params(cluster_params);
+    free_accumulators(cluster_acc);
     free_and_null((void**)X);
     free_and_null((void**)predicted_labels);
     free_and_null((void**)ground_truth_labels);
-    free_cluster_params(cluster_params);
-    free_accumulators(cluster_acc);
     free_and_null((void**)resp);
 }
 

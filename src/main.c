@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
     // Check that all allocations were successful
     if(alloc_fail){
         fprintf(stderr, "Memory allocation failed\n");
-        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&cluster_acc,&local_gamma);
+        safe_cleanup(&cluster_params,&cluster_acc,&X,&predicted_labels,&ground_truth_labels, &local_gamma);
         MPI_Abort(MPI_COMM_WORLD,1);
     }   
 
@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
     if(rank == 0){
         if(read_dataset(inputParams.dataset_file_path, &metadata, X, ground_truth_labels) != 0){
             fprintf(stderr, "Failed to read dataset from file: %s\n", inputParams.dataset_file_path);
-            safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&cluster_acc,&local_gamma);
+            safe_cleanup(&cluster_params,&cluster_acc,&X,&predicted_labels,&ground_truth_labels, &local_gamma);
             MPI_Abort(MPI_COMM_WORLD,1);
         }
     }
@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
     // Check that all allocations were successful
     if (!local_X || !local_gamma || !local_predicted_labels || local_acc_alloc_status != 0) {
         fprintf(stderr, "Local variable memory allocation failed\n");
-        safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&cluster_acc, &local_gamma);
+        safe_cleanup(&cluster_params,&cluster_acc,&X,&predicted_labels,&ground_truth_labels, &local_gamma);
         free_accumulators(&local_cluster_acc);
         MPI_Abort(MPI_COMM_WORLD,1);
     }
@@ -186,7 +186,7 @@ int main(int argc, char **argv) {
     }
     
     // Free all the allocated memory
-    safe_cleanup(&X,&predicted_labels,&ground_truth_labels,&cluster_params,&cluster_acc,&local_gamma);
+    safe_cleanup(&cluster_params,&cluster_acc,&X,&predicted_labels,&ground_truth_labels, &local_gamma);
     free_accumulators(&local_cluster_acc);
     // Finalize MPI communicator
     MPI_Finalize();
