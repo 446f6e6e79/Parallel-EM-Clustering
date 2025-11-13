@@ -277,3 +277,67 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
     MPI_Bcast(cluster_params->sigma, metadata->K*metadata->D, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(cluster_params->pi, metadata->K, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
+
+/*
+ * Compute the log-likelihood of the data given the current cluster parameters
+ * Parameters:
+ *   - X: The data points (N x D matrix)
+ *   - metadata: 
+ *      - N: Number of samples
+ *      - D: Number of features
+ *      - K: Number of clusters
+ *   - cluster_params: 
+ *      - mu: (K x D) Matrix of cluster means
+ *      - sigma: (K x D) Matrix of cluster variances
+ *      - pi: (K) Vector of mixture weights
+ *   Output:
+ *     - log_likelihood: The computed log-likelihood value
+ *        
+ */
+double compute_log_likelihood(double *X, Metadata *metadata, ClusterParams *cluster_params) {
+    double log_likelihood = 0.0;
+    for (int i = 0; i < metadata->N; i++) {
+        // Compute the likelihood of data point i
+        double point_likelihood = 0.0;
+        double *x = &X[i * metadata->D];
+        for (int k = 0; k < metadata->K; k++) {
+            double *mu_k = &cluster_params->mu[k * metadata->D];
+            double *sigma_k = &cluster_params->sigma[k * metadata->D];
+            // Accumulate weighted likelihood from each cluster
+            point_likelihood += cluster_params->pi[k] * gaussian_multi_diag(x, mu_k, sigma_k, metadata->D);
+        }
+        // Guard to avoid log(0)
+        if (point_likelihood <= 0.0) point_likelihood = GUARD_VALUE;
+        // Accumulate log-likelihood
+        log_likelihood += log(point_likelihood);
+    }
+    return log_likelihood;
+}
+
+/*
+*   Check for convergence based on log-likelihood difference
+*   Parameters:
+*     - prev_log_likelihood: Log-likelihood from the previous iteration
+*     - curr_log_likelihood: Pointer to store the current log-likelihood
+*     - inputParams: InputParams_t structure containing convergence threshold
+*     - X: dataset (N x D)
+*     - metadata: Metadata structure containing N, D, and K
+*     - cluster_params: ClusterParams structure containing mu, sigma, and pi
+*   Output:
+*     - Returns 1 if converged, 0 otherwise
+*/
+int check_convergence(double prev_log_likelihood, double *curr_log_likelihood, int threshold,
+                      double *X, Metadata *metadata, ClusterParams *cluster_params) {
+    // Compute current log-likelihood
+    *curr_log_likelihood = compute_log_likelihood(X, metadata, cluster_params);
+
+    // Compute absolute difference between current and previous log-likelihood
+    double diff = fabs(*curr_log_likelihood - prev_log_likelihood);
+
+    // If threshold is set and convergence criterion is met, return 1 (converged)
+    if (threshold > 0.0 && diff < threshold) {
+        printf("Converged with log-likelihood: %.8lf\n", *curr_log_likelihood);
+        return 1;   // Converged
+    }
+    return 0;       // Not converged
+}

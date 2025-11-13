@@ -16,5 +16,7 @@ void e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_params,
 void init_params(double *X, Metadata *metadata, ClusterParams *cluster_params);
 double gaussian_multi_diag(double *x, double *mu, double *sigma, int D);  
 void compute_clustering(double *gamma, int N, int K, int *predicted_labels);
+double compute_log_likelihood(double *X, Metadata *metadata, ClusterParams *cluster_params);
+int check_convergence(double prev_log_likelihood, double *curr_log_likelihood, int threshold, double *X, Metadata *metadata, ClusterParams *cluster_params);
 
 #endif

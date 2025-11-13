@@ -60,9 +60,12 @@ int main(int argc, char **argv) {
     // Initialize parameters
     init_params(X, &metadata, &cluster_params);
     
+    // Log-likelihood variables for convergence check
+    double prev_log_likelihood = -INFINITY;
+    double curr_log_likelihood = 0.0;
     /*
         EM loop
-        The loop runs until MAX_ITER is reached
+        The loop runs until MAX_ITER is reached or convergence is achieved based on the threshold (if provided)
     */
     for (int iter = 0; iter < MAX_ITER; iter++) {
         // E-step
@@ -70,6 +73,14 @@ int main(int argc, char **argv) {
 
         // M-step
         m_step(X, &metadata, &cluster_params, &cluster_acc, gamma);
+
+        // Compute log-likelihood for convergence check (if threshold is set)
+        if (inputParams.threshold > 0.0) {
+            if (check_convergence(prev_log_likelihood, &curr_log_likelihood, inputParams.threshold, X, &metadata, &cluster_params)) {
+                break; // Converged
+            }
+            prev_log_likelihood = curr_log_likelihood;
+        }
     }
     
     // Compute predicted labels from responsibilities

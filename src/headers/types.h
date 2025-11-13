@@ -74,7 +74,6 @@ typedef struct {
     // Path to the debug information file (optional)
     const char *debug_file_path;
     // Convergence threshold (optional)
-    //TODO: implement threshold stopping in the main loop
     double threshold;
 } InputParams_t;
 
