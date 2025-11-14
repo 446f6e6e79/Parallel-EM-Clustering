@@ -1,8 +1,26 @@
 \section{Introduction}
+
+In this work, we address the problem of clustering large datasets using the
+Expectation-Maximization (EM) algorithm for Gaussian Mixture Models (GMMs).
+Clustering is a fundamental task in unsupervised machine learning, where the goal is to group
+similar data points together based on their inherent characteristics.
+The EM algorithm is an iterative method used to estimate the parameters of GMMs, allowing us to
+identify the underlying clusters in the data. However, the EM algorithm can be computationally intensive,
+especially for large datasets, which motivates the need for parallelization to improve efficiency and scalability.
+So in this report, we present a parallel implementation of the EM algorithm for clustering, using MPI and OpenMP libraries. 
+Then we evaluate the performance of our implementation on various settings, analyzing its scalability, speedup, and efficiency.
+In this way, we want to prove the effectiveness of parallelization in accelerating the EM algorithm for clustering large datasets.
+
 \subsection{Problem Overview}
 
 The goal of clustering is to partition a dataset $\mathcal{X}=\{x_1,x_2,\dots, x_N\}$ where $x_i \in \mathbb{R}^D$ 
 into $K$ (number of clusters) groups without using label information. 
+Each cluster is represented by a probability distribution, and in our case, they are modeled as a Gaussian distribution.
+The challenge is to estimate the parameters of these distributions, including the means, covariances, and mixture weights, 
+such that the overall likelihood of the data given the model is maximized.
+
+Then the size of the dataset $N$, the number of features $D$, and the number of clusters $K$ can be very large, 
+making the computation of clustering time-consuming.
 
 \subsection{Gaussian Mixture Models}
 
@@ -41,7 +59,7 @@ The Gaussian density function is defined as:
 
 With this function, we can evaluate the likelihood of a data point $x$ belonging to the $k$-th Gaussian component.
 
-% TODO: move this to implementation (in my opinion)
+%TODO: move this to implementation (in my opinion)
 \noindent
 In our implementation we adopt a diagonal covariance matrix for each Gaussian component. 
 This means that the covariance matrix of component $k$ is defined as:
@@ -58,7 +76,7 @@ making it feasible to work with high-dimensional data.
 
 % -------
 But our main problem is to estimate the parameters $\theta = \{\pi_k, \mu_k, \Sigma_k\}_{k=1}^K$ of the GMM given the dataset $\mathcal{X}$,
-as they are unknown.
+as they are unknown in our case.
 
 \subsection{Expectation-Maximization algorithm}
 
