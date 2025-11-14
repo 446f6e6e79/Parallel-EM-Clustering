@@ -78,8 +78,15 @@ int main(int argc, char **argv) {
 
         // Write to the debug file intermediate results if debug file path is provided
         if(inputParams.debug_file_path){
-            compute_clustering(gamma, metadata.N, metadata.K, predicted_labels);    
-            write_labels_info(inputParams.debug_file_path, X, predicted_labels, ground_truth_labels, &metadata, &cluster_params, iter, 'a');
+            compute_clustering(gamma, metadata.N, metadata.K, predicted_labels);
+            if ( iter == 0 ) {
+                // Rewrite the file
+                write_labels_info(inputParams.debug_file_path, X, predicted_labels, ground_truth_labels, &metadata, &cluster_params, iter, 'w');
+            }
+            else{
+                // Append to the file
+                write_labels_info(inputParams.debug_file_path, X, predicted_labels, ground_truth_labels, &metadata, &cluster_params, iter, 'a');
+            }
         }
         
         // Compute log-likelihood for convergence check (if threshold is set)
