@@ -6,12 +6,18 @@ into $K$ (number of clusters) groups without using label information.
 
 \subsection{Gaussian Mixture Models}
 
-A Gaussian Mixture Model assumes that each data point 
+A Gaussian Mixture Model (GMM) \cite{Reynolds2009} is a probabilistic model that represents data as a combination
+ of multiple Gaussian distributions, each with its own mean, covariance, and mixture weight.
+GMMs are widely used for clustering tasks due to their flexibility in modeling complex data distributions,
+ where data points may naturally cluster around multiple centers with varying shapes and sizes.
+So the goal is to estimate, by knowing the parameters of both the Gaussian components, to assign data points to these clusters.
+
+A GMMs assumes that each data point 
 is generated from one of $K$ Gaussian components:
 
 \begin{equation}
     p(x \mid \theta) = \sum_{k=1}^{K} \pi_k \, \mathcal{N}(x \mid \mu_k, \Sigma_k)
-    \label{gmm_equation}
+    \label{generation_equation}
 \end{equation}
 
 where:
@@ -21,7 +27,9 @@ where:
 
 \noindent
 Here, $\pi_k$ are the mixture weights, $\mu_k$ are the means, and $\Sigma_k$ are the covariance matrices of the Gaussian components.
-The multivariate Gaussian density is:
+The mixture weights represent the prior probability of each component, while the Gaussian density function $\mathcal{N}(x \mid \mu_k, \Sigma_k)$
+models the distribution of data points within each component.
+The Gaussian density function is defined as:
 
 \begin{equation}
 \mathcal{N}(x \mid \mu_k, \Sigma_k)
@@ -31,6 +39,9 @@ The multivariate Gaussian density is:
   \label{gaussian_density}
 \end{equation}
 
+With this function, we can evaluate the likelihood of a data point $x$ belonging to the $k$-th Gaussian component.
+
+% TODO: move this to implementation (in my opinion)
 \noindent
 In our implementation we adopt a diagonal covariance matrix for each Gaussian component. 
 This means that the covariance matrix of component $k$ is defined as:
@@ -44,6 +55,10 @@ This means that the covariance matrix of component $k$ is defined as:
 \noindent
 This simplification reduces computational complexity and memory usage,
 making it feasible to work with high-dimensional data.
+
+% -------
+But our main problem is to estimate the parameters $\theta = \{\pi_k, \mu_k, \Sigma_k\}_{k=1}^K$ of the GMM given the dataset $\mathcal{X}$,
+as they are unknown.
 
 \subsection{Expectation-Maximization algorithm}
 
