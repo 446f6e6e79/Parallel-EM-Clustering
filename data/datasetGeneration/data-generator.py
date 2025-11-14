@@ -4,7 +4,7 @@ Generate a synthetic dataset for EM (Expectation-Maximization) classification.
 
 Usage examples:
     python data-generator.py --samples 1000 --features 2 --clusters 3 --output em_dataset.csv
-    python data-generator.py -s 500 -f 2 -k 3 --means -5,0 0,5 5,0 --std 0.5 0.7 0.4 -o mydata.csv --plot
+    python data-generator.py -s 500 -f 2 -k 3 --means-list "-5,0 0,5 5,0" --std 0.5 0.7 0.4 -o mydata.csv --plot
 """
 import argparse
 import pandas as pd
@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import make_blobs
 import numpy as np
 from pathlib import Path
+import re
 
 # Limit the number of points per cluster to plot for clarity
 PLOT_MAX_PER_CLUSTER = 100
@@ -45,8 +46,12 @@ def build_parser():
     parser.add_argument("-s", "--samples", type=int, default=1000, help="Number of samples (default: 1000)")
     parser.add_argument("-f", "--features", type=int, default=2, help="Number of features (default: 2)")
     parser.add_argument("-k", "--clusters", type=int, default=3, help="Number of clusters (default: 3)")
-    parser.add_argument("--means", nargs="+", default=None,
-                        help='List of cluster means, e.g. --means m_1 m_2 ... m_k, where m_i= m_i_1,m_i_2,...,m_i_d (a mean per feature per cluster must be provided)')
+    # Accept repeated --means (one per cluster). Use equals for negatives: --means=-3,5
+    parser.add_argument("--means", dest="means", action="append", metavar="MEAN", default=None,
+                        help='Repeat per cluster, e.g. --means=2,-2 --means=0,1 --means=-3,5 (use "=" for negatives: --means=-3,5)')
+    # Also accept a single string list (quoted), e.g. --means-list "2,-2 0,1 -3,5" or "--means-list 2,-2;0,1;-3,5"
+    parser.add_argument("--means-list", dest="means_list", type=str, default=None,
+                        help='Quoted list: "2,-2 0,1 -3,5" or "2,-2;0,1;-3,5"')
     parser.add_argument("--std", type=float, nargs="+", default=None,
                         help="List of cluster standard deviations (default: all 1.0)")
     parser.add_argument("-equal", "--equal_size", action="store_true",
@@ -56,28 +61,37 @@ def build_parser():
                         help="Output CSV filename (default: em_dataset.csv)")
     parser.add_argument("-m", "--metadata", type=str, default="em_metadata.txt",
                         help="Output metadata filename (default: em_metadata.txt)")
-    
     parser.add_argument("--plot", action="store_true", help="Show a scatter plot of the dataset")
     return parser
 
-def parse_means(means_list, n_clusters, n_features):
+def parse_means(means_flags, means_list_str, n_clusters, n_features):
     """
-        Parse means input from CLI: e.g. --means m_1 m_2 ... m_k, where m_i= m_i_1,m_i_2,...,m_i_d
+        Support:
+          - Repeated flags: --means 2,-2 --means 0,1 --means -3,5
+            (use equals for negatives: --means=-3,5)
+          - Single list:   --means-list "2,-2 0,1 -3,5" or "2,-2;0,1;-3,5"
     """
-    if means_list is None:
+    tokens = []
+    if means_list_str:
+        # split by whitespace
+        tokens.extend([t for t in re.split(r"\s+", means_list_str.strip()) if t])
+
+    if means_flags:
+        # each flag is one "a,b" string; note negatives require --means=-3,5 form
+        tokens.extend(means_flags)
+
+    if not tokens:
         return None
 
     centers = []
-    for mean_str in means_list:
-        # Split the string into individual coordinates
-        mean_values = [float(x) for x in mean_str.split(",")]
-        # If for a cluster the number of means does not match the number of features, raise an error
-        if len(mean_values) != n_features:
+    for mean_str in tokens:
+        vals = [float(x) for x in mean_str.split(",")]
+        if len(vals) != n_features:
             raise ValueError(f"Each mean must have {n_features} values. Got: {mean_str}")
-        centers.append(mean_values)
-    # If the number of provided means does not match the number of clusters, raise an error
+        centers.append(vals)
+
     if len(centers) != n_clusters:
-        raise ValueError(f"Number of means must equal number of clusters ({n_clusters}).")
+        raise ValueError(f"Number of means must equal number of clusters ({n_clusters}). Got {len(centers)}.")
     return centers
 
 def compute_cluster_counts(total_samples: int, k: int, equal: bool, seed: int) -> list[int]:
@@ -181,8 +195,8 @@ def main():
         else:
             raise ValueError("Provide either one std (applied to all clusters) or one per cluster.")
 
-    # Parse means
-    centers = parse_means(args.means, args.clusters, args.features)
+    # Parse means (supports --means-list or repeated --means)
+    centers = parse_means(args.means, args.means_list, args.clusters, args.features)
 
     # Determine per-cluster counts
     per_cluster_counts = compute_cluster_counts(args.samples, args.clusters, args.equal_size, args.random_state)

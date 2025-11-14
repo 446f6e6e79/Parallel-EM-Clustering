@@ -27,6 +27,15 @@ The executable will be generated at `bin/EM_Sequential`
 #### Debug Mode
 A debug mode compilation is provided, which includes additional logging for checking the correctness of the implementation.
 This can be activated either by setting the environment variable `DDEBUG=1` or by adding the keyword `debug` to the other provided compilation commands.
+For example, to compile the parallel version in debug mode:
+```bash
+make debug
+```
+or, for the serial version:
+
+```bash
+make debug-sequential
+```
 
 ### Compiling on the Cluster
 If you are compiling the project on the cluster, remember to load the
@@ -43,13 +52,12 @@ available during compilation.
 ### 2. Generating the Input Data
 We provide a script for generating synthetic datasets tailored to the clustering problem addressed in this project, allowing you to test and evaluate the algorithm under different configurations
 
-Before running the Python scripts on your personal machine, a virtual environment should be created with all the required dependencies:
+Before running the Python scripts on your personal machine, a virtual environment should be created with all the required dependencies, provided in the `requirements.txt` file.
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip
-pip install numpy pandas scikit-learn matplotlib
+pip install -r requirements.txt
 ```
 This environment provides all the necessary libraries to run also the other Python scripts included in the repository.
 
@@ -67,6 +75,10 @@ From the main directory of the repository:
 ```bash
 python data/datasetGeneration/data-generator.py
 ```
+An example of usage with custom parameters:
+```bash
+python data/datasetGeneration/data-generator.py --samples 5000 --features 2 --clusters 4 --means-list "-10,0 0,10 10,0 0,-10"
+```
 
 ##### Parameters
 
@@ -81,12 +93,10 @@ The list of possible parameters for the script are:
 - `--clusters, -k` (**int**, default `3`):  
   Number of clusters (Gaussian components) to generate.
 
-- `--means` (**list of str**):  
-  One mean vector per cluster.  
-  Example:  
-  ```bash
-  --means -5,0 0,5 5,0
-  ```
+- `--means` (**list of str**):
+  List of cluster means. You can specify:
+  - A single value per cluster (e.g. `--means=0,5 --means=10,15` for 2 clusters in 2D)
+  - A list of means using `--means-list` (e.g. `--means-list "0,0 5,5 10,10"` for 3 clusters in 2D)
   Each cluster mean should have a number of elements equal to `--features`.
 
 - `--std` (**list of float**, default `1.0`):  
