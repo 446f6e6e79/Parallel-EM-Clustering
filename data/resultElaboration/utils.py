@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import confusion_matrix
 from scipy.optimize import linear_sum_assignment
+from matplotlib.patches import Ellipse
+import matplotlib.pyplot as plt
 
 def compute_metrics(group):
     """
@@ -155,26 +157,95 @@ def plot_metrics(filtered_df, metric, fixed_parameters=None):
     # Return the figure to the caller
     return fig
 
-def clustering_accuracy(csv_file):
+def cluster_mapping(y_true, y_pred):
     """
-        Calculate clustering accuracy from a CSV file containing 'predicted' and 'real' columns.
+    Return:
+      - pred_to_real: dict mapping predicted_label -> real_label
+      - real_to_pred: dict mapping real_label -> predicted_label
+      - accuracy: permutation-invariant accuracy in [0,1]
+    """
+    labels_true = np.unique(y_true)
+    labels_pred = np.unique(y_pred)
+    # Use same label order on rows/cols (union), so we can map indices back to labels
+    labels = np.unique(np.concatenate([labels_true, labels_pred]))
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
+    row_ind, col_ind = linear_sum_assignment(-cm)
+
+    pred_to_real = {labels[c]: labels[r] for r, c in zip(row_ind, col_ind) if labels[c] in set(labels_pred)}
+    real_to_pred = {labels[r]: labels[c] for r, c in zip(row_ind, col_ind) if labels[r] in set(labels_true)}
+    acc = (cm[row_ind, col_ind].sum() / cm.sum()) if cm.sum() > 0 else 0.0
+    return pred_to_real, real_to_pred, acc
+
+def clustering_accuracy(df):
+    """
+        Calculate clustering accuracy from a DataFrame containing 'predicted' and 'real' columns.
         Uses the Hungarian algorithm to find the best matching between predicted and real labels.
         Parameters:
-            csv_file: Path to the CSV file
+            df: DataFrame containing the clustering results
         Returns:
             accuracy: Clustering accuracy as a float
     """
-    # Read the CSV file
-    df = pd.read_csv(csv_file)
     y_pred = df['predicted_cluster'].to_numpy()
     y_true = df['real_cluster'].to_numpy()
+    _, _, accuracy = cluster_mapping(y_true, y_pred)
+    return accuracy
 
-    # Build confusion matrix
-    cm = confusion_matrix(y_true, y_pred)
-    
-    # Hungarian algorithm to maximize accuracy
-    row_ind, col_ind = linear_sum_assignment(-cm)
-    
-    # Final accuracy calculation
-    accuracy = cm[row_ind, col_ind].sum() / cm.sum() 
-    return accuracy * 100
+def plot_cov_ellipse(mean, cov, ax, color):
+    vals, vecs = np.linalg.eigh(cov)
+    order = vals.argsort()[::-1]
+    vals, vecs = vals[order], vecs[:, order]
+    theta = np.degrees(np.arctan2(*vecs[:,0][::-1]))
+    width, height = 2 * np.sqrt(vals)
+    ellipse = Ellipse(xy=mean, width=width, height=height, angle=theta,
+                      edgecolor=color, facecolor='none', lw=2)
+    ax.add_patch(ellipse)
+
+def create_clustering_frame(df, it):
+    """
+        Create a frame for clustering visualization at a specific iteration.
+        Parameters:
+            df: DataFrame containing clustering results for all iterations
+            it: Iteration number we are going to plot
+        Returns:
+            image: Numpy array representing the frame image
+    """
+    # Filter data for the specific iteration it
+    df_it = df[df['iteration'] == it]
+    fig, ax = plt.subplots(figsize=(6,6))
+
+    # For every cluster, plot points and ellipses
+    for c in sorted(df_it['predicted_cluster'].unique()):
+        # Filter data for the current cluster
+        data = df_it[df_it['predicted_cluster'] == c]
+        ax.scatter(data['feature_1'], data['feature_2'], s=10, label=f'Cluster {c}')
+
+        # Draw mean & covariance ellipse if available
+        mean = [data['mu_k_1'].iloc[0], data['mu_k_2'].iloc[0]]
+        cov = np.diag([data['sigma_k_1'].iloc[0], data['sigma_k_2'].iloc[0]])
+        plot_cov_ellipse(mean, cov, ax, color=ax._get_lines.get_next_color())
+
+    ax.set_title(f"Iteration {it}")
+    ax.legend()
+    plt.tight_layout()
+
+    # Save each frame to an array
+    fig.canvas.draw()
+    fig.canvas.draw()
+    image = np.array(fig.canvas.renderer.buffer_rgba())
+    # Convert RGBA -> RGB
+    image = image[:, :, :3]  # drop alpha
+    return image
+
+def derive_cluster_mapping(df):
+    """
+    Convenience wrapper using DataFrame columns 'predicted_cluster' and 'real_cluster'.
+    """
+    y_pred = df['predicted_cluster'].to_numpy()
+    y_true = df['real_cluster'].to_numpy()
+    return cluster_mapping(y_true, y_pred)
+
+def remap_predicted(y_pred, pred_to_real):
+    """
+    Remap predicted labels into the real label space using the mapping.
+    """
+    return np.array([pred_to_real.get(p, p) for p in y_pred])
