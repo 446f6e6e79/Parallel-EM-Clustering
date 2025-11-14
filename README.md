@@ -75,6 +75,10 @@ From the main directory of the repository:
 ```bash
 python data/datasetGeneration/data-generator.py
 ```
+An example of usage with custom parameters:
+```bash
+python data/datasetGeneration/data-generator.py --samples 5000 --features 2 --clusters 4 --means-list "-10,0 0,10 10,0 0,-10"
+```
 
 ##### Parameters
 
@@ -89,12 +93,10 @@ The list of possible parameters for the script are:
 - `--clusters, -k` (**int**, default `3`):  
   Number of clusters (Gaussian components) to generate.
 
-- `--means` (**list of str**):  
-  One mean vector per cluster.  
-  Example:  
-  ```bash
-  --means -5,0 0,5 5,0
-  ```
+- `--means` (**list of str**):
+  List of cluster means. You can specify:
+  - A single value per cluster (e.g. `--means=0,5 --means=10,15` for 2 clusters in 2D)
+  - A list of means using `--means-list` (e.g. `--means-list "0,0 5,5 10,10"` for 3 clusters in 2D)
   Each cluster mean should have a number of elements equal to `--features`.
 
 - `--std` (**list of float**, default `1.0`):  
