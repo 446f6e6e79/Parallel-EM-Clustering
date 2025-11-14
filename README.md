@@ -52,13 +52,12 @@ available during compilation.
 ### 2. Generating the Input Data
 We provide a script for generating synthetic datasets tailored to the clustering problem addressed in this project, allowing you to test and evaluate the algorithm under different configurations
 
-Before running the Python scripts on your personal machine, a virtual environment should be created with all the required dependencies:
+Before running the Python scripts on your personal machine, a virtual environment should be created with all the required dependencies, provided in the `requirements.txt` file.
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip
-pip install numpy pandas scikit-learn matplotlib
+pip install -r requirements.txt
 ```
 This environment provides all the necessary libraries to run also the other Python scripts included in the repository.
 
