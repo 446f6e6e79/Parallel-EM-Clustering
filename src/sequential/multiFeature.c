@@ -4,8 +4,9 @@
 
 /*
     Expection-Maximization Clustering Algorithm
+    Standard sequential implementation of the EM algorithm for multi feature clustering.
 
-    Usage: ./program <dataset_file> <metadata_file> <execution_info_file> [output_labels_file]
+    Usage: ./program <dataset_file> <metadata_file> [execution_info_file] [output_labels_file]
 */
 int main(int argc, char **argv) { 
     Metadata metadata;                  // Contains number of samples, number of features, number of clusters and max line size

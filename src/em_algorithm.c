@@ -1,4 +1,5 @@
 #include "headers/em_algorithm.h"
+
 /*
     Multivariate Gaussian probability density function with diagonal covariance matrix.
     p(x | mu, Sigma_diag) =
@@ -95,9 +96,11 @@ void compute_clustering(double *gamma, int N, int K, int *predicted_labels) {
  *         - pi: (K) Vector of mixture weights
  *    Output parameters:
  *    - gamma: (N x K) Responsibilities matrix
-*/
+ *    Returns:
+ *    - log_likelihood: The log-likelihood of the data given the current parameters used in convergence check (if needed)
+ */
 double e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_params, double *gamma){
-
+    // Initialize log-likelihood
     double log_likelihood = 0.0;
     for(int i = 0; i < N; i++) {
         // Initialize denominator for normalization
@@ -143,6 +146,7 @@ double e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_param
  * 
 */
 void m_step( double *X, Metadata *metadata, ClusterParams *cluster_params, Accumulators *acc, double *gamma){
+    // Reset accumulators before starting the M-step
     reset_accumulators(acc, metadata);
     // Accumulate Nk and mu_num for each cluster
     for (int i = 0; i < metadata->N; i++) {
@@ -217,6 +221,7 @@ void m_step( double *X, Metadata *metadata, ClusterParams *cluster_params, Accum
  * 
 */
 void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, ClusterParams *cluster_params, Accumulators *cluster_acc, Accumulators *local_cluster_acc, double *local_gamma, int rank){
+    // Reset local accumulators
     parallel_reset_accumulators(cluster_acc, local_cluster_acc, metadata);
 
     // Accumulate Nk and mu_num for each cluster, done by every process
@@ -231,6 +236,7 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
         }
     }
 
+    // Reduce local accumulators into global accumulators (Nk and mu_k)
     MPI_Reduce(local_cluster_acc->N_k, cluster_acc->N_k, metadata->K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     MPI_Reduce(local_cluster_acc->mu_k, cluster_acc->mu_k, metadata->D*metadata->K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
@@ -247,6 +253,7 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
         }
     }
 
+    // Broadcast updated mu to all processes
     MPI_Bcast(cluster_params->mu, metadata->K*metadata->D, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     // Accumulate weighted squared differences for variances, done by every process
@@ -262,6 +269,7 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
         }
     }
     
+    // Reduce local accumulators into global accumulators (sigma_k)
     MPI_Reduce(local_cluster_acc->sigma_k, cluster_acc->sigma_k, metadata->K*metadata->D, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
     // Finalize sigma (variance per-dim) and pi, only done by rank 0
@@ -278,6 +286,7 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
         }
     }
 
+    // Broadcast updated sigma and pi to all processes
     MPI_Bcast(cluster_params->sigma, metadata->K*metadata->D, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(cluster_params->pi, metadata->K, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
@@ -293,6 +302,7 @@ int check_convergence(double *prev_log_likelihood, double *curr_log_likelihood, 
     if (fabs(*curr_log_likelihood - *prev_log_likelihood) < threshold) {
         return 1; // Converged
     }
+    // Update previous log-likelihood for next iteration
     *prev_log_likelihood = *curr_log_likelihood;
     return 0; // Not converged
 }

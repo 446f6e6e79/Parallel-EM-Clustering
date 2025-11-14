@@ -4,13 +4,15 @@
 
 /*
     Expection-Maximization Clustering Algorithm
-    Usage: ./program <dataset_file> <metadata_file> <execution_info_file> [output_labels_file]
+    MPI parallel implementation of the EM algorithm for multi feature clustering.
+
+    Usage: ./program <dataset_file> <metadata_file> [execution_info_file] [output_labels_file]
 */
 int main(int argc, char **argv) { 
     // Initialize MPI
     MPI_Init(&argc, &argv);
-    int rank;       // id of the current process
-    int size;       // Number of processes
+    int rank;                               // id of the current process
+    int size;                               // Number of processes
     
     // Initialize MPI rank (process ID) and size (total processes)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -70,7 +72,7 @@ int main(int argc, char **argv) {
     broadcast_metadata(&metadata, rank);
     stop_timer(&timers.data_distribution_start, &timers.data_distribution_time);
 
-    int alloc_fail = 0;     // Flag to check correctness of all allocations
+    int alloc_fail = 0;
     // Allocate buffers for master process
     if(rank == 0){
         X = malloc(metadata.N * metadata.D * sizeof(double));
@@ -138,16 +140,16 @@ int main(int argc, char **argv) {
     debug_print_scatter(local_N, metadata.D, local_X, rank);
     
     // Log-likelihood variables for convergence check
-    double prev_log_likelihood = -INFINITY;
-    double curr_log_likelihood = 0.0;
-    double local_curr_log_likelihood = 0.0;
-    int converged = 0;
+    double prev_log_likelihood = -INFINITY;             // Previous log-likelihood
+    double curr_log_likelihood = 0.0;                   // Current log-likelihood
+    double local_curr_log_likelihood = 0.0;             // Local log-likelihood for each process
+    int converged = 0;                                  // Convergence flag
+
     /*
         EM loop
         The loop runs until MAX_ITER is reached or convergence is achieved based on the threshold (if provided)
     */
-   start_timer(&timers.compute_start);
-    //TODO: add check for early stopping if defined
+    start_timer(&timers.compute_start);
     for (int iter = 0; iter < MAX_ITER; iter++) {
         // E-step
         start_timer(&timers.e_step_start);
@@ -168,7 +170,7 @@ int main(int argc, char **argv) {
                 // Broadcast convergence info to all processes
                 converged = 1;
             }
-            prev_log_likelihood = curr_log_likelihood;
+            // Broadcast convergence info to all processes
             MPI_Bcast(&converged, 1, MPI_INT, 0, MPI_COMM_WORLD);
             if (converged) break;
         }

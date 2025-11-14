@@ -10,6 +10,7 @@ double gaussian(double x, double mean, double var) {
 }
 /*
     Expection-Maximization Clustering Algorithm
+    Standard sequential implementation of the EM algorithm for single feature clustering.
 
     Usage: ./program <dataset_file> <metadata_file>
 */

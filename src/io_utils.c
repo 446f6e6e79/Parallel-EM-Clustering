@@ -94,9 +94,15 @@ int read_metadata(const char *meta_data_file_path, Metadata *metadata) {
 /*
     Write the execution information to the output csv file
     The file format is:
-        n_process,n_samples,n_features,n_clusters,time_seconds,io_time,compute_time,data_distribution_time
+        n_process,n_samples,n_features,n_clusters,time_seconds,io_time,compute_time,data_distribution_time,e_step_time,m_step_time,data_distribution_time
     Each execution will append a new line to the file.
-    Returns 0 on success, -1 on failure.
+    Parameters:
+        - filename: Path to the output csv file.
+        - n_process: Number of processes used in the execution.
+        - metadata: Metadata structure containing dataset information.
+        - timers: Timers structure containing execution times.
+    Returns:
+        0 on success, -1 on failure.
 */
 int write_execution_info(const char *filename, int n_process, Metadata *metadata, Timers_t *timers){
     // Open the file in append mode

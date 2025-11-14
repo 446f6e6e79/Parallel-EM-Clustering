@@ -118,9 +118,9 @@ void gather_dataset(int *local_predicted_labels, int *predicted_labels, int N, i
 
 
 /**
- *   Broadcast metadata (N, D, K) from root process to all other processes
- *    using a single MPI_Bcast operation for efficiency.
- *    
+*    Broadcast metadata (N, D, K) from root process to all other processes
+*    using a single MPI_Bcast operation for efficiency.
+*    
 *    Parameters:    
 *    - metadata: Metadata structure containing N, D, and K
 *    - rank: Rank of the current MPI process
