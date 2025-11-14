@@ -1,1 +1,99 @@
 \section{Introduction}
+\subsection{Problem Overview}
+
+The goal of clustering is to partition a dataset $\mathcal{X}=\{x_1,x_2,\dots, x_N\}$ where $x_i \in \mathbb{R}^D$ 
+into $K$ (number of clusters) groups without using label information. 
+
+\subsection{Gaussian Mixture Models}
+
+A Gaussian Mixture Model assumes that each data point 
+is generated from one of $K$ Gaussian components:
+
+\begin{equation}
+    p(x \mid \theta) = \sum_{k=1}^{K} \pi_k \, \mathcal{N}(x \mid \mu_k, \Sigma_k)
+    \label{gmm_equation}
+\end{equation}
+
+where:
+\[
+\sum_{k=1}^K \pi_k = 1, \quad \pi_k \ge 0
+\]
+
+\noindent
+Here, $\pi_k$ are the mixture weights, $\mu_k$ are the means, and $\Sigma_k$ are the covariance matrices of the Gaussian components.
+The multivariate Gaussian density is:
+
+\begin{equation}
+\mathcal{N}(x \mid \mu_k, \Sigma_k)
+= \frac{1}{(2\pi)^{D/2} |\Sigma_k|^{1/2}}
+  \exp\left( -\frac{1}{2} (x - \mu_k)^T 
+  \Sigma_k^{-1} (x - \mu_k) \right)
+  \label{gaussian_density}
+\end{equation}
+
+\noindent
+In our implementation we adopt a diagonal covariance matrix for each Gaussian component. 
+This means that the covariance matrix of component $k$ is defined as:
+
+\[
+\mathcal{N}(x \mid \mu_k, \Sigma_k)
+= \frac{1}{(2\pi)^{D/2} \prod_{d=1}^D \sigma_{k,d}^{1/2}}
+  \exp\Bigg(-\frac{1}{2} \sum_{d=1}^D \frac{(x_d - \mu_{k,d})^2}{\sigma_{k,d}}\Bigg)
+\]
+
+\noindent
+This simplification reduces computational complexity and memory usage,
+making it feasible to work with high-dimensional data.
+
+\subsection{Expectation-Maximization algorithm}
+
+In the E-step we compute the responsibilities:
+
+\begin{equation}
+\gamma_{ik} 
+= p(z_i = k \mid x_i, \theta)
+= \frac{\pi_k \, \mathcal{N}(x_i \mid \mu_k, \Sigma_k)}
+       {\sum_{j=1}^{K} \pi_j \, \mathcal{N}(x_i \mid \mu_j, \Sigma_j)}
+    \label{e_step_equation}
+\end{equation}
+
+In the M-step we perform the following
+
+Update of :
+\begin{equation}
+N_k = \sum_{i=1}^{N} \gamma_{ik}
+\label{m_step_equation}
+\end{equation}
+
+Update of means:
+\[\mu_k = \frac{1}{N_k} \sum_{i=1}^{N} \gamma_{ik} x_i\]   
+
+Update of covariance matrices:
+\[\Sigma_k = \frac{1}{N_k} \sum_{i=1}^{N} \gamma_{ik} (x_i - \mu_k)(x_i - \mu_k)^T\]
+
+Update of mixture weights:
+\[\pi_k = \frac{N_k}{N}\]
+
+Log-likelihood computation:
+\begin{equation}
+\mathcal{L}(\theta) = \sum_{i=1}^{N} \log \left( \sum_{k=1}^{K} \pi_k \, \mathcal{N}(x_i \mid \mu_k, \Sigma_k) \right)
+\label{log_likelihood}
+\end{equation}
+
+\begin{algorithm}[H]
+\caption{Expectation-Maximization for GMM}
+\begin{algorithmic}[1]
+\State Initialize parameters $\{\pi_k, \mu_k, \Sigma_k\}_{k=1}^K$
+\For{i $= 1 \dots \text{MAX\_ITER}$}
+    \State \textbf{E-step:} compute responsibilities using \eqref{e_step_equation}
+    \State \textbf{M-step:} update parameters using \eqref{m_step_equation}
+    \State Compute log-likelihood $\mathcal{L}_{\text{curr}}$ according to \eqref{log_likelihood}
+    \If{$|\mathcal{L}_{\text{curr}} - \mathcal{L}_{\text{prev}}| < \epsilon$}
+        \State \textbf{break} \Comment{Convergence reached}
+    \EndIf
+    \State $\mathcal{L}_{\text{prev}} \gets \mathcal{L}_{\text{curr}}$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Expectation-Maximization algorithm for Clustering}

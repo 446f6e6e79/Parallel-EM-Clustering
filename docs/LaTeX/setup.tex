@@ -1,5 +1,6 @@
-% Pacchetti essenziali
+% Essential LaTeX packages and custom commands for documentation
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{comment}
@@ -11,13 +12,15 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{tcolorbox} 
-\usepackage{fancyhdr} % Aggiunto per intestazioni personalizzate
+\usepackage{fancyhdr} 
+\usepackage{multirow}
+\usepackage{array}
 
-% Definition of the command for the month
+% Command to get the current month name
 \newcommand{\MonthName}{%
   \ifcase\month\or January\or February\or March\or April\or May\or June\or July\or August\or September\or October\or November\or December\fi}
 
-  % Configurazione di codeblocks con il pacchetto listings
+% Configuration of code blocks with the listings package
 \lstset{
   basicstyle=\ttfamily\small,
   keywordstyle=\color{blue},
@@ -25,42 +28,45 @@
   stringstyle=\color{red},
   showstringspaces=false,
   breaklines=true,
-  frame=single, % Aggiunge un bordo attorno al codice
-  numbers=left, % Numeri di riga a sinistra
-  numberstyle=\tiny\color{gray}, % Stile dei numeri di riga
-  stepnumber=1, % Numero di righe da saltare tra i numeri
-  numbersep=-5pt, % Distanza tra i numeri di riga e il codice
-  tabsize=2, % Dimensione del tab
-  captionpos=b, % Posizione della didascalia
+  frame=single, 
+  numbers=left, 
+  numberstyle=\tiny\color{gray}, 
+  stepnumber=1, 
+  numbersep=-5pt, 
+  tabsize=2, 
+  captionpos=b, 
 }
 
-% Configurazione dell'intestazione
+% Configuration of the header and footer with fancyhdr
 \pagestyle{fancy}
-\fancyhf{} % Pulisce le intestazioni e i piè di pagina
-\fancyhead[L]{\leftmark} % Sezione corrente a sinistra
-\fancyhead[R]{\thepage} % Numero di pagina a destra
+\fancyhf{} 
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage} 
 
-% Comandi personalizzati per definizioni
+% Custom commands for definitions
 \newcommand{\definition}[2]{%
   \paragraph{#1:} #2%
 }
 
-% Alternativa con enfasi sul termine
+% Alternative with emphasis on the term
 \newcommand{\defterm}[2]{%
   \paragraph{\textbf{#1}:} #2%
 }
 
-% Ambiente per liste di definizioni
+% Environment for lists of definitions
 \newenvironment{definitions}{%
   \begin{description}[font=\normalfont\bfseries\large, leftmargin=0pt, labelindent=0pt]
 }{%
   \end{description}
 }
 
-% Definizione con box colorato (opzionale)
+% Definition with colored box (optional)
 \newtcolorbox{defbox}[1]{
   colback=blue!5!white,
   colframe=blue!75!black,
   title=#1,
   fonttitle=\bfseries
 }
+
+% No indentation for paragraphs
+\setlength{\parindent}{0pt}
