@@ -18,6 +18,20 @@ Each cluster is represented by a probability distribution, and in our case, they
 The challenge is to estimate the parameters of these distributions-namely the means, covariances, and mixture weights- 
 such that the overall likelihood of the data given the model is maximized.
 
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[t]{0.52\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{../media/first_iteration.png}
+    \end{minipage}\hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{../media/em_visualization.png}
+    \end{minipage}\hfill
+    \caption{Example of clustering using GMMs with $K=3$ on a 2D dataset.}
+    \label{fig:gmm_clusters}
+\end{figure}
+
 \subsection{Gaussian Mixture Models}
 
 A Gaussian Mixture Model (GMM) \cite{Reynolds2009} is a probabilistic model that represents data as a combination
@@ -83,10 +97,6 @@ This simplification reduces computational complexity and memory usage,
 making it feasible to work with high-dimensional data. In fact, evaluating the Gaussian density in the full-covariance 
 case requires $O(D^3)$ time due to matrix inversion and determinant 
 computation, while the diagonal formulation reduces this to $O(D)$. 
-
-% -------
-
-%TODO: Add an image representing GMMs and clustering
 
 At this point, our main problem is to estimate the parameters $\theta = \{\pi_k, \boldsymbol{\mu}_k, \Sigma_k\}_{k=1}^K$ of the GMM given the dataset $\mathcal{X}$,
 as they are unknown in our case.
