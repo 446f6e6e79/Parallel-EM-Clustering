@@ -59,20 +59,35 @@ The Gaussian density function is defined as:
 
 With this function, we can evaluate the likelihood of a data point $x$ belonging to the $k$-th Gaussian component.
 
-%TODO: move this to implementation (in my opinion)
-\noindent
-In our implementation we adopt a diagonal covariance matrix for each Gaussian component. 
-This means that the covariance matrix of component $k$ is defined as:
+In our implementation we adopt a diagonal covariance matrix \cite{bishop2006pattern} for each Gaussian component. 
+This assumption implies that the features are uncorrelated within each component, simplifying the covariance matrix to a diagonal form:
+
 
 \[
-\mathcal{N}(x \mid \mu_k, \Sigma_k)
+\Sigma_k = 
+\begin{pmatrix}
+\sigma_{k,1} & 0 & \cdots & 0 \\
+0 & \sigma_{k,2} & \cdots & 0 \\
+\vdots & \vdots & \ddots & \vdots \\
+0 & 0 & \cdots & \sigma_{k,D}
+\end{pmatrix}
+\]
+
+Then the Gaussian density function simplifies to:
+
+\begin{equation}
+  \mathcal{N}(x \mid \mu_k, \Sigma_k)
 = \frac{1}{(2\pi)^{D/2} \prod_{d=1}^D \sigma_{k,d}^{1/2}}
   \exp\Bigg(-\frac{1}{2} \sum_{d=1}^D \frac{(x_d - \mu_{k,d})^2}{\sigma_{k,d}}\Bigg)
-\]
+  \label{diagonal_gaussian_density}
+\end{equation}
+
 
 \noindent
 This simplification reduces computational complexity and memory usage,
-making it feasible to work with high-dimensional data.
+making it feasible to work with high-dimensional data. In fact, evaluating the Gaussian density in the full-covariance 
+case requires $O(D^3)$ time due to matrix inversion and determinant 
+computation, while the diagonal formulation reduces this to $O(D)$. 
 
 % -------
 
@@ -166,6 +181,25 @@ In the following, we provide pseudocode for the overall EM algorithm for GMMs, a
 \end{algorithm}
 
 \begin{algorithm}[H]
+\caption{Compute multivariate Gaussian density with diagonal covariance}
+\begin{algorithmic}[1]
+\Require $x \in \mathbb{R}^D$, $\mu \in \mathbb{R}^D$, $\sigma \in \mathbb{R}^D$ 
+\Ensure $\mathcal{N}(x \mid \mu, \sigma)$
+\State $\text{logdet} \gets 0$
+\State $\text{quad} \gets 0$
+\For{$d = 1$ to $D$}
+    \State $var \gets \sigma[d]$
+    \State $\text{logdet} \gets \text{logdet} + \log(var)$
+    \State $\text{diff} \gets x[d] - \mu[d]$
+    \State $\text{quad} \gets \text{quad} + \frac{\text{diff}^2}{var}$
+\EndFor
+\State $\text{exponent} \gets -0.5 \cdot ( D \cdot \log 2\pi + \text{logdet} + \text{quad} )$
+\State \Return $\exp(\text{exponent})$
+\end{algorithmic}
+\end{algorithm}
+
+
+\begin{algorithm}[H]
 \caption{E-step: Computation of Responsibilities}
 \begin{algorithmic}[1]
 \Require Dataset $X \in \mathbb{R}^{N \times D}$, parameters $\mu_{k}, \sigma_{k}, \pi_{k}$ for $k=1,\dots,K$
@@ -173,7 +207,7 @@ In the following, we provide pseudocode for the overall EM algorithm for GMMs, a
 \For{$i = 1$ to $N$}
     \State $\text{denom} \gets 0$
     \For{$k = 1$ to $K$}
-        \State $\gamma_{ik}  \gets \pi_k \cdot \mathcal{N}(X[i] \mid \mu_k, \Sigma_k)$ \Comment{Gaussian density using \eqref{gaussian_density}}
+        \State $\gamma_{ik}  \gets \pi_k \cdot \mathcal{N}(X[i] \mid \mu_k, \Sigma_k)$ \Comment{Gaussian density using \eqref{diagonal_gaussian_density}}
         \State $\text{denom} \gets \text{denom} + \gamma_{ik}$
     \EndFor
 
