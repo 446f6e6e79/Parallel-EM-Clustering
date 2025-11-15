@@ -3,7 +3,14 @@ import numpy as np
 import imageio
 from utils import create_clustering_frame, remap_predicted, derive_cluster_mapping
 
-def visualize_em(csv_path, output_gif="data/em_progress.gif"):
+def visualize_em(csv_path, output_gif="data/em_progress.gif", iterations=None):
+    """
+    Visualizes the progression of the EM clustering algorithm as a GIF.
+    Args:
+        csv_path (str): Path to the CSV file containing clustering data.
+        output_gif (str): Path to save the output GIF.
+        iterations (list, optional): Specific iterations to include in the GIF. If None, includes all iterations.
+    """
     # Load the CSV data
     df = pd.read_csv(csv_path)
     
@@ -25,11 +32,15 @@ def visualize_em(csv_path, output_gif="data/em_progress.gif"):
     xlim = (x_min - pad_x, x_max + pad_x)
     ylim = (y_min - pad_y, y_max + pad_y)
 
+    # Filter iterations if specified    
+    if iterations is not None:
+        df = df[df['iteration'].isin(iterations)]
+
     frames = []
     for it in sorted(df['iteration'].unique()):
-        frames.append(create_clustering_frame(df, it, xlim=xlim, ylim=ylim))
+        frames.append(create_clustering_frame(df, it, xlim=xlim, ylim=ylim, show_iteration=True))
 
-    imageio.mimsave(output_gif, frames, fps=2)
+    imageio.mimsave(output_gif, frames, fps=min(2, len(frames)))
     print(f"Saved animation to {output_gif}")
 
 if __name__ == "__main__":
@@ -40,4 +51,4 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--out", dest="output_gif", default="data/em_visualization.gif",
                         help="Output GIF path (default: data/em_visualization.gif)")
     args = parser.parse_args()
-    visualize_em(args.csv_path, args.output_gif)
+    visualize_em(args.csv_path, args.output_gif, iterations=None)

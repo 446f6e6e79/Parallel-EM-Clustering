@@ -249,7 +249,7 @@ def plot_cov_ellipses(mean, cov, ax, color,
             center_kwargs = dict(marker='x', s=64, linewidths=2, color=color, zorder=6)
         ax.scatter([mean[0]], [mean[1]], **center_kwargs)
 
-def create_clustering_frame(df, it, xlim, ylim):
+def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
     """
     Create a matplotlib figure for a specific iteration of clustering.
     Parameters:
@@ -291,7 +291,12 @@ def create_clustering_frame(df, it, xlim, ylim):
         if l not in by_label:
             by_label[l] = h
     ax.legend(by_label.values(), by_label.keys(), frameon=False)
-    ax.set_title(f"Iteration {it}")
+    # Add label for feature axes
+    ax.set_xlabel("Feature 1")
+    ax.set_ylabel("Feature 2")
+    
+    if show_iteration:
+        ax.set_title(f"Iteration {it}")
     plt.tight_layout()
 
     fig.canvas.draw()
