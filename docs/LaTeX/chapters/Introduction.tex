@@ -75,12 +75,23 @@ This simplification reduces computational complexity and memory usage,
 making it feasible to work with high-dimensional data.
 
 % -------
-But our main problem is to estimate the parameters $\theta = \{\pi_k, \mu_k, \Sigma_k\}_{k=1}^K$ of the GMM given the dataset $\mathcal{X}$,
+
+%TODO: Add an image representing GMMs and clustering
+
+At this point, our main problem is to estimate the parameters $\theta = \{\pi_k, \mu_k, \Sigma_k\}_{k=1}^K$ of the GMM given the dataset $\mathcal{X}$,
 as they are unknown in our case.
 
-\subsection{Expectation-Maximization algorithm}
+\subsection{Expectation-Maximization algorithm} 
+
+The Expectation-Maximization (EM) algorithm \cite{dempster1977em} is an iterative method for finding maximum likelihood estimates of parameters in statistical models,
+where the model depends on unobserved latent variables. In the context of GMMs, the latent variables represent the cluster assignments of data points.
+The EM algorithm consists of two main steps: the Expectation step (E-step) and the Maximization step (M-step).
+
 \subsubsection*{E-Step}
-In the E-step we compute the responsibilities:
+
+Using the current estimates of the parameters $\theta$, we compute the posterior probabilities (responsibilities) that each data point belongs to each Gaussian component.
+At the first iteration, the parameters are initialized randomly, in order to start the algorithm.
+The responsibilities $\gamma_{ik}$ (data points $i$ belongs to cluster $k$) are computed as follows:
 
 \begin{equation}
 \gamma_{ik} 
@@ -90,9 +101,9 @@ In the E-step we compute the responsibilities:
     \label{e_step_equation}
 \end{equation}
 \subsubsection*{M-Step}
-In the M-step we perform the following
+Using the responsibilities computed in the E-step, we update the parameters of the GMM to maximize the expected complete-data log-likelihood.
+The updates for the parameters are given by:
 
-Update of :
 \begin{equation}
 N_k = \sum_{i=1}^{N} \gamma_{ik}
 \label{m_step_equation}
@@ -107,13 +118,37 @@ Update of covariance matrices:
 Update of mixture weights:
 \[\pi_k = \frac{N_k}{N}\]
 
-Log-likelihood computation:
+
+After updating the parameters, we repeat the E-step and M-step until convergence, which is typically determined by checking
+if the change in log-likelihood between iterations is below a predefined threshold $\epsilon$ or if a maximum number of iterations is reached.
+
+The log-likelihood of the data given the model parameters is computed as:
 \begin{equation}
-\mathcal{L}(\theta) = \sum_{i=1}^{N} \log \left( \sum_{k=1}^{K} \pi_k \, \mathcal{N}(x_i \mid \mu_k, \Sigma_k) \right)
+\mathcal{L}(\theta ) = \sum_{i=1}^{N} \log \left( \sum_{k=1}^{K} \pi_k \, \mathcal{N}(x_i \mid \mu_k, \Sigma_k) \right)
 \label{log_likelihood}
 \end{equation}
 
+\subsubsection*{Clustering Assignment}
+
+In order to cluster the dataset \cite{kak2024clustering} using the EM algorithm for GMMs, we simply assign each data point to the cluster corresponding 
+to the Gaussian component with the highest responsibility. This is only done after the algorithm has converged or reached the maximum number of iterations.
+
+\begin{equation}
+\hat{z}_i = \arg\max_{k} p(z_i = k \mid x_i, \theta) = \arg\max_{k} \gamma_{ik}
+\label{clustering_equation}
+\end{equation}
+
+\subsubsection*{Computational Complexity}
+
+The computational complexity of the EM algorithm for clustering primarily depends on the number of data points $N$, the number of clusters $K$, and the number of data $D$.
+In each iteration of the EM algorithm, the E-step requires $O(NKD)$ operations to compute the responsibilities for all data points and clusters.
+The M-step also requires $O(NKD)$ operations to update the parameters of the GMM.
+Therefore, the overall complexity per iteration is $O(NKD)$.
+This complexity can become prohibitive for large datasets, motivating the need for parallelization to improve efficiency.
 \subsubsection{Pseudocode}
+
+In the following, we provide pseudocode for the overall EM algorithm for GMMs, as well as for the E-step and M-step procedures.
+
 \begin{algorithm}[H]
 \caption{Expectation-Maximization for GMM}
 \begin{algorithmic}[1]
@@ -130,4 +165,75 @@ Log-likelihood computation:
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Expectation-Maximization algorithm for Clustering}
+\begin{algorithm}[H]
+\caption{E-step: Computation of Responsibilities}
+\begin{algorithmic}[1]
+\Require Dataset $X \in \mathbb{R}^{N \times D}$, parameters $\mu_{k}, \sigma_{k}, \pi_{k}$ for $k=1,\dots,K$
+\Ensure Responsibilities $\gamma_{ik}$
+\For{$i = 1$ to $N$}
+    \State $\text{denom} \gets 0$
+    \For{$k = 1$ to $K$}
+        \State $\gamma_{ik}  \gets \pi_k \cdot \mathcal{N}(X[i] \mid \mu_k, \Sigma_k)$ \Comment{Gaussian density using \eqref{gaussian_density}}
+        \State $\text{denom} \gets \text{denom} + \gamma_{ik}$
+    \EndFor
+
+    \For{$k = 1$ to $K$}
+        \State $\gamma_{ik} \gets \gamma_{ik} / \text{denom}$ 
+   \EndFor
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+
+\begin{algorithm}[H]
+\caption{M-step: Parameter Update}
+\begin{algorithmic}[1]
+\Require Dataset $X \in \mathbb{R}^{N \times D}$, responsibilities $\gamma_{ik}$
+\Ensure Updated parameters $\mu_k$, $\sigma_k$, $\pi_k$
+\State Initialize accumulators: $N_k \gets 0$, $\mu^{\text{acc}}_{kd} \gets 0$, $\sigma^{\text{acc}}_{kd} \gets 0$
+\For{$i = 1$ to $N$}
+    \For{$k = 1$ to $K$}
+        \State $N_k \gets N_k + \gamma_{ik}$
+        \For{$d = 1$ to $D$}
+            \State $\mu^{\text{acc}}_{kd} \gets \mu^{\text{acc}}_{kd} + \gamma_{ik} \cdot X[i,d]$
+        \EndFor
+    \EndFor
+\EndFor
+\For{$k = 1$ to $K$}
+    \For{$d = 1$ to $D$}
+        \State $\mu_{kd} \gets \mu^{\text{acc}}_{kd} / N_k$
+    \EndFor
+\EndFor
+\For{$i = 1$ to $N$}
+    \For{$k = 1$ to $K$}
+        \For{$d = 1$ to $D$}
+            \State $\sigma^{\text{acc}}_{kd} \gets \sigma^{\text{acc}}_{kd} + \gamma_{ik} \cdot (X[i,d] - \mu_{kd})^2$
+        \EndFor
+    \EndFor
+\EndFor
+\For{$k = 1$ to $K$}
+    \For{$d = 1$ to $D$}
+        \State $\sigma_{kd} \gets \sigma^{\text{acc}}_{kd} / N_k$
+    \EndFor
+    \State $\pi_k \gets N_k / N$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Clustering: Label Assignment from Responsibilities}
+\begin{algorithmic}[1]
+\Require Responsibilities matrix $\gamma \in \mathbb{R}^{N \times K}$
+\Ensure Predicted labels $\hat{y} \in \{1,\dots,K\}^N$
+\For{$i = 1$ to $N$}
+    \State $\text{max\_resp} \gets \gamma_{i1}$ \Comment{Initialize with first cluster responsibility}
+    \State $\hat{y}_i \gets 1$
+    \For{$k = 2$ to $K$}
+        \If{$\gamma_{ik} > \text{max\_resp}$}
+            \State $\text{max\_resp} \gets \gamma_{ik}$
+            \State $\hat{y}_i \gets k$
+        \EndIf
+    \EndFor
+\EndFor
+\end{algorithmic}
+\end{algorithm}
