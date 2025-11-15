@@ -1,3 +1,24 @@
 \section{Parallel Design}
 
-\subsection{Data dependecies}
+\subsection{Data dependencies}
+
+\begin{table}[ht]
+\centering
+\small
+\setlength{\tabcolsep}{8pt}
+\renewcommand{\arraystretch}{1.05}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|}
+\hline
+\multirow{2}{*}{Memory Location} & \multicolumn{3}{c|}{Earlier Statement} & \multicolumn{3}{c|}{Later Statement} & \multirow{2}{*}{Loop-carried?} & \multirow{2}{*}{Kind of Dataflow} \\
+\cline{2-7}
+ & Line & Iteration & Access & Line & Iteration & Access & & \\
+\hline
+$a(i+1)$ & 20 & $i$   & read  & 10 & $i+1$ & write & yes & anti \\
+\hline
+$b(i)$   & 30 & $i$   & read  & 20 & $i+1$ & write & yes & anti \\
+\hline
+$c(2)$   & 40 & $i$   & write & 30 & $i+1$ & read  & yes & flow \\
+\hline
+\end{tabular}}
+\end{table}
