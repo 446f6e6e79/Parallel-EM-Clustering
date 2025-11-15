@@ -49,17 +49,6 @@ for run in {1..3}; do
 
     PARAMETERS="-i $input -m $meta -b $info"
 
-    # Skip if any required file is missing
-    missing=false
-    for f in ${PARAMETERS}; do
-      if [ ! -f "$f" ]; then
-        echo "Missing file: $f — skipping $dataset_name"
-        missing=true
-        break
-      fi
-    done
-    $missing && continue
-
     for combo in "${COMBOS[@]}"; do
       IFS=":" read -r NODES NCPUS <<< "$combo"
       NP=$(( NODES * NCPUS ))
