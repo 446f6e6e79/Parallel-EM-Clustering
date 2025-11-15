@@ -37,7 +37,7 @@ or, for the serial version:
 make debug-sequential
 ```
 
-### Compiling on the Cluster
+#### Compiling on the Cluster
 If you are compiling the project on the cluster, remember to load the
 required MPI module before running any `make` command:
 
@@ -69,9 +69,16 @@ The datasets used in our analysis can be generated using the provided script:
 This script automatically creates several datasets with different configurations (number of examples, features, and clusters).
 Each generated dataset is stored under the `data/datasets` directory.
 
-It is also possible to generate new datasets manually, as described below.
+#### Import the Dataset to the Cluster
+
+The generated files can be exported to the cluster via:
+
+```bash
+scp  -r data/datasets user@cluster:/path/to/destination
+```
+
 #### Manual dataset generation
-From the main directory of the repository:
+It is also possible to manually generate a custom dataset using the provided Python script. To run it from the main directory of the repository:
 ```bash
 python data/datasetGeneration/data-generator.py
 ```
@@ -119,15 +126,7 @@ The list of possible parameters for the script are:
 - `--plot` (**flag**):  
   Display a 2D scatter plot of the generated dataset (only works when `--features 2`).
 
----
 
-### Import the Dataset to the Cluster
-
-The generated files can be exported to the cluster via:
-
-```bash
-scp  -r data/datasets user@cluster:/path/to/destination
-```
 
 ---
 
@@ -147,14 +146,14 @@ Example usage:
 
 #### Parallel Version
 
-```bash
-./bin/EM_clustering
-```
-Example usage:
-```bash
-./bin/EM_clustering -i data/em_dataset.csv -m data/em_metadata.txt
-```
 
+```bash
+mpirun -np <num_processes> ./bin/EM_Clustering
+```
+Example usage, with 4 processes:
+```bash
+mpirun -np 4 ./bin/EM_Clustering -i data/em_dataset.csv -m data/em_metadata.txt
+```
 
 #### Available Parameters
 
@@ -178,7 +177,7 @@ The list of possible parameters for the program is:
 - `-t` (**double**, optional):  
   Threshold value used for early stopping the algorithm. If set, the algorithm will continue as long as the update of the responsibility matrix is more than the specified threshold. Otherwise, it will run for `MAX_ITER` iterations.
 
-### Batch Runs on the cluster (for Performance Experiments)
+#### Batch Runs on the cluster (for Performance Experiments)
 We provide a job generator that, for each provided datasets, generates job scripts for different node/core combinations and submits them to the cluster:
 
 ```bash
@@ -210,20 +209,27 @@ You can submit the job to the cluster with:
    qsub scripts/singleParallelJob.sh
 ```
 ---
-### 4. Testing the correctness of the parallel version
-During the development of the parallel version of our application, we needed to ensure that its results remained consistent with those of the serial version.
-
-To achieve this, we created a dedicated test dataset suite, allowing us to perform reproducible correctness checks between the two implementations.
-These test datasets can be generated at any time using the following command:
-```bash
-./scripts/dataset_generator.sh --mode test
-```
-The test can then be executed using the provided script:
-```bash
-./scripts/test_application.sh
-```
-
 ## Outputs
+The program produces different outputs depending on the provided parameters.
+### Evaluating scalability and performance
+
+### Visualize the algorithm's clustering process
+By providing the `-d <debug_filePath>` parameter to the sequential version, the program will output intermediate results at each iteration of the algorithm.
+Example usage:
+```bash
+./bin/EM_sequential -i data/em_dataset.csv -m data/em_metadata.txt -d data/debug.csv
+```
+The debug file will contain, for each iteration, the current parameters of the GMM and the clustering assignments for each data point. Those can be used to visualize the clustering process of the algorithm over time.
+
+<p align="center">
+  <img src="docs/media/em_progress.gif" alt="EM clustering progression" width="500" />
+</p>
+
+We provide a Python script to create an animation of the clustering process using the debug file:
+```bash
+python data/resultElaboration/algorithm_visualization.py -i data/debug.csv -o data/em_visualization.gif
+```
+The output GIF will be saved at the specified path (default: `data/em_visualization.gif`).
 
 ---
 

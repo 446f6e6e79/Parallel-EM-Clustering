@@ -190,78 +190,115 @@ def clustering_accuracy(df):
     _, _, accuracy = cluster_mapping(y_true, y_pred)
     return accuracy
 
-def plot_cov_ellipse(mean, cov, ax, color, alpha=0.18, edge_alpha=0.9,
-                     show_center=True, center_kwargs=None):
+def plot_cov_ellipses(mean, cov, ax, color,
+                      sigmas=(1, 2, 3),
+                      alphas=None,
+                      edge_alpha=0.9,
+                      show_center=True,
+                      center_kwargs=None):
     """
-    Draw a covariance ellipse given:
+    Draw concentric covariance ellipses for multiple sigma levels.
         mean: 2D center
-        cov:  2x2 covariance (can be full, not only diagonal)
-        color: base color (string or RGB tuple)
-        alpha: face transparency
-        edge_alpha: edge line transparency
-        show_center: draw an 'x' at the center
-        center_kwargs: kwargs for the center marker (passed to ax.scatter)
+        cov:  2x2 covariance matrix
+        sigmas: iterable of sigma radii (e.g. (1,2,3))
+        alphas: iterable of face transparency (same length as sigmas). If None, auto.
+        edge_alpha: transparency for edges
+        show_center: draw an 'x' at center
     """
-    vals, vecs = np.linalg.eigh(cov)          # eigenvalues / eigenvectors
-    order = vals.argsort()[::-1]              # sort descending
+    sigmas = list(sigmas)
+    # Largest first (so smaller ellipses draw on top)
+    sigmas.sort(reverse=True)
+
+    vals, vecs = np.linalg.eigh(cov)
+    order = vals.argsort()[::-1]
     vals, vecs = vals[order], vecs[:, order]
     theta = np.degrees(np.arctan2(*vecs[:, 0][::-1]))
-    width, height = 2 * np.sqrt(vals)         # 1-sigma ellipse
+    stds = np.sqrt(vals)
 
-    ellipse = Ellipse(
-        xy=mean,
-        width=width,
-        height=height,
-        angle=theta,
-        edgecolor=color,
-        facecolor=color,
-        lw=2,
-        alpha=alpha
-    )
-    ellipse.set_edgecolor((*ellipse.get_edgecolor()[:3], edge_alpha))
-    ax.add_patch(ellipse)
+    # If alphas not provided, compute inversely proportional to sigmas
+    # Outer ellipses more transparent
+    if alphas is None:
+        base = 0.35
+        alphas = []
+        for s in sigmas:
+            # inverse proportional
+            alphas.append(base / (0.6 + 0.6 * s))
+    else:
+        if len(alphas) != len(sigmas):
+            raise ValueError("alphas length must match sigmas length")
+
+    for s, a in zip(sigmas, alphas):
+        width, height = 2 * s * stds  # 2*σ*s gives diameter for each axis
+        ellipse = Ellipse(
+            xy=mean,
+            width=width,
+            height=height,
+            angle=theta,
+            facecolor=color,
+            edgecolor=color,
+            lw=2,
+            alpha=a
+        )
+        ec = ellipse.get_edgecolor()
+        if isinstance(ec, (tuple, list)) and len(ec) == 3:
+            ellipse.set_edgecolor((*ec, edge_alpha))
+        ax.add_patch(ellipse)
 
     if show_center:
         if center_kwargs is None:
-            center_kwargs = dict(marker='x', s=64, linewidths=2, color=color, zorder=5)
+            center_kwargs = dict(marker='x', s=64, linewidths=2, color=color, zorder=6)
         ax.scatter([mean[0]], [mean[1]], **center_kwargs)
 
-def create_clustering_frame(df, it):
+def create_clustering_frame(df, it, xlim, ylim):
     """
-    Create a frame for clustering visualization at a specific iteration.
+    Create a matplotlib figure for a specific iteration of clustering.
+    Parameters:
+        df: DataFrame containing clustering data
+        it: Iteration number to visualize
+        xlim: Tuple (xmin, xmax) for x-axis limits
+        ylim: Tuple (ymin, ymax) for y-axis limits
+    Returns:
+        image: Numpy array representing the figure
     """
     df_it = df[df['iteration'] == it]
     fig, ax = plt.subplots(figsize=(6, 6))
 
-    # Colormap: consistent colors per predicted cluster
+    # Set axis limits
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+
     unique_clusters = sorted(df_it['predicted_cluster'].unique())
     color_map = {c: plt.cm.tab10(i % 10) for i, c in enumerate(unique_clusters)}
 
     for c in unique_clusters:
         data = df_it[df_it['predicted_cluster'] == c]
         color = color_map[c]
-
-        ax.scatter(
-            data['feature_1'],
-            data['feature_2'],
-            s=12,
-            label=f'Cluster {c}',
-            color=color,
-            alpha=0.85
-        )
+        ax.scatter(data['feature_1'], data['feature_2'], s=12, label=f'Cluster {c}', color=color, alpha=0.85)
 
         mean = [data['mu_k_1'].iloc[0], data['mu_k_2'].iloc[0]]
         cov = np.diag([data['sigma_k_1'].iloc[0], data['sigma_k_2'].iloc[0]])
-        plot_cov_ellipse(mean, cov, ax, color=color)
+        plot_cov_ellipses(mean, cov, ax, color, sigmas=(1,2,3))
 
+        wrong = data[data['real_cluster'] != data['predicted_cluster']]
+        if not wrong.empty:
+            ax.scatter(wrong['feature_1'], wrong['feature_2'], marker='x', s=45, linewidths=2,
+                       color=color, alpha=1.0, zorder=10)
+
+    # Create legend, removing duplicates
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = {}
+    for h, l in zip(handles, labels):
+        if l not in by_label:
+            by_label[l] = h
+    ax.legend(by_label.values(), by_label.keys(), frameon=False)
     ax.set_title(f"Iteration {it}")
-    ax.legend(frameon=False)
     plt.tight_layout()
 
     fig.canvas.draw()
     image = np.array(fig.canvas.renderer.buffer_rgba())[:, :, :3]
     plt.close(fig)
     return image
+
 
 def derive_cluster_mapping(df):
     """
