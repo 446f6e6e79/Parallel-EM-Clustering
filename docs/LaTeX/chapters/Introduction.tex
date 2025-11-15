@@ -12,21 +12,16 @@ We evaluate the performance of our implementation on various settings, analyzing
 Our results demonstrate the effectiveness of parallelization in accelerating the EM algorithm for clustering large datasets.
 
 \subsection{Problem Overview}
-
-The goal of clustering is to partition a dataset $\mathcal{X}=\{x_1,x_2,\dots, x_N\}$ where $x_i \in \mathbb{R}^D$ 
+The goal of clustering is to partition a dataset $\mathcal{X}=\{\boldsymbol{x}_1,\boldsymbol{x}_2,\dots, \boldsymbol{x}_N\}$ where $\boldsymbol{x}_i \in \mathbb{R}^D$ 
 into $K$ (number of clusters) groups without using label information. 
 Each cluster is represented by a probability distribution, and in our case, they are modeled as a Gaussian distribution.
-The challenge is to estimate the parameters of these distributions, including the means, covariances, and mixture weights, 
+The challenge is to estimate the parameters of these distributions-namely the means, covariances, and mixture weights- 
 such that the overall likelihood of the data given the model is maximized.
-
-Then the size of the dataset $N$, the number of features $D$, and the number of clusters $K$ can be very large, 
-making the computation of clustering time-consuming.
 
 \subsection{Gaussian Mixture Models}
 
 A Gaussian Mixture Model (GMM) \cite{Reynolds2009} is a probabilistic model that represents data as a combination
- of multiple Gaussian distributions, each with its own mean, covariance, and mixture weight.
-GMMs are widely used for clustering tasks due to their flexibility in modeling complex data distributions,
+ of multiple Gaussian distributions, each with its own mean, covariance, and mixture weight. GMMs are widely used for clustering tasks due to their flexibility in modeling complex data distributions,
  where data points may naturally cluster around multiple centers with varying shapes and sizes.
 So the goal is to estimate, by knowing the parameters of both the Gaussian components, to assign data points to these clusters.
 
@@ -34,30 +29,30 @@ A GMMs assumes that each data point
 is generated from one of $K$ Gaussian components:
 
 \begin{equation}
-    p(x \mid \theta) = \sum_{k=1}^{K} \pi_k \, \mathcal{N}(x \mid \mu_k, \Sigma_k)
+    p(\boldsymbol{x} \mid \theta) = \sum_{k=1}^{K} \pi_k \, \mathcal{N}(\boldsymbol{x} \mid \boldsymbol{\mu}_k, \Sigma_k)
     \label{generation_equation}
 \end{equation}
 
-where:
+where the sum of the mixture weights satisfies the following constraints:
 \[
 \sum_{k=1}^K \pi_k = 1, \quad \pi_k \ge 0
 \]
 
 \noindent
-Here, $\pi_k$ are the mixture weights, $\mu_k$ are the means, and $\Sigma_k$ are the covariance matrices of the Gaussian components.
-The mixture weights represent the prior probability of each component, while the Gaussian density function $\mathcal{N}(x \mid \mu_k, \Sigma_k)$
-models the distribution of data points within each component.
+Here, $\pi_k$ are the mixture weights, $\boldsymbol{\mu}_k$ are the means, and $\Sigma_k$ are the covariance matrices of the Gaussian components.
+The mixture weights $\pi_k$ represent the prior probability of component $k$, while the Gaussian density function $\mathcal{N}(\boldsymbol{x} \mid \boldsymbol{\mu}_k, \Sigma_k)$
+models the distribution of data points assigned to that component.
 The Gaussian density function is defined as:
 
 \begin{equation}
-\mathcal{N}(x \mid \mu_k, \Sigma_k)
+\mathcal{N}(\boldsymbol{x} \mid \boldsymbol{\mu}_k, \Sigma_k)
 = \frac{1}{(2\pi)^{D/2} |\Sigma_k|^{1/2}}
-  \exp\left( -\frac{1}{2} (x - \mu_k)^T 
-  \Sigma_k^{-1} (x - \mu_k) \right)
+  \exp\left( -\frac{1}{2} (\boldsymbol{x} - \boldsymbol{\mu}_k)^T 
+  \Sigma_k^{-1} (\boldsymbol{x} - \boldsymbol{\mu}_k) \right)
   \label{gaussian_density}
 \end{equation}
 
-With this function, we can evaluate the likelihood of a data point $x$ belonging to the $k$-th Gaussian component.
+With this function, we can evaluate the likelihood of a data point $\boldsymbol{x}$ belonging to the $k$-th Gaussian component.
 
 In our implementation we adopt a diagonal covariance matrix \cite{bishop2006pattern} for each Gaussian component. 
 This assumption implies that the features are uncorrelated within each component, simplifying the covariance matrix to a diagonal form:
@@ -76,7 +71,7 @@ This assumption implies that the features are uncorrelated within each component
 Then the Gaussian density function simplifies to:
 
 \begin{equation}
-  \mathcal{N}(x \mid \mu_k, \Sigma_k)
+  \mathcal{N}(\boldsymbol{x} \mid \boldsymbol{\mu}_k, \Sigma_k)
 = \frac{1}{(2\pi)^{D/2} \prod_{d=1}^D \sigma_{k,d}^{1/2}}
   \exp\Bigg(-\frac{1}{2} \sum_{d=1}^D \frac{(x_d - \mu_{k,d})^2}{\sigma_{k,d}}\Bigg)
   \label{diagonal_gaussian_density}
@@ -93,7 +88,7 @@ computation, while the diagonal formulation reduces this to $O(D)$.
 
 %TODO: Add an image representing GMMs and clustering
 
-At this point, our main problem is to estimate the parameters $\theta = \{\pi_k, \mu_k, \Sigma_k\}_{k=1}^K$ of the GMM given the dataset $\mathcal{X}$,
+At this point, our main problem is to estimate the parameters $\theta = \{\pi_k, \boldsymbol{\mu}_k, \Sigma_k\}_{k=1}^K$ of the GMM given the dataset $\mathcal{X}$,
 as they are unknown in our case.
 
 \subsection{Expectation-Maximization algorithm} 
@@ -104,20 +99,20 @@ The EM algorithm consists of two main steps: the Expectation step (E-step) and t
 
 \subsubsection*{E-Step}
 
-Using the current estimates of the parameters $\theta$, we compute the posterior probabilities (responsibilities) that each data point belongs to each Gaussian component.
+Using the current parameter estimates $\theta$, we compute the posterior probabilities, also called responsibilities, that each data point belongs to each Gaussian component.
 At the first iteration, the parameters are initialized randomly, in order to start the algorithm.
-The responsibilities $\gamma_{ik}$ (data points $i$ belongs to cluster $k$) are computed as follows:
+The responsibilities $\gamma_{ik}$, representing the probability that data point $\boldsymbol{x}_i$ belongs to cluster $k$ is computed as follows:
 
 \begin{equation}
 \gamma_{ik} 
-= p(z_i = k \mid x_i, \theta)
-= \frac{\pi_k \, \mathcal{N}(x_i \mid \mu_k, \Sigma_k)}
-       {\sum_{j=1}^{K} \pi_j \, \mathcal{N}(x_i \mid \mu_j, \Sigma_j)}
+= p(z_i = k \mid \boldsymbol{x}_i, \theta)
+= \frac{\pi_k \, \mathcal{N}(\boldsymbol{x}_i \mid \boldsymbol{\mu}_k, \Sigma_k)}
+       {\sum_{j=1}^{K} \pi_j \, \mathcal{N}(\boldsymbol{x}_i \mid \boldsymbol{\mu}_j, \Sigma_j)}
     \label{e_step_equation}
 \end{equation}
 \subsubsection*{M-Step}
-Using the responsibilities computed in the E-step, we update the parameters of the GMM to maximize the expected complete-data log-likelihood.
-The updates for the parameters are given by:
+Using the responsibilities \(\gamma_{ik}\) computed in the E-step, we update the parameters of the GMM to maximize the expected complete-data log-likelihood.
+The updates for each component \(k = 1, \dots, K\) are as follows:
 
 \begin{equation}
 N_k = \sum_{i=1}^{N} \gamma_{ik}
@@ -125,21 +120,21 @@ N_k = \sum_{i=1}^{N} \gamma_{ik}
 \end{equation}
 
 Update of means:
-\[\mu_k = \frac{1}{N_k} \sum_{i=1}^{N} \gamma_{ik} x_i\]   
+\[\boldsymbol{\mu}_k = \frac{1}{N_k} \sum_{i=1}^{N} \gamma_{ik} \boldsymbol{x}_i\]   
 
 Update of covariance matrices:
-\[\Sigma_k = \frac{1}{N_k} \sum_{i=1}^{N} \gamma_{ik} (x_i - \mu_k)(x_i - \mu_k)^T\]
+\[\Sigma_k = \frac{1}{N_k} \sum_{i=1}^{N} \gamma_{ik} (\boldsymbol{x}_i - \boldsymbol{\mu}_k)(\boldsymbol{x}_i - \boldsymbol{\mu}_k)^T\]
 
 Update of mixture weights:
 \[\pi_k = \frac{N_k}{N}\]
 
-
-After updating the parameters, we repeat the E-step and M-step until convergence, which is typically determined by checking
-if the change in log-likelihood between iterations is below a predefined threshold $\epsilon$ or if a maximum number of iterations is reached.
+After updating the parameters, the E-step and M-step are repeated until convergence. Convergence is typically assessed by monitoring
+the change in log-likelihood between successive iterations. The process is considered converged if the change is below a predefined threshold $\epsilon$.
+Alternatively, a maximum number of iterations can be set to prevent infinite loops.
 
 The log-likelihood of the data given the model parameters is computed as:
 \begin{equation}
-\mathcal{L}(\theta ) = \sum_{i=1}^{N} \log \left( \sum_{k=1}^{K} \pi_k \, \mathcal{N}(x_i \mid \mu_k, \Sigma_k) \right)
+\mathcal{L}(\theta ) = \sum_{i=1}^{N} \log \left( \sum_{k=1}^{K} \pi_k \, \mathcal{N}(\boldsymbol{x}_i \mid \boldsymbol{\mu}_k, \Sigma_k) \right)
 \label{log_likelihood}
 \end{equation}
 
@@ -149,18 +144,18 @@ In order to cluster the dataset \cite{kak2024clustering} using the EM algorithm 
 to the Gaussian component with the highest responsibility. This is only done after the algorithm has converged or reached the maximum number of iterations.
 
 \begin{equation}
-\hat{z}_i = \arg\max_{k} p(z_i = k \mid x_i, \theta) = \arg\max_{k} \gamma_{ik}
+\hat{z}_i = \arg \max_{k} p(z_i = k \mid \boldsymbol{x}_i, \theta) = \arg\max_{k} \gamma_{ik}
 \label{clustering_equation}
 \end{equation}
-
-\subsubsection*{Computational Complexity}
+%TODO: review from here on
+\subsection{Computational Complexity analysis}
 
 The computational complexity of the EM algorithm for clustering primarily depends on the number of data points $N$, the number of clusters $K$, and the number of data $D$.
 In each iteration of the EM algorithm, the E-step requires $O(NKD)$ operations to compute the responsibilities for all data points and clusters.
 The M-step also requires $O(NKD)$ operations to update the parameters of the GMM.
 Therefore, the overall complexity per iteration is $O(NKD)$.
 This complexity can become prohibitive for large datasets, motivating the need for parallelization to improve efficiency.
-\subsubsection{Pseudocode}
+\subsection{Pseudocode}
 
 In the following, we provide pseudocode for the overall EM algorithm for GMMs, as well as for the E-step and M-step procedures.
 
