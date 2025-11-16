@@ -78,5 +78,9 @@ data/
 /test
 # Ignore personal files
 idea/
+# Ignore python notebook files
 /tools/dataElaboration/.ipynb_checkpoints
 /tools/dataElaboration/__pycache__
+tools/dataElaboration/tmp.ipynb
+# Ignore temporary jobs file
+/file

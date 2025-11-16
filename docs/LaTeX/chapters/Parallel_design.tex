@@ -1,32 +1,27 @@
 \section{Parallel Design}
-Current state-of-the-art parallelization techniques for the EM algorithm primarily focus on data parallelism approaches.
-Data parallelism involves distributing the data across multiple processing units so that computations can be performed simultaneously on different subsets of the data.
+Current state-of-the-art parallelization techniques for the EM algorithm primarily focus on data parallelism approaches, where
+the dataset is partitioned across multiple processing units so that computations can be performed simultaneously on different subsets of the data.
 \cite{altinigneli2013massively} present a GPU-based implementation of the EM algorithm that leverages the massive parallelism of GPUs to accelerate the computation of both the E-step and M-step using Asynchronous Model Update strategy.
 Similarly, \cite{lee2016simple} propose a simple multithreaded version of the EM algorithm for finite mixture models.
-\\Both approaches demonstrate significant speedups compared to traditional CPU-based implementations, making them suitable for large-scale data analysis tasks.
+\\Both approaches demonstrate significant speedups compared to traditional single-threaded implementations, making them suitable for large-scale data analysis tasks.
 
 \subsection{Our Approach}
 Building on the insights of the reviewed literature, our approach adopts a data-parallelism strategy to enhance the performance of the EM algorithm for GMMs.
-The dataset is partitioned into smaller chunks, which are then distributed across multiple processing units.
+The dataset is partitioned into chunks and distributed across multiple processing units.
 Each processing unit independently performs the E-step on its assigned data chunk, while the global parameters updates of the M-step are obtained by aggregating the partial results across all units.
 
 \subsubsection*{E-step Parallelization}
-During the E-step, each processing unit computes the responsibilities for its subset of data points, previously partitioned from the entire dataset.
-Since the computation of responsibilities for each data point is independent of others, this step is inherently parallelizable. 
-So the change of the sequential E-step algorithm (Algorithm \ref{e_step_alg}) is minimal: each processing unit executes the same E-step algorithm on its local data chunk.
-After all processing units complete their local E-step computations, the results are kept locally in order to be used in the subsequent M-step.
+The E-step is trivially parallelizable, as responsibilities for each data point are computed independently. 
+Each processing unit executes the standard E-step on its local data chunk, storing the results for the subsequent 
+M-step aggregation. This requires minimal modification from the sequential algorithm (Algorithm \ref{e_step_alg}).
 
 \subsubsection*{M-step Parallelization}
-Meanwhile, the E-step can be executed in parallel without any inter-process communication, the M-step requires a more coordinated approach.
-In fact, the M-step updates the clusters parameters that should be globally consistent across all processing units.
-To achieve this, each processing unit computes local accumulators for the sufficient statistics needed to update the parameters (means, variances, and mixture weights) based on its local responsibilities.
-Once all processing units have computed their local accumulators, a global reduction operation is performed to aggregate these local results into global accumulators.
-Finally, one designated processing unit finalizes the parameter updates using the aggregated statistics and broadcasts the updated parameters back to all processing units for the next iteration.
-At this point, all processing units have the updated parameters needed for the next iteration of the EM algorithm.
-
-We can expect the communication overhead during the M-step to be relatively high respect to the E-step, especially when the number of processing units increases.
-However, since the M-step involves only a small amount of data (the parameters of the GMM), the communication cost is manageable and does not significantly impact the overall performance of the algorithm.
-
+Differently, the M-step requires a more coordinated approach to ensure globally consistent cluster parameters updates.
+Each processing unit computes local accumulators for the sufficient statistics (means, variances, and mixture weights) based on its local responsibilities.
+These local results are then aggregated into global via reduction operations to form the dataset statistics.
+A designated processing unit finalizes the parameter updates using the aggregated statistics and broadcasts the updated parameters back to all processing units for the next iteration.
+\\\label{M_step_communication}Although the communication overhead in the M-step is relatively high with respect to the E-step, it remains
+limited, as only the GMM parameters need to be communicated. Consequently, the communication cost is manageable and does not significantly impact the overall performance of the algorithm.
 
 \begin{algorithm}[H]
 \caption{Parallel M-step}

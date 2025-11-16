@@ -20,6 +20,13 @@ if [ ${#DATASETS[@]} -eq 0 ]; then
   exit 1
 fi
 
+# Output file for job info
+OUTPUT_INFO="$BASE_DIR/data/algorithm_results/execution_info.csv"
+if [-f OUTPUT_INFO ]; then
+  echo "No output file found in $OUTPUT_INFO"
+  exit 
+fi
+
 COMBOS=(
   "1:1"
   "1:2"
@@ -40,15 +47,14 @@ for run in {1..3}; do
     # Define the needed file parameters path
     input="${DATA_DIR}/em_dataset.csv"
     meta="${DATA_DIR}/em_metadata.txt"
-    info="$BASE_DIR/data/algorithm_results/execution_info.csv"
     
     # Check if the all input file exists
-    if [ ! -f "$input" ] || [ ! -f "$meta" ] || [ ! -f "$info" ]; then
+    if [ ! -f "$input" ] || [ ! -f "$meta" ]; then
       echo "Missing required file(s) for $dataset_name — skipping"
       continue
     fi
 
-    PARAMETERS="-i $input -m $meta -b $info"
+    PARAMETERS="-i $input -m $meta -b $OUTPUT_INFO"
 
     for combo in "${COMBOS[@]}"; do
       IFS=":" read -r NODES NCPUS <<< "$combo"

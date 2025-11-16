@@ -221,6 +221,7 @@ void m_step( double *X, Metadata *metadata, ClusterParams *cluster_params, Accum
  * 
 */
 void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, ClusterParams *cluster_params, Accumulators *cluster_acc, Accumulators *local_cluster_acc, double *local_gamma, int rank){
+    //TODO: All the accumulators that uses a reduce and then broadcast can be optimized using Allreduce (see Allreduce MPI function)
     // Reset local accumulators
     parallel_reset_accumulators(cluster_acc, local_cluster_acc, metadata);
 

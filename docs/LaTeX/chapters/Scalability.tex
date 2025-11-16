@@ -1,21 +1,35 @@
 \section{Performance and Scalability Analysis}
-
+To evaluate the performance and scalability of our parallel EM clustering implementation, we conducted a series of experiments, focusing on different dataset sizes and varying the number of processes. 
+Each configuration was executed multiple times to ensure the reliability of the results, only reporting the average execution times.
+\\To ensure a fair comparison, all the experiments were conducted ignoring the Convergence criterion, thus running a fixed number of 100 EM iterations for each configuration.
 \begin{table}[h!]
     \centering
-    \label{tab:matrix_vector_times}
     \renewcommand{\arraystretch}{1.2}
-    \begin{tabular}{|c|c|c|c|c|c|}
-    \hline
-    \textbf{N\_Processes} & \multicolumn{5}{c|}{\textbf{Order of Matrix}} \\ \hline
-    & \textbf{1024} & \textbf{2048} & \textbf{4096} & \textbf{8192} & \textbf{16,384} \\ \hline
-    1  & 4.1 & 16.0 & 64.0 & 270 & 1100 \\ \hline
-    2  & 2.3 & 8.5  & 33.0 & 140 & 560  \\ \hline
-    4  & 2.0 & 5.1  & 18.0 & 70  & 280  \\ \hline
-    8  & 1.7 & 3.3  & 9.8  & 36  & 140  \\ \hline
-    16 & 1.7 & 2.6  & 5.9  & 19  & 71   \\ \hline
-    \end{tabular}
-    \caption{Run-times (in seconds) for}
-    \vspace{0.5em}
-\end{table}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
 
+    \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
+        \hline
+        \textbf{N\_Processes} & 
+        \textbf{0.156M} & 
+        \textbf{0.312M} & 
+        \textbf{0.625M} & 
+        \textbf{1.25M} & 
+        \textbf{2.5M} & 
+        \textbf{5M} & 
+        \textbf{10M} \\
+        \hline
+        1  & 297.632 & 593.155 & 1130.304 & 2335.867 & 4397.415 & 8894.845 & 18847.702 \\
+        2  & 156.803 & 291.890 & 600.935 & 1237.693 & 2163.025 & 4663.527 & 9960.310 \\
+        4  & 74.642 & 151.010 & 308.600 & 583.617 & 1203.344 & 2328.943 & 4750.940 \\
+        8  & 40.714 & 75.342 & 170.673 & 308.520 & 536.586 & 1151.998 & 2518.595 \\
+        16 & 20.338 & 41.383 & 80.637 & 160.426 & 284.150 & 639.656 & 1270.313 \\
+        32 & 10.520 & 21.751 & 43.271 & 85.196 & 149.911 & 332.319 & 703.324 \\
+        64 & 5.563  & 10.881 & 20.813 & 41.297  & 80.452  & 163.248 & 340.816 \\
+        \hline
+    \end{tabularx}
+    \caption{Execution times (in seconds) for different dataset sizes.  
+    Dataset sizes are expressed in millions (M).}
+\label{tab:execution_times}
+\end{table}
     

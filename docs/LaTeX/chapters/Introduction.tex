@@ -157,14 +157,12 @@ to the Gaussian component with the highest responsibility. This is only done aft
 \hat{z}_i = \arg \max_{k} p(z_i = k \mid \boldsymbol{x}_i, \theta) = \arg\max_{k} \gamma_{ik}
 \label{clustering_equation}
 \end{equation}
-%TODO: review from here on
 \subsection{Computational Complexity analysis}
 \label{sec:complexity_analysis}
-The computational complexity of the EM algorithm for clustering primarily depends on the number of data points $N$, the number of clusters $K$, and the number of data $D$.
-In each iteration of the EM algorithm, the E-step requires $O(NKD)$ operations to compute the responsibilities for all data points and clusters.
-The M-step also requires $O(NKD)$ operations to update the parameters of the GMM.
-Therefore, the overall complexity per iteration is $O(NKD)$.
-This complexity can become prohibitive for large datasets, motivating the need for parallelization to improve efficiency.
+The computational cost of the EM algorithm is determined by the number of data points $N$, clusters $K$, and feature dimensions $D$.  
+Both the E-step and M-step require $O(NKD)$ operations per iteration, resulting in an overall per-iteration complexity of $O(NKD)$.  
+For large datasets, this can become a significant bottleneck, motivating the need for parallelization to improve its efficiency.
+
 \subsection{Pseudocode}
 
 In the following, we provide pseudocode for the overall EM algorithm for GMMs, as well as for the E-step and M-step procedures.
