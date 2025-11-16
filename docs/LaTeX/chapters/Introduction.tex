@@ -170,7 +170,7 @@ This complexity can become prohibitive for large datasets, motivating the need f
 In the following, we provide pseudocode for the overall EM algorithm for GMMs, as well as for the E-step and M-step procedures.
 
 \begin{algorithm}[H]
-\caption{Expectation-Maximization for GMM}
+\caption{Expectation-Maximization for GMM clustering}
 \begin{algorithmic}[1]
 \State Initialize parameters $\{\pi_k, \mu_k, \Sigma_k\}_{k=1}^K$
 \For{i $= 1 \dots \text{MAX\_ITER}$}
@@ -182,7 +182,9 @@ In the following, we provide pseudocode for the overall EM algorithm for GMMs, a
     \EndIf
     \State $\mathcal{L}_{\text{prev}} \gets \mathcal{L}_{\text{curr}}$
 \EndFor
+\State \textbf{Clustering:} assign labels using \eqref{clustering_equation}
 \end{algorithmic}
+\label{em_alg}
 \end{algorithm}
 
 \begin{algorithm}[H]
@@ -201,6 +203,7 @@ In the following, we provide pseudocode for the overall EM algorithm for GMMs, a
 \State $\text{exponent} \gets -0.5 \cdot ( D \cdot \log 2\pi + \text{logdet} + \text{quad} )$
 \State \Return $\exp(\text{exponent})$
 \end{algorithmic}
+\label{gaussian_alg}
 \end{algorithm}
 
 
@@ -221,6 +224,7 @@ In the following, we provide pseudocode for the overall EM algorithm for GMMs, a
    \EndFor
 \EndFor
 \end{algorithmic}
+\label{e_step_alg}
 \end{algorithm}
 
 
@@ -257,6 +261,7 @@ In the following, we provide pseudocode for the overall EM algorithm for GMMs, a
     \State $\pi_k \gets N_k / N$
 \EndFor
 \end{algorithmic}
+\label{m_step_alg}
 \end{algorithm}
 
 \begin{algorithm}[H]
@@ -275,4 +280,5 @@ In the following, we provide pseudocode for the overall EM algorithm for GMMs, a
     \EndFor
 \EndFor
 \end{algorithmic}
+\label{clustering_alg}
 \end{algorithm}
