@@ -1,1 +1,25 @@
 \section{Implementation}
+
+The implementation of the algorithm was carried out using C, inspired by the Python code provided in \cite{Azizi2023ParallelEM}.
+The parallelization was achieved using MPI to enable distributed computing across multiple processors, and hybrid parallelization was implemented by combining MPI with OpenMP to leverage multi-threading within each process.
+Subsequently, the code was expanded with additional Python and Bash scripts to better validate and analyse the performance of our implementation.
+
+\subsubsection*{Data generation}
+We generated synthetic datasets in Python to produce GMM-distributed data points, allowing full control over key characteristics such as the number of clusters, dimensionality, and number of samples. 
+The generator also provided metadata about the generated samples, along with the true labels for each data point. 
+
+\subsubsection*{Accuracy Checks}
+As part of the implementation, we included validation checks to ensure the correctness of the algorithm, especially in the initial stages.
+These checks involved comparing the outputs of the algorithm against the real labels provided by the data generator.
+To perform this evaluation, we utilized permutation-invariant accuracy metrics (Hungarian algorithm), which allowed us to assess the clustering performance without being affected by the arbitrary ordering of cluster labels.
+By resolving label permutations, we could accurately measure how well the algorithm clustered the data points according to their true underlying distributions.
+
+\subsection{Parallel Algorithm Implementation}
+
+\subsubsection*{Data distribution}
+
+\subsubsection*{E-step Implementation}
+
+\subsubsection*{M-step Implementation}
+
+\subsection{Hybrid Parallel Algorithm Implementation}
