@@ -3,7 +3,7 @@
 # === Configuration ===
 # Automatically find the base directory (where this script lives)
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PYTHON_SCRIPT="${BASE_DIR}/data/datasetGeneration/data-generator.py"  # Your dataset generator script
+PYTHON_SCRIPT="${BASE_DIR}/tools/dataGeneration/data-generator.py"  # Your dataset generator script
 
 # Where the generated datasets will go
 DATA_DIR="${BASE_DIR}/data/datasets"

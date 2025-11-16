@@ -68,17 +68,13 @@ dkms.conf
 notes/
 
 # Ignoring the data files
-data/*.txt
-data/*.csv
-.vscode/
+data/
 
-data/em_dataset.csv
-notes.txt
-data/resultElaboration/.ipynb_checkpoints/elaborate_data-checkpoint.ipynb
-data/resultElaboration/__pycache__/utils.cpython-313.pyc
+# Ignoring the binary files
 /bin
-/data/datasets
-
+# IDE files
+.vscode/
+# Test files
 /test
-data/em_progress.gif
-tmp.py
+# Ignore personal files
+idea/

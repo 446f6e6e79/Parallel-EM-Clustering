@@ -80,11 +80,11 @@ scp  -r data/datasets user@cluster:/path/to/destination
 #### Manual dataset generation
 It is also possible to manually generate a custom dataset using the provided Python script. To run it from the main directory of the repository:
 ```bash
-python data/datasetGeneration/data-generator.py
+python tools/dataGeneration/data-generator.py
 ```
 An example of usage with custom parameters:
 ```bash
-python data/datasetGeneration/data-generator.py --samples 5000 --features 2 --clusters 4 --means-list "-10,0 0,10 10,0 0,-10"
+python tools/dataGeneration/data-generator.py --samples 5000 --features 2 --clusters 4 --means-list "-10,0 0,10 10,0 0,-10"
 ```
 
 ##### Parameters
@@ -141,7 +141,7 @@ The list of possible parameters for the script are:
 Example usage:
 
 ```bash
-./bin/EM_sequential -i data/em_dataset.csv -m data/em_metadata.txt
+./bin/EM_sequential -i data/raw/em_dataset.csv -m data/raw/em_metadata.txt
 ```
 
 #### Parallel Version
@@ -152,7 +152,7 @@ mpirun -np <num_processes> ./bin/EM_Clustering
 ```
 Example usage, with 4 processes:
 ```bash
-mpirun -np 4 ./bin/EM_Clustering -i data/em_dataset.csv -m data/em_metadata.txt
+mpirun -np 4 ./bin/EM_Clustering -i data/raw/em_dataset.csv -m data/raw/em_metadata.txt
 ```
 
 #### Available Parameters
@@ -217,7 +217,7 @@ The program produces different outputs depending on the provided parameters.
 By providing the `-d <debug_filePath>` parameter to the sequential version, the program will output intermediate results at each iteration of the algorithm.
 Example usage:
 ```bash
-./bin/EM_sequential -i data/em_dataset.csv -m data/em_metadata.txt -d data/debug.csv
+./bin/EM_sequential -i data/raw/em_dataset.csv -m data/raw/em_metadata.txt -d data/algorithm_results/debug.csv
 ```
 The debug file will contain, for each iteration, the current parameters of the GMM and the clustering assignments for each data point. Those can be used to visualize the clustering process of the algorithm over time.
 
@@ -227,9 +227,9 @@ The debug file will contain, for each iteration, the current parameters of the G
 
 We provide a Python script to create an animation of the clustering process using the debug file:
 ```bash
-python data/resultElaboration/algorithm_visualization.py -i data/debug.csv -o data/em_visualization.gif
+python tools/dataElaboration/algorithm_visualization.py -i data/algorithm_results/debug.csv -o data/elaborated/em_visualization.gif
 ```
-The output GIF will be saved at the specified path (default: `data/em_visualization.gif`).
+The output GIF will be saved at the specified path (default: `data/elaborated/em_visualization.gif`).
 
 ---
 

@@ -25,7 +25,7 @@ def get_repo_data_dir() -> Path:
     """
     # parents[0]=.../data/datasetGeneration, parents[1]=.../data, parents[2]=.../Parallel-EM-Clustering
     repo_root = Path(__file__).resolve().parents[2]
-    data_dir = repo_root / "data"
+    data_dir = repo_root / "data" / "raw"
     data_dir.mkdir(parents=True, exist_ok=True)
     return data_dir
 

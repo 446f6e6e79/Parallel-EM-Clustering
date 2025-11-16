@@ -3,7 +3,7 @@ import numpy as np
 import imageio
 from utils import create_clustering_frame, remap_predicted, derive_cluster_mapping
 
-def visualize_em(csv_path, output_gif="data/em_progress.gif", iterations=None):
+def visualize_em(csv_path, output_gif, iterations=None):
     """
     Visualizes the progression of the EM clustering algorithm as a GIF.
     Args:
@@ -46,9 +46,9 @@ def visualize_em(csv_path, output_gif="data/em_progress.gif", iterations=None):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Visualize EM clustering progression as a GIF.")
-    parser.add_argument("-i", "--csv", dest="csv_path", default="data/debug.csv",
-                        help="Path to the debug CSV file (default: data/debug.csv)")
-    parser.add_argument("-o", "--out", dest="output_gif", default="data/em_visualization.gif",
-                        help="Output GIF path (default: data/em_visualization.gif)")
+    parser.add_argument("-i", "--csv", dest="csv_path", default="data/algorithm_results/debug.csv",
+                        help="Path to the debug CSV file (default: data/algorithm_results/debug.csv)")
+    parser.add_argument("-o", "--out", dest="output_gif", default="data/elaborated/em_visualization.gif",
+                        help="Output GIF path (default: data/elaborated/em_visualization.gif)")
     args = parser.parse_args()
     visualize_em(args.csv_path, args.output_gif, iterations=None)

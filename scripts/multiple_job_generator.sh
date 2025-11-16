@@ -39,7 +39,7 @@ for run in {1..3}; do
     # Define the needed file parameters path
     input="${DATA_DIR}/em_dataset.csv"
     meta="${DATA_DIR}/em_metadata.txt"
-    info="$BASE_DIR/data/execution_info.csv"
+    info="$BASE_DIR/data/algorithm_results/execution_info.csv"
     
     # Check if the all input file exists
     if [ ! -f "$input" ] || [ ! -f "$meta" ] || [ ! -f "$info" ]; then
