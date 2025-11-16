@@ -78,3 +78,5 @@ data/
 /test
 # Ignore personal files
 idea/
+/tools/dataElaboration/.ipynb_checkpoints
+/tools/dataElaboration/__pycache__
