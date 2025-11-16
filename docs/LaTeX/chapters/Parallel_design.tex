@@ -9,9 +9,91 @@ Similarly, \cite{lee2016simple} propose a simple multithreaded version of the EM
 Building on the insights of the reviewed literature, our approach adopts a data-parallelism strategy to enhance the performance of the EM algorithm for GMMs.
 The dataset is partitioned into smaller chunks, which are then distributed across multiple processing units.
 Each processing unit independently performs the E-step on its assigned data chunk, while the global parameters updates of the M-step are obtained by aggregating the partial results across all units.
+
 \subsubsection*{E-step Parallelization}
+During the E-step, each processing unit computes the responsibilities for its subset of data points, previously partitioned from the entire dataset.
+Since the computation of responsibilities for each data point is independent of others, this step is inherently parallelizable. 
+So the change of the sequential E-step algorithm (Algorithm \ref{e_step_alg}) is minimal: each processing unit executes the same E-step algorithm on its local data chunk.
+After all processing units complete their local E-step computations, the results are kept locally in order to be used in the subsequent M-step.
 
 \subsubsection*{M-step Parallelization}
+Meanwhile, the E-step can be executed in parallel without any inter-process communication, the M-step requires a more coordinated approach.
+In fact, the M-step updates the clusters parameters that should be globally consistent across all processing units.
+To achieve this, each processing unit computes local accumulators for the sufficient statistics needed to update the parameters (means, variances, and mixture weights) based on its local responsibilities.
+Once all processing units have computed their local accumulators, a global reduction operation is performed to aggregate these local results into global accumulators.
+Finally, one designated processing unit finalizes the parameter updates using the aggregated statistics and broadcasts the updated parameters back to all processing units for the next iteration.
+At this point, all processing units have the updated parameters needed for the next iteration of the EM algorithm.
+
+We can expect the communication overhead during the M-step to be relatively high respect to the E-step, especially when the number of processing units increases.
+However, since the M-step involves only a small amount of data (the parameters of the GMM), the communication cost is manageable and does not significantly impact the overall performance of the algorithm.
+
+
+\begin{algorithm}[H]
+\caption{Parallel M-step}
+\begin{algorithmic}[1]
+\Require Local data chunk $X_{\text{loc}} \in \mathbb{R}^{N_{\text{loc}} \times D}$, local responsibilities $\gamma^{\text{loc}}_{ik}$
+\Ensure Updated parameters $\mu_k$, $\sigma_k$, $\pi_k$
+
+\State \textbf{Initialize local accumulators:}
+\State $N^{\text{loc}}_k \gets 0$, \quad $\mu^{\text{loc}}_{kd} \gets 0$, \quad $\sigma^{\text{loc}}_{kd} \gets 0$
+
+\Statex
+\State \textbf{Local accumulation of} $N_k^{\text{loc}}$ \textbf{and weighted means} $\mu^{\text{loc}}_{kd}$
+\For{$i = 1$ to $N_{\text{loc}}$}
+    \For{$k = 1$ to $K$}
+        \State $N^{\text{loc}}_k \gets N^{\text{loc}}_k + \gamma^{\text{loc}}_{ik}$
+        \For{$d = 1$ to $D$}
+            \State $\mu^{\text{loc}}_{kd} \gets \mu^{\text{loc}}_{kd} + \gamma^{\text{loc}}_{ik}\, X_{\text{loc}}[i,d]$
+        \EndFor
+    \EndFor
+\EndFor
+\State \textbf{Global reduction for} $N_k$ \textbf{and mean accumulators} $\mu^{acc}_{kd}$
+
+\Statex
+\State \textbf{Done only by one process:}
+\State \textbf{Finalize means} $\mu_{kd}$
+\For{$k = 1$ to $K$}
+    \If{$N_k \le 0$} \State $N_k \gets \varepsilon$ \EndIf
+    \For{$d = 1$ to $D$}
+        \State $\mu_{kd} \gets \mu^{acc}_{kd} / N_k$
+    \EndFor
+\EndFor
+\State \textbf{Broadcast updated means to all processes}
+\Statex
+
+\State \textbf{Local accumulation of variance  $\sigma^{\text{loc}}_{kd}$ numerators}
+\For{$i = 1$ to $N_{\text{loc}}$}
+    \For{$k = 1$ to $K$}
+        \For{$d = 1$ to $D$}
+            \State $\sigma^{\text{loc}}_{kd} \gets \sigma^{\text{loc}}_{kd} 
+             + \gamma^{\text{loc}}_{ik} \cdot (X_{\text{loc}}[i,d] - \mu_{kd})^2$
+        \EndFor
+    \EndFor
+\EndFor
+\State \textbf{Global reduction for variance accumulators} $\sigma^{acc}_{kd}$
+\State $\sigma^{acc}_{kd} \gets \text{MPI\_Reduce}(\sigma^{\text{loc}}_{kd}, \text{SUM})$
+
+\Statex
+\State{\textbf{Done only by one process:}}
+\State \textbf{Finalize variances and mixture weights} $\sigma_{kd}$, $\pi_k$
+\For{$k = 1$ to $K$}
+    \For{$d = 1$ to $D$}
+        \State $\sigma_{kd} \gets \sigma^{acc}_{kd} / N_k$
+    \EndFor
+    \State $\pi_k \gets N_k / N$
+\EndFor
+
+\State \textbf{Broadcast final parameters variances and mixture weights to all processes}
+
+\end{algorithmic}
+\label{parallel_m_step}
+\end{algorithm}
+
+\subsubsection*{Clustering Assignment}
+The clustering assignment step can also be parallelized in a similar manner to the E-step.
+Each processing unit computes the cluster assignments for its local data chunk based on the final responsibilities computed in the last E-step.
+Since the assignments are independent for each data point, this step can be executed in parallel without any inter-process communication.
+After all processing units complete their local clustering assignments, the results can be gathered if needed for further analysis or output.
 
 \subsubsection*{Performance Considerations}
 Theoretically, this design reduces the computation times associated with the dataset size. As shown in the computational complexity analysis in Section \ref{sec:complexity_analysis}, the overall time complexity of the EM algorithm is reduced from $O(NKD)$ to $O\left(\frac{NKD}{P}\right)$, where $P$ is the number of processing units.
