@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 def compute_metrics(group):
     """
-        Calculate speedup and efficiency for a problem size group
+        Calculate speedup and efficiency of compute_time, e_step_time, m_step_time for a problem size group.
         The function gets the sequential execution time from the row where n_processes == 1
         Computes:
             - speedup as t1 / tN
@@ -17,12 +17,19 @@ def compute_metrics(group):
     """
     # Get the sequential execution time (1 process)
     t1 = group[group['n_process'] == 1]['compute_time'].iloc[0]
-    
-    # Calculate speedup and efficiency
-    group = group.copy()
-    group['speedup'] = t1 / group['compute_time']
-    group['efficiency'] = group['speedup'] / group['n_process']
-    
+    t1_e = group[group['n_process'] == 1]['e_step_time'].iloc[0]
+    t1_m = group[group['n_process'] == 1]['m_step_time'].iloc[0]
+
+    group = group.copy()    
+    # Calculate speedup for compute_time, e_step_time, m_step_time
+    group['compute_speedup'] = t1 / group['compute_time']
+    group['e_step_speedup'] = t1_e / group['e_step_time']
+    group['m_step_speedup'] = t1_m / group['m_step_time']
+    # Calculate efficiency
+    group['compute_efficiency'] = group['compute_speedup'] / group['n_process']
+    group['e_step_efficiency'] = group['e_step_speedup'] / group['n_process']
+    group['m_step_efficiency'] = group['m_step_speedup'] / group['n_process']
+
     return group
 
 def make_pivot(df, value, index='n_process', columns=['n_samples', 'n_features', 'n_clusters'],
