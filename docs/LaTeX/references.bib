@@ -46,3 +46,32 @@ url="https://doi.org/10.1007/978-0-387-73003-5_196"
   month        = {March 3},
   url          = {https://engineering.purdue.edu/kak/Tutorials/ExpectationMaximization.pdf}
 }
+
+@inproceedings{altinigneli2013massively,
+author = {Altinigneli, Muzaffer Can and Plant, Claudia and B\"{o}hm, Christian},
+title = {Massively parallel expectation maximization using graphics processing units},
+year = {2013},
+isbn = {9781450321747},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2487575.2487628},
+doi = {10.1145/2487575.2487628},
+abstract = {Composed of several hundreds of processors, the Graphics Processing Unit (GPU) has become a very interesting platform for computationally demanding tasks on massive data. A special hierarchy of processors and fast memory units allow very powerful and efficient parallelization but also demands novel parallel algorithms. Expectation Maximization (EM) is a widely used technique for maximum likelihood estimation. In this paper, we propose an innovative EM clustering algorithm particularly suited for the GPU platform on NVIDIA's Fermi architecture. The central idea of our algorithm is to allow the parallel threads exchanging their local information in an asynchronous way and thus updating their cluster representatives on demand by a technique called Asynchronous Model Updates (Async-EM). Async-EM enables our algorithm not only to accelerate convergence but also to reduce the overhead induced by memory bandwidth limitations and synchronization requirements. We demonstrate (1) how to reformulate the EM algorithm to be able to exchange information using Async-EM and (2) how to exploit the special memory and processor architecture of a modern GPU in order to share this information among threads in an optimal way. As a perspective Async-EM is not limited to EM but can be applied to a variety of algorithms.},
+booktitle = {Proceedings of the 19th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
+pages = {838–846},
+numpages = {9},
+keywords = {graphics processing unit, fermi, expectation maximization, cuda},
+location = {Chicago, Illinois, USA},
+series = {KDD '13}
+}
+
+@INPROCEEDINGS{lee2016simple,
+  author={Lee, Sharon X. and Leemaqz, Kaleb L. and McLachlan, Geoffrey J.},
+  booktitle={2016 International Conference on Digital Image Computing: Techniques and Applications (DICTA)}, 
+  title={A Simple Parallel EM Algorithm for Statistical Learning via Mixture Models}, 
+  year={2016},
+  volume={},
+  number={},
+  pages={1-8},
+  keywords={Mixture models;Gaussian distribution;Biological system modeling;Maximum likelihood estimation;Limiting;Algorithm design and analysis;Computational modeling},
+  doi={10.1109/DICTA.2016.7796997}}

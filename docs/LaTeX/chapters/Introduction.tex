@@ -159,7 +159,7 @@ to the Gaussian component with the highest responsibility. This is only done aft
 \end{equation}
 %TODO: review from here on
 \subsection{Computational Complexity analysis}
-
+\label{sec:complexity_analysis}
 The computational complexity of the EM algorithm for clustering primarily depends on the number of data points $N$, the number of clusters $K$, and the number of data $D$.
 In each iteration of the EM algorithm, the E-step requires $O(NKD)$ operations to compute the responsibilities for all data points and clusters.
 The M-step also requires $O(NKD)$ operations to update the parameters of the GMM.

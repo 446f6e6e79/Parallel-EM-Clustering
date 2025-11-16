@@ -1,6 +1,26 @@
 \section{Parallel Design}
+Current state-of-the-art parallelization techniques for the EM algorithm primarily focus on data parallelism approaches.
+Data parallelism involves distributing the data across multiple processing units so that computations can be performed simultaneously on different subsets of the data.
+\cite{altinigneli2013massively} present a GPU-based implementation of the EM algorithm that leverages the massive parallelism of GPUs to accelerate the computation of both the E-step and M-step using Asynchronous Model Update strategy.
+Similarly, \cite{lee2016simple} propose a simple multithreaded version of the EM algorithm for finite mixture models.
+\\Both approaches demonstrate significant speedups compared to traditional CPU-based implementations, making them suitable for large-scale data analysis tasks.
 
-\subsection{Data dependencies}
+\subsection{Our Approach}
+Building on the insights of the reviewed literature, our approach adopts a data-parallelism strategy to enhance the performance of the EM algorithm for GMMs.
+The dataset is partitioned into smaller chunks, which are then distributed across multiple processing units.
+Each processing unit independently performs the E-step on its assigned data chunk, while the global parameters updates of the M-step are obtained by aggregating the partial results across all units.
+\subsubsection*{E-step Parallelization}
+
+\subsubsection*{M-step Parallelization}
+
+\subsubsection*{Performance Considerations}
+Theoretically, this design reduces the computation times associated with the dataset size. As shown in the computational complexity analysis in Section \ref{sec:complexity_analysis}, the overall time complexity of the EM algorithm is reduced from $O(NKD)$ to $O\left(\frac{NKD}{P}\right)$, where $P$ is the number of processing units.
+\\We assume that the number of clusters $K$ and dimensionality $D$ are significantly smaller than the number of data points $N$, which is a common characteristic of many real-world large-scale clustering applications.
+Under this assumption, the computational cost is dominated by $N$, making our parallelization strategy particularly effective: distributing the data across processing units yields near-linear reductions in execution time.
+Furthermore, this assumption ensures that the communication overhead during the M-step aggregation remains manageable, as the size of the parameters to be communicated between processing units depends only on $K$ and $D$.
+
+\subsection{Hybrid Parallelism}
+\subsubsection{Data dependencies}
 
 \begin{table}[ht]
 \centering
