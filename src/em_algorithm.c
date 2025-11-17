@@ -218,13 +218,12 @@ void m_step( double *X, Metadata *metadata, ClusterParams *cluster_params, Accum
  *          - sigma_k: (K x D) Weighted sums for variances 
  *    - local_gamma: (local_N x K) Local responsibilities matrix
  *    - rank: MPI rank of the current process
- * 
 */
-void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, ClusterParams *cluster_params, Accumulators *cluster_acc, Accumulators *local_cluster_acc, double *local_gamma, int rank){
+void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, ClusterParams *cluster_params, Accumulators *cluster_acc, Accumulators *local_cluster_acc, double *local_gamma){
     //TODO: All the accumulators that uses a reduce and then broadcast can be optimized using Allreduce (see Allreduce MPI function)
     // Reset local accumulators
     parallel_reset_accumulators(cluster_acc, local_cluster_acc, metadata);
-
+    
     // Accumulate Nk and mu_num for each cluster, done by every process
     for (int i = 0; i < local_N; i++) {
         double *x = &local_X[i*metadata->D]; // Vector of features for data point i
@@ -237,25 +236,21 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
         }
     }
 
-    // Reduce local accumulators into global accumulators (Nk and mu_k)
-    MPI_Reduce(local_cluster_acc->N_k, cluster_acc->N_k, metadata->K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(local_cluster_acc->mu_k, cluster_acc->mu_k, metadata->D*metadata->K, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    // Reduce local accumulators into global accumulators (Nk and mu_k) each process will have the final result after this Allreduce
+    MPI_Allreduce(local_cluster_acc->N_k, cluster_acc->N_k, metadata->K, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(local_cluster_acc->mu_k, cluster_acc->mu_k, metadata->D * metadata->K, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    // Finalize the calculation of the weighted means (for each feature) for each cluster, only done by rank 0
-    if(rank == 0){
-        //TODO: (IN FUTURE, should be done using openmp???)
-        for (int k = 0; k < metadata->K; k++) {
-            // Guard to avoid division by zero
-            if (cluster_acc->N_k[k] <= 0.0) cluster_acc->N_k[k] = GUARD_VALUE;
-            // Finalize mu
-            for( int d = 0; d < metadata->D; d++) {
-               cluster_params->mu[k*metadata->D + d] = cluster_acc->mu_k[k*metadata->D +d] / cluster_acc->N_k[k];
-            }
+    // Finalize the calculation of the weighted means (for each feature) for each cluster
+    //TODO: (IN FUTURE, should be done using openmp???)
+    for (int k = 0; k < metadata->K; k++) {
+        // Guard to avoid division by zero
+        if (cluster_acc->N_k[k] <= 0.0) cluster_acc->N_k[k] = GUARD_VALUE;
+        // Finalize mu
+        for( int d = 0; d < metadata->D; d++) {
+            cluster_params->mu[k*metadata->D + d] = cluster_acc->mu_k[k*metadata->D +d] / cluster_acc->N_k[k];
         }
+    
     }
-
-    // Broadcast updated mu to all processes
-    MPI_Bcast(cluster_params->mu, metadata->K*metadata->D, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     // Accumulate weighted squared differences for variances, done by every process
     for (int i = 0; i < local_N; i++) {
@@ -271,25 +266,19 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
     }
     
     // Reduce local accumulators into global accumulators (sigma_k)
-    MPI_Reduce(local_cluster_acc->sigma_k, cluster_acc->sigma_k, metadata->K*metadata->D, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Allreduce(local_cluster_acc->sigma_k, cluster_acc->sigma_k, metadata->K * metadata->D, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    // Finalize sigma (variance per-dim) and pi, only done by rank 0
-    if(rank == 0){
-        //TODO: (IN FUTURE, should be done using openmp???)
-        for (int k = 0; k < metadata->K; k++) {
-            for (int d = 0; d < metadata->D; d++) {
-                // Nk[k] is already guarded
-                // Finalize variance for each dimension
-                cluster_params->sigma[k * metadata->D + d] = cluster_acc->sigma_k[k * metadata->D + d] / cluster_acc->N_k[k];
-            }
-            // Update mixture weights
-            cluster_params->pi[k] = cluster_acc->N_k[k] / (double)metadata->N;
+    // Finalize sigma (variance per-dim) and pi
+    //TODO: (IN FUTURE, should be done using openmp???)
+    for (int k = 0; k < metadata->K; k++) {
+        for (int d = 0; d < metadata->D; d++) {
+            // Nk[k] is already guarded
+            // Finalize variance for each dimension
+            cluster_params->sigma[k * metadata->D + d] = cluster_acc->sigma_k[k * metadata->D + d] / cluster_acc->N_k[k];
         }
+        // Update mixture weights
+        cluster_params->pi[k] = cluster_acc->N_k[k] / (double)metadata->N;
     }
-
-    // Broadcast updated sigma and pi to all processes
-    MPI_Bcast(cluster_params->sigma, metadata->K*metadata->D, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    MPI_Bcast(cluster_params->pi, metadata->K, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
 /*

@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
 
         //M-step
         start_timer(&timers.m_step_start);
-        m_step_parallelized(local_X, local_N, &metadata, &cluster_params, &cluster_acc, &local_cluster_acc, local_gamma, rank);
+        m_step_parallelized(local_X, local_N, &metadata, &cluster_params, &cluster_acc, &local_cluster_acc, local_gamma);
         stop_timer(&timers.m_step_start, &timers.m_step_time);
 
         // Check for convergence (if threshold is set)

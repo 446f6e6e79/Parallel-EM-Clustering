@@ -35,7 +35,6 @@ COMBOS=(
   "2:8"
   "2:16"
   "4:16"
-  "8:16"
 )
 
 for run in {1..3}; do
@@ -60,7 +59,7 @@ for run in {1..3}; do
       IFS=":" read -r NODES NCPUS <<< "$combo"
       NP=$(( NODES * NCPUS ))
 
-      JOB_SCRIPT="${OUTPUT_DIR}/job_${dataset_name}run${run}${NODES}n_${NCPUS}c.sh"
+      JOB_SCRIPT="${OUTPUT_DIR}/job_${dataset_name}-run_${run}-nodes_${NODES}-cpus_${NCPUS}.sh"
 
       sed "s|__EXECUTABLE__|$EXECUTABLE|g; \
            s|__PLACEMENT__|$PLACEMENT|g; \
