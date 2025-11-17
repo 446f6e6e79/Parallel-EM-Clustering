@@ -1,13 +1,15 @@
 \section{Performance and Scalability Analysis}
 To evaluate the performance and scalability of our parallel EM clustering implementation, we conducted a series of experiments, focusing on different dataset sizes and varying the number of processes. 
 Each configuration was executed multiple times to ensure the reliability of the results, only reporting the average execution times.
-\\To ensure a fair comparison, all the experiments were conducted ignoring the Convergence criterion, thus running a fixed number of 100 EM iterations for each configuration.
+\\To ensure a fair comparison, all the experiments were conducted ignoring the convergence criterion, thus running a fixed number of 100 EM iterations for each configuration.
+
+\subsection*{Our Approach Results}
+In this analysis we keep number of features and number of clusters constant, as not involved in the parallelization.
 \begin{table}[h!]
     \centering
     \renewcommand{\arraystretch}{1.2}
     \setlength{\tabcolsep}{4pt}
     \footnotesize
-
     \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
         \hline
         \textbf{N\_Processes} & 
@@ -19,17 +21,131 @@ Each configuration was executed multiple times to ensure the reliability of the 
         \textbf{5M} & 
         \textbf{10M} \\
         \hline
-        1  & 297.632 & 593.155 & 1130.304 & 2335.867 & 4397.415 & 8894.845 & 18847.702 \\
-        2  & 156.803 & 291.890 & 600.935 & 1237.693 & 2163.025 & 4663.527 & 9960.310 \\
-        4  & 74.642 & 151.010 & 308.600 & 583.617 & 1203.344 & 2328.943 & 4750.940 \\
-        8  & 40.714 & 75.342 & 170.673 & 308.520 & 536.586 & 1151.998 & 2518.595 \\
-        16 & 20.338 & 41.383 & 80.637 & 160.426 & 284.150 & 639.656 & 1270.313 \\
-        32 & 10.520 & 21.751 & 43.271 & 85.196 & 149.911 & 332.319 & 703.324 \\
-        64 & 5.563  & 10.881 & 20.813 & 41.297  & 80.452  & 163.248 & 340.816 \\
+        1  & 281.444 & 563.894 & 1027.496 & 2116.075 & 4553.415 & 8741.255 & 18373.160 \\
+        2  & 140.678 & 261.653 & 572.785 & 1013.512 & 2058.963 & 4206.922 & 8887.230 \\
+        4  & 71.339 & 132.982 & 283.020 & 522.856 & 1054.098 & 2112.717 & 4437.170 \\
+        8  & 34.587 & 67.079 & 146.560 & 280.315 & 510.900 & 1100.518 & 2319.220 \\
+        16 & 19.760 & 34.806 & 69.208 & 139.989 & 264.852 & 582.296 & 1153.750 \\
+        32 & 9.425 & 18.796 & 40.770 & 75.046 & 146.378 & 290.347 & 601.700 \\
+        64 & 5.164 & 10.042 & 20.823 & 41.247 & 77.118 & 150.703 & 321.380 \\
         \hline
     \end{tabularx}
-    \caption{Execution times (in seconds) for different dataset sizes.  
-    Dataset sizes are expressed in millions (M).}
+    \caption{Execution times (in seconds) for different dataset sizes and number of processes.}
 \label{tab:execution_times}
 \end{table}
+
+\begin{table}[h!]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
+        \hline
+        \textbf{N\_Processes} & 
+        \textbf{0.156M} & 
+        \textbf{0.312M} & 
+        \textbf{0.625M} & 
+        \textbf{1.25M} & 
+        \textbf{2.5M} & 
+        \textbf{5M} & 
+        \textbf{10M} \\
+        \hline
+        1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
+        2  & 2.001 & 2.155 & 1.794 & 2.088 & 2.212 & 2.078 & 2.067 \\
+        4  & 3.945 & 4.240 & 3.630 & 4.047 & 4.320 & 4.137 & 4.141 \\
+        8  & 8.137 & 8.406 & 7.011 & 7.549 & 8.913 & 7.943 & 7.922 \\
+        16 & 14.243 & 16.201 & 14.846 & 15.116 & 17.192 & 15.012 & 15.925 \\
+        32 & 29.862 & 30.001 & 25.202 & 28.197 & 31.107 & 30.106 & 30.535 \\
+        64 & 54.505 & 56.154 & 49.343 & 51.303 & 59.045 & 58.003 & 57.169 \\
+        \hline
+    \end{tabularx}
+    \caption{Speedup (T1/Tp) for different dataset sizes and number of processes.}
+\label{tab:speedup}
+\end{table}
     
+\begin{table}[h!]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
+        \hline
+        \textbf{N\_Processes} & 
+        \textbf{0.156M} & 
+        \textbf{0.312M} & 
+        \textbf{0.625M} & 
+        \textbf{1.25M} & 
+        \textbf{2.5M} & 
+        \textbf{5M} & 
+        \textbf{10M} \\
+        \hline
+        1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
+        2  & 1.000 & 1.078 & 0.897 & 1.044 & 1.106 & 1.039 & 1.034 \\
+        4  & 0.986 & 1.060 & 0.908 & 1.012 & 1.080 & 1.034 & 1.035 \\
+        8  & 1.017 & 1.051 & 0.876 & 0.944 & 1.114 & 0.993 & 0.990 \\
+        16 & 0.890 & 1.013 & 0.928 & 0.945 & 1.075 & 0.938 & 0.995 \\
+        32 & 0.933 & 0.938 & 0.788 & 0.881 & 0.972 & 0.941 & 0.954 \\
+        64 & 0.852 & 0.877 & 0.771 & 0.802 & 0.923 & 0.906 & 0.893 \\
+        \hline
+    \end{tabularx}
+    \caption{Efficiency (Speedup/Processes) for different dataset sizes and number of processes.}
+\label{tab:efficiency_global}
+\end{table}
+
+\begin{table}[h!]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
+        \hline
+        \textbf{N\_Processes} & 
+        \textbf{0.156M} & 
+        \textbf{0.312M} & 
+        \textbf{0.625M} & 
+        \textbf{1.25M} & 
+        \textbf{2.5M} & 
+        \textbf{5M} & 
+        \textbf{10M} \\
+        \hline
+        1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
+        2  & 1.003 & 1.084 & 0.898 & 1.045 & 1.106 & 1.042 & 1.035 \\
+        4  & 0.996 & 1.070 & 0.918 & 1.016 & 1.081 & 1.041 & 1.033 \\
+        8  & 1.028 & 1.081 & 0.910 & 0.967 & 1.142 & 1.050 & 1.039 \\
+        16 & 0.921 & 1.031 & 0.943 & 0.969 & 1.093 & 0.949 & 1.028 \\
+        32 & 0.956 & 0.962 & 0.830 & 0.910 & 1.008 & 0.963 & 0.981 \\
+        64 & 0.883 & 0.925 & 0.821 & 0.849 & 0.961 & 0.944 & 0.923 \\
+        \hline
+    \end{tabularx}
+    \caption{Efficiency of the E-Step for different dataset sizes and number of processes.}
+\label{tab:efficiency_estep}
+\end{table}
+
+\begin{table}[h!]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \setlength{\tabcolsep}{4pt}
+    \footnotesize
+    \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
+        \hline
+        \textbf{N\_Processes} & 
+        \textbf{0.156M} & 
+        \textbf{0.312M} & 
+        \textbf{0.625M} & 
+        \textbf{1.25M} & 
+        \textbf{2.5M} & 
+        \textbf{5M} & 
+        \textbf{10M} \\
+        \hline
+        1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
+        2  & 0.963 & 0.993 & 0.875 & 1.035 & 1.107 & 0.995 & 1.022 \\
+        4  & 0.857 & 0.924 & 0.773 & 0.947 & 1.064 & 0.949 & 1.072 \\
+        8  & 0.866 & 0.738 & 0.557 & 0.691 & 0.826 & 0.549 & 0.601 \\
+        16 & 0.576 & 0.793 & 0.745 & 0.685 & 0.866 & 0.800 & 0.690 \\
+        32 & 0.673 & 0.673 & 0.441 & 0.594 & 0.644 & 0.701 & 0.695 \\
+        64 & 0.543 & 0.490 & 0.398 & 0.437 & 0.584 & 0.568 & 0.617 \\
+        \hline
+    \end{tabularx}
+    \caption{Efficiency of the M-Step for different dataset sizes and number of processes.}
+\label{tab:efficiency_mstep}
+\end{table}
