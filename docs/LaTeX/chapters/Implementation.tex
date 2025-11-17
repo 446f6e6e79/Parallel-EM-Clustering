@@ -17,6 +17,13 @@ By resolving label permutations, we could accurately measure how well the algori
 \subsection{Parallel Algorithm Implementation}
 
 \subsubsection*{Data distribution}
+The dataset, together with its metadata, is initially loaded by the root process (rank 0).
+First, the metadata (number of samples, dimensions, and number of clusters) is broadcast to all processes using \emph{MPI\_Bcast}.
+Once the metadata is known, each process computes the size of its local data chunk, which is then used to distribute the dataset across processes via \emph{MPI\_Scatterv}. 
+After receiving their respective chunks, all processes proceed with the computation.
+
+At the end of the execution (specifically after the clustering assignment step) each process holds the predicted labels for its local data chunk.
+These local predicted labels are gathered back to the root process using \emph{MPI\_Gatherv}, in order to be written back to a file for accuracy evaluation.
 
 \subsubsection*{E-step Implementation}
 
