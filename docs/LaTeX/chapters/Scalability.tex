@@ -33,7 +33,7 @@ In this analysis we keep number of features and number of clusters constant, as 
     \caption{Execution times (in seconds) for different dataset sizes and number of processes.}
 \label{tab:execution_times}
 \end{table}
-
+\\To better understand the scalability of our implementation, we computed the speedup and efficiency for each configuration.
 \begin{table}[h!]
     \centering
     \renewcommand{\arraystretch}{1.2}
@@ -59,7 +59,7 @@ In this analysis we keep number of features and number of clusters constant, as 
         64 & 54.505 & 56.154 & 49.343 & 51.303 & 59.045 & 58.003 & 57.169 \\
         \hline
     \end{tabularx}
-    \caption{Speedup (T1/Tp) for different dataset sizes and number of processes.}
+    \caption{Speedup ($T_\text{serial} / T_p$) for different dataset sizes and number of processes $p$.}
 \label{tab:speedup}
 \end{table}
     
@@ -88,10 +88,11 @@ In this analysis we keep number of features and number of clusters constant, as 
         64 & 0.852 & 0.877 & 0.771 & 0.802 & 0.923 & 0.906 & 0.893 \\
         \hline
     \end{tabularx}
-    \caption{Efficiency (Speedup/Processes) for different dataset sizes and number of processes.}
+    \caption{Efficiency (Speedup / $p$) for different dataset sizes and number of processes.}
 \label{tab:efficiency_global}
 \end{table}
-
+%# TODO: Analysis of the weak scalability and strong scalability
+%# TODO: Analysis of the efficiency of E-step and M-step separately. Comment on the fact that the result is as expected according to the theoretical analysis and propose hybrid parallelization to improve M-step efficiency.
 \begin{table}[h!]
     \centering
     \renewcommand{\arraystretch}{1.2}

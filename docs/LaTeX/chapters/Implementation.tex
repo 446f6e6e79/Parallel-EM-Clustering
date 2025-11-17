@@ -1,17 +1,17 @@
 \section{Implementation}
 
 The implementation of the algorithm was carried out using C, inspired by the Python code provided in \cite{Azizi2023ParallelEM}.
-The parallelization was achieved using MPI to enable distributed computing across multiple processors, and hybrid parallelization was implemented by combining MPI with OpenMP to leverage multi-threading within each process.
-Subsequently, the code was expanded with additional Python and Bash scripts to better validate and analyse the performance of our implementation.
+The parallelization was achieved using MPI to enable distributed computing across multiple processors, while hybrid parallelization was achieved by integrating OpenMP to exploit multi-threading within each process.
+In addition, Python and Bash scripts were developed to support systematic validation and analysis of the performance of our implementation.
 
 \subsubsection*{Data generation}
-We generated synthetic datasets in Python to produce GMM-distributed data points, allowing full control over key characteristics such as the number of clusters, dimensionality, and number of samples. 
+Synthetic datasets were generated in Python to produce GMM-distributed data points, allowing full control over the number of clusters, dimensionality, and sample size.
 The generator also provided metadata about the generated samples, along with the true labels for each data point. 
 
 \subsubsection*{Accuracy Checks}
-As part of the implementation, we included validation checks to ensure the correctness of the algorithm, especially in the initial stages.
-These checks involved comparing the outputs of the algorithm against the real labels provided by the data generator.
-To perform this evaluation, we utilized permutation-invariant accuracy metrics (Hungarian algorithm), which allowed us to assess the clustering performance without being affected by the arbitrary ordering of cluster labels.
+To ensure the correctness of the implementation, especially during initial testing we performed extensive validation checks 
+by comparing the outputs of the algorithm against the real labels provided by the data generator.
+Clustering performance were evaluated using permutation-invariant accuracy metrics (Hungarian algorithm), which account for the arbitrary nature of cluster labeling in unsupervised learning.
 By resolving label permutations, we could accurately measure how well the algorithm clustered the data points according to their true underlying distributions.
 
 \subsection{Parallel Algorithm Implementation}
@@ -32,6 +32,7 @@ The only notable difference, is that we compute the log-likelihood for the conve
 \subsubsection*{M-step Implementation}
 The M-step implementation follows the design described in Algorithm \ref{parallel_m_step}.
 Each process initializes local accumulators for the sufficient statistics.
+%#TODO: Reinforce the concept of AllReduce (intermidiate results from all processes are combined to produce the final result)
 When the computation of local accumulators is done, we use \emph{MPI\_Allreduce} to aggregate the local results.
 Finally, each process finalizes the parameter updates using the aggregated statistics. 
 

@@ -1,22 +1,23 @@
+%#TODO: too many repetitions of the same concepts (computation of a single data point is independent from the others, comunication overhead only in M-step, distributing the dataset into chunks,...)
 \section{Parallel Design}
 Current state-of-the-art parallelization techniques for the EM algorithm primarily focus on data parallelism approaches, where
 the dataset is partitioned across multiple processing units so that computations can be performed simultaneously on different subsets of the data.
 \cite{altinigneli2013massively} present a GPU-based implementation of the EM algorithm that leverages the massive parallelism of GPUs to accelerate the computation of both the E-step and M-step using Asynchronous Model Update strategy.
 Similarly, \cite{lee2016simple} propose a simple multithreaded version of the EM algorithm for finite mixture models.
-\\Both approaches demonstrate significant speedups compared to traditional single-threaded implementations, making them suitable for large-scale data analysis tasks.
+\\Both approaches demonstrate significant speedups compared to traditional sequential implementations, making them suitable for large-scale data analysis tasks.
 
 \subsection{Our Approach}
 Building on the insights of the reviewed literature, our approach adopts a data-parallelism strategy to enhance the performance of the EM algorithm for GMMs.
-The dataset is partitioned into chunks and distributed across multiple processing units.
-Each processing unit independently performs the E-step on its assigned data chunk, while the global parameters updates of the M-step are obtained by aggregating the partial results across all units.
-
+The dataset is partitioned into equal chunks and distributed across multiple processing units.
+Each processing unit independently performs the E-step on its local data chunk, while the global parameters updates of the M-step are obtained by aggregating the partial results across all units.
+Moreover, the clustering assignment step is also parallelized, allowing each processing unit to compute the assignments for its local data chunk based on the final responsibilities.
 \subsubsection*{E-step Parallelization}
-The E-step is trivially parallelizable, as responsibilities for each data point are computed independently. 
-Each processing unit executes the standard E-step on its local data chunk, storing the results for the subsequent 
-M-step aggregation. This requires minimal modification from the sequential algorithm (Algorithm \ref{e_step_alg}).
+The E-step is trivially parallelizable, as responsibilities for each data point are computed independently of each other.
+Each processing unit can execute the standard E-step on its local data chunk, storing the results for the subsequent
+M-step aggregation. This requires minimal modification from the sequential algorithm (Algorithm \ref{e_step_alg}) and involves little to no inter-process communication.
 
 \subsubsection*{M-step Parallelization}
-Differently, the M-step requires a more coordinated approach to ensure globally consistent cluster parameters updates.
+Differently, the M-step requires a more coordinated approach to ensure globally consistent parameters updates.
 Each processing unit computes local accumulators for the sufficient statistics (i.e., effective counts, weighted sums for the means, and weighted squared differences for the variances) based on its local responsibilities.
 These local results are then aggregated, in order to finalize the parameter updates.
 \\\label{M_step_communication}Although the communication overhead in the M-step is relatively high with respect to the E-step, it remains
@@ -24,13 +25,13 @@ limited, since only the sufficient statistics need to be communicated.
 Consequently, the communication cost is manageable and does not significantly impact the overall performance of the algorithm.
 
 \subsubsection*{Clustering Assignment}
-The clustering assignment step can also be parallelized in a similar manner to the E-step.
-Each processing unit computes the cluster assignments for its local data chunk based on the final responsibilities computed in the last E-step.
-Since the assignments are independent for each data point, this step can be executed in parallel without any inter-process communication.
-After all processing units complete their local clustering assignments, the results can be gathered if needed for further analysis or output.
+The clustering assignment step can be parallelized in a similar manner to the E-step.
+Each processing unit determines the cluster assignments for its local data chunk using the final responsibilities from the preceding E-step.
+Since the assignments are independent for each data point, this step requires no inter-process communication.
+Once all units complete their local clustering assignments, the results can be gathered if needed for further analysis or output.
 
 \subsubsection*{Performance Considerations}
-Theoretically, this design reduces the computation times associated with the dataset size. As shown in the computational complexity analysis in Section \ref{sec:complexity_analysis}, the overall time complexity of the EM algorithm is reduced from $O(NKD)$ to $O\left(\frac{NKD}{P}\right)$, where $P$ is the number of processing units.
+Theoretically, this design reduces the computation times associated with the dataset size. Based on the computational complexity analysis in Section \ref{sec:complexity_analysis}, ideally the overall time complexity of the EM algorithm is reduced from $O(NKD)$ to $O\left(\frac{NKD}{P}\right)$, where $P$ is the number of processing units.
 \\We assume that the number of clusters $K$ and dimensionality $D$ are significantly smaller than the number of data points $N$, which is a common characteristic of many real-world large-scale clustering applications.
 Under this assumption, the computational cost is dominated by $N$, making our parallelization strategy particularly effective: distributing the data across processing units yields near-linear reductions in execution time.
 Furthermore, this assumption ensures that the communication overhead during the M-step aggregation remains manageable, as the size of the parameters to be communicated between processing units depends only on $K$ and $D$.
@@ -64,7 +65,7 @@ $c(2)$   & 40 & $i$   & write & 30 & $i+1$ & read  & yes & flow \\
 
 Other approaches were considered but not implemented for this project.
 \emph{Task parallelization} was deemed unsuitable due to the theoretical inefficiency of the EM algorithm when decomposed into discrete tasks.
-In fact, we should broadcast the whole dataset to all processes for each task, since each task needs to access all data points to compute.
+In fact, we should broadcast the whole dataset to all units for each task, since each task needs to access all data points to compute.
 Then the overhead of managing multiple tasks and synchronizing their results (due to the EM algorithm's iterative nature) would outweigh any potential benefits.
 \emph{Pipeline parallelization} was not applicable, as the EM algorithm's iterative nature does not lend itself to a linear sequence of processing stages.
 
