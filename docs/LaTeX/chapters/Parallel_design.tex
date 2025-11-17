@@ -58,3 +58,19 @@ $c(2)$   & 40 & $i$   & write & 30 & $i+1$ & read  & yes & flow \\
 \hline
 \end{tabular}}
 \end{table}
+
+
+\subsubsection*{Differrent parallelization strategies}
+
+We used a \emph{data parallelization} pattern to distribute the dataset across multiple processing units, allowing for indipendent computation.
+This approach is particularly effective for the E-step and clustering assignment phases. 
+Other approaches, such as \emph{task parallelization}, were considered but deemed less suitable due to the inherent dependencies in the M-step.
+Task parallelization would require significant synchronization overhead, negating the benefits of parallel execution.
+\emph{Pipeline parallelization} was not applicable, as the EM algorithm's iterative nature does not lend itself to a linear sequence of processing stages.
+\emph{Async parallelization} was not adopted, as the properties of the EM algorithm require consistent parameter updates across iterations.
+\emph{Speculative parallelization} was also considered but ultimately not implemented, as the potential for wasted computation outweighed the benefits in this context.
+
+%\emph{Model parallelization}: splitting the set of Gaussian components across devices when $K$ is large; each unit holds a subset of parameters and participates in responsibility computation via broadcast/gather.
+%\emph{Hybrid data+model parallelization}: simultaneous partitioning of data (rows) and components (columns) to improve cache locality when both $N$ and $K$ are large.
+%\emph{Thread-level (shared-memory) parallelism}: OpenMP (or similar) within a node for inner loops over data points while MPI distributes data across nodes.
+
