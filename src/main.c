@@ -66,7 +66,6 @@ int main(int argc, char **argv) {
     }
     stop_timer(&timers.io_start, &timers.io_time);
 
-
     // Broadcast N, D, K to all process using a single MPI call
     start_timer(&timers.data_distribution_start);
     broadcast_metadata(&metadata, rank);
@@ -143,7 +142,6 @@ int main(int argc, char **argv) {
     double prev_log_likelihood = -INFINITY;             // Previous log-likelihood
     double curr_log_likelihood = 0.0;                   // Current log-likelihood
     double local_curr_log_likelihood = 0.0;             // Local log-likelihood for each process
-    int converged = 0;                                  // Convergence flag
 
     /*
         EM loop
@@ -165,14 +163,11 @@ int main(int argc, char **argv) {
         if(inputParams.threshold > 0.0){
             // Reduce local log-likelihoods to global log-likelihood
             MPI_Allreduce(&local_curr_log_likelihood, &curr_log_likelihood, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            if(rank == 0 && check_convergence(&prev_log_likelihood, &curr_log_likelihood, inputParams.threshold)) {
+            // All processes check themselves for convergence
+            if (check_convergence(&prev_log_likelihood, &curr_log_likelihood, inputParams.threshold)) {
                 debug_println("Converged at iteration %d with log-likelihood: %.8lf\n", iter, curr_log_likelihood);
-                // Broadcast convergence info to all processes
-                converged = 1;
+                break;
             }
-            // Broadcast convergence info to all processes
-            MPI_Bcast(&converged, 1, MPI_INT, 0, MPI_COMM_WORLD);
-            if (converged) break;
         }
 
     }
