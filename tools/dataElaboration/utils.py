@@ -22,11 +22,11 @@ def compute_metrics(group):
 
     group = group.copy()    
     # Calculate speedup for compute_time, e_step_time, m_step_time
-    group['compute_speedup'] = t1 / group['compute_time']
+    group['speedup'] = t1 / group['compute_time']
     group['e_step_speedup'] = t1_e / group['e_step_time']
     group['m_step_speedup'] = t1_m / group['m_step_time']
     # Calculate efficiency
-    group['compute_efficiency'] = group['compute_speedup'] / group['n_process']
+    group['efficiency'] = group['speedup'] / group['n_process']
     group['e_step_efficiency'] = group['e_step_speedup'] / group['n_process']
     group['m_step_efficiency'] = group['m_step_speedup'] / group['n_process']
 
