@@ -30,6 +30,9 @@ As said before, the parallelization of the E-step doesn't involve any change in 
 The only notable difference, is that we compute the log-likelihood for the convergence check inside the E-step itself, in order to avoid additional computation.
 
 \subsubsection*{M-step Implementation}
-
+The M-step implementation follows the design described in Algorithm \ref{parallel_m_step}.
+Each process initializes local accumulators for the sufficient statistics.
+When the computation of local accumulators is done, we use \emph{MPI\_Allreduce} to aggregate the local results.
+Finally, each process finalizes the parameter updates using the aggregated statistics. 
 
 \subsection{Hybrid Parallel Algorithm Implementation}

@@ -18,8 +18,7 @@ M-step aggregation. This requires minimal modification from the sequential algor
 \subsubsection*{M-step Parallelization}
 Differently, the M-step requires a more coordinated approach to ensure globally consistent cluster parameters updates.
 Each processing unit computes local accumulators for the sufficient statistics (i.e., effective counts, weighted sums for the means, and weighted squared differences for the variances) based on its local responsibilities.
-These local results are then aggregated into global via reduction operations to form the sufficient statistics.
-Then every processing unit finalizes the parameter updates (Algorithm \ref{parallel_m_step}).
+These local results are then aggregated, in order to finalize the parameter updates.
 \\\label{M_step_communication}Although the communication overhead in the M-step is relatively high with respect to the E-step, it remains
 limited, since only the sufficient statistics need to be communicated.
 Consequently, the communication cost is manageable and does not significantly impact the overall performance of the algorithm.
