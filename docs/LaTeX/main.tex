@@ -25,13 +25,19 @@
 
 \pagenumbering{arabic}
 
+% Include chapters
 \include{chapters/Introduction.tex}
 \include{chapters/Parallel_design.tex}
 \include{chapters/Implementation.tex}
 \include{chapters/Scalability.tex}
 
+% Bibliography
 \newpage
 \nocite{*}
 \bibliographystyle{ieeetr} 
 \bibliography{references.bib}
+
+% Appendix
+\include{chapters/Appendix.tex}
+
 \end{document}

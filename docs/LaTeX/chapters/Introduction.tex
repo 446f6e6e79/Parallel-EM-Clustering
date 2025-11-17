@@ -186,26 +186,6 @@ In the following, we provide pseudocode for the overall EM algorithm for GMMs, a
 \end{algorithm}
 
 \begin{algorithm}[H]
-\caption{Compute multivariate Gaussian density with diagonal covariance}
-\begin{algorithmic}[1]
-\Require $x \in \mathbb{R}^D$, $\mu \in \mathbb{R}^D$, $\sigma \in \mathbb{R}^D$ 
-\Ensure $\mathcal{N}(x \mid \mu, \sigma)$
-\State $\text{logdet} \gets 0$
-\State $\text{quad} \gets 0$
-\For{$d = 1$ to $D$}
-    \State $var \gets \sigma[d]$
-    \State $\text{logdet} \gets \text{logdet} + \log(var)$
-    \State $\text{diff} \gets x[d] - \mu[d]$
-    \State $\text{quad} \gets \text{quad} + \frac{\text{diff}^2}{var}$
-\EndFor
-\State $\text{exponent} \gets -0.5 \cdot ( D \cdot \log 2\pi + \text{logdet} + \text{quad} )$
-\State \Return $\exp(\text{exponent})$
-\end{algorithmic}
-\label{gaussian_alg}
-\end{algorithm}
-
-
-\begin{algorithm}[H]
 \caption{E-step: Computation of Responsibilities}
 \begin{algorithmic}[1]
 \Require Dataset $X \in \mathbb{R}^{N \times D}$, parameters $\mu_{k}, \sigma_{k}, \pi_{k}$ for $k=1,\dots,K$
@@ -262,21 +242,4 @@ In the following, we provide pseudocode for the overall EM algorithm for GMMs, a
 \label{m_step_alg}
 \end{algorithm}
 
-\begin{algorithm}[H]
-\caption{Clustering: Label Assignment from Responsibilities}
-\begin{algorithmic}[1]
-\Require Responsibilities matrix $\gamma \in \mathbb{R}^{N \times K}$
-\Ensure Predicted labels $\hat{y} \in \{1,\dots,K\}^N$
-\For{$i = 1$ to $N$}
-    \State $\text{max\_resp} \gets \gamma_{i1}$ \Comment{Initialize with first cluster responsibility}
-    \State $\hat{y}_i \gets 1$
-    \For{$k = 2$ to $K$}
-        \If{$\gamma_{ik} > \text{max\_resp}$}
-            \State $\text{max\_resp} \gets \gamma_{ik}$
-            \State $\hat{y}_i \gets k$
-        \EndIf
-    \EndFor
-\EndFor
-\end{algorithmic}
-\label{clustering_alg}
-\end{algorithm}
+

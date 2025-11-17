@@ -1,0 +1,98 @@
+\appendix
+\section{Appendix}
+
+\subsection*{Pseudocode}
+
+\begin{algorithm}[H]
+\caption{Compute multivariate Gaussian density with diagonal covariance}
+\begin{algorithmic}[1]
+\Require $x \in \mathbb{R}^D$, $\mu \in \mathbb{R}^D$, $\sigma \in \mathbb{R}^D$ 
+\Ensure $\mathcal{N}(x \mid \mu, \sigma)$
+\State $\text{logdet} \gets 0$
+\State $\text{quad} \gets 0$
+\For{$d = 1$ to $D$}
+    \State $var \gets \sigma[d]$
+    \State $\text{logdet} \gets \text{logdet} + \log(var)$
+    \State $\text{diff} \gets x[d] - \mu[d]$
+    \State $\text{quad} \gets \text{quad} + \frac{\text{diff}^2}{var}$
+\EndFor
+\State $\text{exponent} \gets -0.5 \cdot ( D \cdot \log 2\pi + \text{logdet} + \text{quad} )$
+\State \Return $\exp(\text{exponent})$
+\end{algorithmic}
+\label{gaussian_alg}
+\caption{Gaussian Density Computation with Diagonal Covariance}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Clustering: Label Assignment from Responsibilities}
+\begin{algorithmic}[1]
+\Require Responsibilities matrix $\gamma \in \mathbb{R}^{N \times K}$
+\Ensure Predicted labels $\hat{y} \in \{1,\dots,K\}^N$
+\For{$i = 1$ to $N$}
+    \State $\text{max\_resp} \gets \gamma_{i1}$ \Comment{Initialize with first cluster responsibility}
+    \State $\hat{y}_i \gets 1$
+    \For{$k = 2$ to $K$}
+        \If{$\gamma_{ik} > \text{max\_resp}$}
+            \State $\text{max\_resp} \gets \gamma_{ik}$
+            \State $\hat{y}_i \gets k$
+        \EndIf
+    \EndFor
+\EndFor
+\end{algorithmic}
+\label{clustering_alg}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Parallel M-step}
+\begin{algorithmic}[1]
+\Require Local data chunk $X_{\text{loc}} \in \mathbb{R}^{N_{\text{loc}} \times D}$, local responsibilities $\gamma^{\text{loc}}_{ik}$
+\Ensure Updated parameters $\mu_k$, $\sigma_k$, $\pi_k$
+
+\State \textbf{Initialize local accumulators:}
+\State $N^{\text{loc}}_k \gets 0$, \quad $\mu^{\text{loc}}_{kd} \gets 0$, \quad $\sigma^{\text{loc}}_{kd} \gets 0$
+
+\Statex
+\State \textbf{Local accumulation of} $N_k^{\text{loc}}$ \textbf{and weighted means} $\mu^{\text{loc}}_{kd}$
+\For{$i = 1$ to $N_{\text{loc}}$}
+    \For{$k = 1$ to $K$}
+        \State $N^{\text{loc}}_k \gets N^{\text{loc}}_k + \gamma^{\text{loc}}_{ik}$
+        \For{$d = 1$ to $D$}
+            \State $\mu^{\text{loc}}_{kd} \gets \mu^{\text{loc}}_{kd} + \gamma^{\text{loc}}_{ik}\, X_{\text{loc}}[i,d]$
+        \EndFor
+    \EndFor
+\EndFor
+\State \textbf{AllReduce for} $N_k$ \textbf{and mean accumulators} $\mu^{acc}_{kd}$
+
+\Statex
+\State \textbf{Finalize means} $\mu_{kd}$
+\For{$k = 1$ to $K$}
+    \If{$N_k \le 0$} \State $N_k \gets \varepsilon$ \EndIf
+    \For{$d = 1$ to $D$}
+        \State $\mu_{kd} \gets \mu^{acc}_{kd} / N_k$
+    \EndFor
+\EndFor
+
+\Statex
+
+\State \textbf{Local accumulation of variance  $\sigma^{\text{loc}}_{kd}$ numerators}
+\For{$i = 1$ to $N_{\text{loc}}$}
+    \For{$k = 1$ to $K$}
+        \For{$d = 1$ to $D$}
+            \State $\sigma^{\text{loc}}_{kd} \gets \sigma^{\text{loc}}_{kd} 
+             + \gamma^{\text{loc}}_{ik} \cdot (X_{\text{loc}}[i,d] - \mu_{kd})^2$
+        \EndFor
+    \EndFor
+\EndFor
+\State \textbf{AllReduce for variance accumulators} $\sigma^{acc}_{kd}$
+\Statex
+\State \textbf{Finalize variances and mixture weights} $\sigma_{kd}$, $\pi_k$
+\For{$k = 1$ to $K$}
+    \For{$d = 1$ to $D$}
+        \State $\sigma_{kd} \gets \sigma^{acc}_{kd} / N_k$
+    \EndFor
+    \State $\pi_k \gets N_k / N$
+\EndFor
+
+\end{algorithmic}
+\label{parallel_m_step}
+\end{algorithm}
