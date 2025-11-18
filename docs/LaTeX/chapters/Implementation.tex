@@ -30,11 +30,86 @@ These local predicted labels are gathered back to the root process using \emph{M
 As said before, the parallelization of the E-step doesn't involve any change in the sequential algorithm.
 The only notable difference, is that we compute the log-likelihood for the convergence check inside the E-step itself, in order to avoid additional computation.
 
+\begin{algorithm}[H]
+\caption{E-step: Computation of Responsibilities}
+\begin{algorithmic}[1]
+\Require Dataset $X \in \mathbb{R}^{N \times D}$, parameters $\mu_{k}, \sigma_{k}, \pi_{k}$ for $k=1,\dots,K$
+\Ensure Responsibilities $\gamma_{ik}$
+\For{$i = 1$ to $N$}
+    \State $\text{denom} \gets 0$
+    \For{$k = 1$ to $K$}
+        \State $\gamma_{ik}  \gets \pi_k \cdot \mathcal{N}(X[i] \mid \mu_k, \Sigma_k)$ \Comment{Gaussian density using \ref{gaussian_alg}}
+        \State $\text{denom} \gets \text{denom} + \gamma_{ik}$
+    \EndFor
+
+    \For{$k = 1$ to $K$}
+        \State $\gamma_{ik} \gets \gamma_{ik} / \text{denom}$ 
+   \EndFor
+\EndFor
+\end{algorithmic}
+\label{e_step_alg}
+\end{algorithm}
+
 \subsubsection*{M-step Implementation}
 The M-step is implemented as outlined in Algorithm \ref{parallel_m_step}.
 Each process first initializes local accumulators for the sufficient statistics and computes their partial distribution.
 Upon completion, the local results are aggregated across all processes via \emph{MPI\_Allreduce}, which is preferred over
 \emph{MPI\_Reduce} followed by a broadcast, since the combined results are needed by all processes for the subsequent steps.
 Finally, each process updates the model parameters using the aggregated statistics.
+
+\begin{algorithm}[H]
+\caption{Parallel M-step}
+\begin{algorithmic}[1]
+\Require Local data chunk $X_{\text{loc}} \in \mathbb{R}^{N_{\text{loc}} \times D}$, local responsibilities $\gamma^{\text{loc}}_{ik}$
+\Ensure Updated parameters $\mu_k$, $\sigma_k$, $\pi_k$
+
+\State \textbf{Initialize local accumulators:}
+\State $N^{\text{loc}}_k \gets 0$, \quad $\mu^{\text{loc}}_{kd} \gets 0$, \quad $\sigma^{\text{loc}}_{kd} \gets 0$
+
+\Statex
+\State \textbf{Local accumulation of} $N_k^{\text{loc}}$ \textbf{and weighted means} $\mu^{\text{loc}}_{kd}$
+\For{$i = 1$ to $N_{\text{loc}}$}
+    \For{$k = 1$ to $K$}
+        \State $N^{\text{loc}}_k \gets N^{\text{loc}}_k + \gamma^{\text{loc}}_{ik}$
+        \For{$d = 1$ to $D$}
+            \State $\mu^{\text{loc}}_{kd} \gets \mu^{\text{loc}}_{kd} + \gamma^{\text{loc}}_{ik}\, X_{\text{loc}}[i,d]$
+        \EndFor
+    \EndFor
+\EndFor
+\State \textbf{AllReduce for} $N_k$ \textbf{and mean accumulators} $\mu^{acc}_{kd}$
+
+\Statex
+\State \textbf{Finalize means} $\mu_{kd}$
+\For{$k = 1$ to $K$}
+    \If{$N_k \le 0$} \State $N_k \gets \varepsilon$ \EndIf
+    \For{$d = 1$ to $D$}
+        \State $\mu_{kd} \gets \mu^{acc}_{kd} / N_k$
+    \EndFor
+\EndFor
+
+\Statex
+
+\State \textbf{Local accumulation of variance  $\sigma^{\text{loc}}_{kd}$ numerators}
+\For{$i = 1$ to $N_{\text{loc}}$}
+    \For{$k = 1$ to $K$}
+        \For{$d = 1$ to $D$}
+            \State $\sigma^{\text{loc}}_{kd} \gets \sigma^{\text{loc}}_{kd} 
+             + \gamma^{\text{loc}}_{ik} \cdot (X_{\text{loc}}[i,d] - \mu_{kd})^2$
+        \EndFor
+    \EndFor
+\EndFor
+\State \textbf{AllReduce for variance accumulators} $\sigma^{acc}_{kd}$
+\Statex
+\State \textbf{Finalize variances and mixture weights} $\sigma_{kd}$, $\pi_k$
+\For{$k = 1$ to $K$}
+    \For{$d = 1$ to $D$}
+        \State $\sigma_{kd} \gets \sigma^{acc}_{kd} / N_k$
+    \EndFor
+    \State $\pi_k \gets N_k / N$
+\EndFor
+
+\end{algorithmic}
+\label{parallel_m_step}
+\end{algorithm}
 
 \subsection{Hybrid Parallel Algorithm Implementation}

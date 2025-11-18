@@ -157,15 +157,10 @@ to the Gaussian component with the highest responsibility. This is only done aft
 \hat{z}_i = \arg \max_{k} p(z_i = k \mid \boldsymbol{x}_i, \theta) = \arg\max_{k} \gamma_{ik}
 \label{clustering_equation}
 \end{equation}
-\subsection{Computational Complexity analysis}
-\label{sec:complexity_analysis}
-The computational cost of the EM algorithm is determined by the number of data points $N$, clusters $K$, and feature dimensions $D$.  
-Both the E-step and M-step require $O(NKD)$ operations per iteration, resulting in an overall per-iteration complexity of $O(NKD)$.  
-For large datasets, this can become a significant bottleneck, motivating the need for parallelization to improve its efficiency.
 
-\subsection{Pseudocode}
+\subsubsection*{Pseudocode}
 
-In the following, we provide pseudocode for the overall EM algorithm for GMMs, as well as for the E-step and M-step procedures.
+In the following, we provide pseudocode for the overall EM algorithm for GMMs.
 
 \begin{algorithm}[H]
 \caption{Expectation-Maximization for GMM clustering}
@@ -175,71 +170,24 @@ In the following, we provide pseudocode for the overall EM algorithm for GMMs, a
     \State \textbf{E-step:} compute responsibilities using \eqref{e_step_equation}
     \State \textbf{M-step:} update parameters using \eqref{m_step_equation}
     \State Compute log-likelihood $\mathcal{L}_{\text{curr}}$ according to \eqref{log_likelihood}
-    \If{$|\mathcal{L}_{\text{curr}} - \mathcal{L}_{\text{prev}}| < \epsilon$}
-        \State \textbf{break} \Comment{Convergence reached}
+    \If{Converged} 
+        \State break 
     \EndIf
-    \State $\mathcal{L}_{\text{prev}} \gets \mathcal{L}_{\text{curr}}$
 \EndFor
 \State \textbf{Clustering:} assign labels using \eqref{clustering_equation}
 \end{algorithmic}
 \label{em_alg}
 \end{algorithm}
 
-\begin{algorithm}[H]
-\caption{E-step: Computation of Responsibilities}
-\begin{algorithmic}[1]
-\Require Dataset $X \in \mathbb{R}^{N \times D}$, parameters $\mu_{k}, \sigma_{k}, \pi_{k}$ for $k=1,\dots,K$
-\Ensure Responsibilities $\gamma_{ik}$
-\For{$i = 1$ to $N$}
-    \State $\text{denom} \gets 0$
-    \For{$k = 1$ to $K$}
-        \State $\gamma_{ik}  \gets \pi_k \cdot \mathcal{N}(X[i] \mid \mu_k, \Sigma_k)$ \Comment{Gaussian density using \eqref{diagonal_gaussian_density}}
-        \State $\text{denom} \gets \text{denom} + \gamma_{ik}$
-    \EndFor
 
-    \For{$k = 1$ to $K$}
-        \State $\gamma_{ik} \gets \gamma_{ik} / \text{denom}$ 
-   \EndFor
-\EndFor
-\end{algorithmic}
-\label{e_step_alg}
-\end{algorithm}
+\subsection{Computational Complexity analysis}
+\label{sec:complexity_analysis}
+The computational cost of the EM algorithm is determined by the number of data points $N$, clusters $K$, and feature dimensions $D$.  
+Both the E-step and M-step require $O(NKD)$ operations per iteration, resulting in an overall per-iteration complexity of $O(NKD)$.  
+For large datasets, this can become a significant bottleneck, motivating the need for parallelization to improve its efficiency.
 
 
-\begin{algorithm}[H]
-\caption{M-step: Parameter Update}
-\begin{algorithmic}[1]
-\Require Dataset $X \in \mathbb{R}^{N \times D}$, responsibilities $\gamma_{ik}$
-\Ensure Updated parameters $\mu_k$, $\sigma_k$, $\pi_k$
-\State Initialize accumulators: $N_k \gets 0$, $\mu^{\text{acc}}_{kd} \gets 0$, $\sigma^{\text{acc}}_{kd} \gets 0$
-\For{$i = 1$ to $N$}
-    \For{$k = 1$ to $K$}
-        \State $N_k \gets N_k + \gamma_{ik}$
-        \For{$d = 1$ to $D$}
-            \State $\mu^{\text{acc}}_{kd} \gets \mu^{\text{acc}}_{kd} + \gamma_{ik} \cdot X[i,d]$
-        \EndFor
-    \EndFor
-\EndFor
-\For{$k = 1$ to $K$}
-    \For{$d = 1$ to $D$}
-        \State $\mu_{kd} \gets \mu^{\text{acc}}_{kd} / N_k$
-    \EndFor
-\EndFor
-\For{$i = 1$ to $N$}
-    \For{$k = 1$ to $K$}
-        \For{$d = 1$ to $D$}
-            \State $\sigma^{\text{acc}}_{kd} \gets \sigma^{\text{acc}}_{kd} + \gamma_{ik} \cdot (X[i,d] - \mu_{kd})^2$
-        \EndFor
-    \EndFor
-\EndFor
-\For{$k = 1$ to $K$}
-    \For{$d = 1$ to $D$}
-        \State $\sigma_{kd} \gets \sigma^{\text{acc}}_{kd} / N_k$
-    \EndFor
-    \State $\pi_k \gets N_k / N$
-\EndFor
-\end{algorithmic}
-\label{m_step_alg}
-\end{algorithm}
+
+
 
 
