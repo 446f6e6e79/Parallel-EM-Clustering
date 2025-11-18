@@ -1,4 +1,3 @@
-%#TODO: too many repetitions of the same concepts (computation of a single data point is independent from the others, comunication overhead only in M-step, distributing the dataset into chunks,...)
 \section{Parallel Design}
 Current state-of-the-art parallelization techniques for the EM algorithm primarily focus on data parallelism approaches, where
 the dataset is partitioned across multiple processing units so that computations can be performed simultaneously on different subsets of the data.
@@ -8,9 +7,8 @@ Similarly, \cite{lee2016simple} propose a simple multithreaded version of the EM
 
 \subsection{Our Approach}
 Building on the insights of the reviewed literature, our approach adopts a data-parallelism strategy to enhance the performance of the EM algorithm for GMMs.
-The dataset is partitioned into equal chunks and distributed across multiple processing units.
-Each processing unit independently performs the E-step on its local data chunk, while the global parameters updates of the M-step are obtained by aggregating the partial results across all units.
-Moreover, the clustering assignment step is also parallelized, allowing each processing unit to compute the assignments for its local data chunk based on the final responsibilities.
+The dataset is partitioned into equal chunks and distributed across multiple processing units, which perform computations on their respective data subsets.
+
 \subsubsection*{E-step Parallelization}
 The E-step is trivially parallelizable, as responsibilities for each data point are computed independently of each other.
 Each processing unit can execute the standard E-step on its local data chunk, storing the results for the subsequent
@@ -19,10 +17,7 @@ M-step aggregation. This requires minimal modification from the sequential algor
 \subsubsection*{M-step Parallelization}
 Differently, the M-step requires a more coordinated approach to ensure globally consistent parameters updates.
 Each processing unit computes local accumulators for the sufficient statistics (i.e., effective counts, weighted sums for the means, and weighted squared differences for the variances) based on its local responsibilities.
-These local results are then aggregated, in order to finalize the parameter updates.
-\\\label{M_step_communication}Although the communication overhead in the M-step is relatively high with respect to the E-step, it remains
-limited, since only the sufficient statistics need to be communicated.
-Consequently, the communication cost is manageable and does not significantly impact the overall performance of the algorithm.
+These local results are then aggregated, in order to finalize the global parameter updates.
 
 \subsubsection*{Clustering Assignment}
 The clustering assignment step can be parallelized in a similar manner to the E-step.
