@@ -7,7 +7,6 @@ Similarly, \cite{lee2016simple} propose a simple multithreaded version of the EM
 
 \subsection{Our Approach}
 Building on the insights of the reviewed literature, our approach adopts a data-parallelism strategy to enhance the performance of the EM algorithm for GMMs.
-The dataset is partitioned into equal chunks and distributed across multiple processing units, which perform computations on their respective data subsets.
 
 \subsubsection*{E-step Parallelization}
 The E-step is trivially parallelizable, as responsibilities for each data point are computed independently of each other.
@@ -30,7 +29,7 @@ Theoretically, this design reduces the computation times associated with the dat
 \\We assume that the number of clusters $K$ and dimensionality $D$ are significantly smaller than the number of data points $N$, which is a common characteristic of many real-world large-scale clustering applications.
 Under this assumption, the computational cost is dominated by $N$, making our parallelization strategy particularly effective: distributing the data across processing units yields near-linear reductions in execution time.
 Furthermore, this assumption ensures that the communication overhead during the M-step aggregation remains manageable, as the size of the parameters to be communicated between processing units depends only on $K$ and $D$.
-
+%#TODO: add a comment on the communication overhead and scalability limitations!!!
 \subsection{Hybrid Parallelism}
 \subsubsection{Data dependencies}
 
@@ -58,11 +57,14 @@ $c(2)$   & 40 & $i$   & write & 30 & $i+1$ & read  & yes & flow \\
 
 \subsubsection*{Different parallelization strategies}
 
-Other approaches were considered but not implemented for this project.
-\emph{Task parallelization} was deemed unsuitable due to the theoretical inefficiency of the EM algorithm when decomposed into discrete tasks.
-In fact, we should broadcast the whole dataset to all units for each task, since each task needs to access all data points to compute.
-Then the overhead of managing multiple tasks and synchronizing their results (due to the EM algorithm's iterative nature) would outweigh any potential benefits.
-\emph{Pipeline parallelization} was not applicable, as the EM algorithm's iterative nature does not lend itself to a linear sequence of processing stages.
+Other parallelization approaches were considered but ultimately not implemented for this project.
+\\\emph{Task parallelization} was deemed unsuitable due to the inherent characteristics of the EM algorithm. Each task 
+would require access to the entire dataset in order to compute the responsibilities and update the parameters.
+This would introduce substantial communication overhead, effectively negating any potential performance gains.
+Moreover, the iterative nature of the EM algorithm would require frequent synchronization between tasks, further increasing the overhead.
+\\\emph{Pipeline parallelization} was not applicable. The EM algorithm does not follow an independent sequence of stages that can be overlapped in a pipeline fashion.
+Instead it alternates expectation and maximization phases, each dependent on the results of the previous one.
+This sequential dependency prevents the effective use of pipelining.
 
 %\emph{Model parallelization}: splitting the set of Gaussian components across devices when $K$ is large; each unit holds a subset of parameters and participates in responsibility computation via broadcast/gather.
 

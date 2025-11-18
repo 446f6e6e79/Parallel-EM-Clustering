@@ -4,7 +4,7 @@ Each configuration was executed multiple times to ensure the reliability of the 
 \\To ensure a fair comparison, all the experiments were conducted ignoring the convergence criterion, thus running a fixed number of 100 EM iterations for each configuration.
 
 \subsection*{Our Approach Results}
-In this analysis we keep number of features and number of clusters constant, as not involved in the parallelization.
+In this analysis we keep number of features ($D = 50$) and number of clusters ($K = 15$) constant, while varying the number of data points ($N$) and the number of processes ($P$).
 \begin{table}[h!]
     \centering
     \renewcommand{\arraystretch}{1.2}
@@ -91,8 +91,10 @@ In this analysis we keep number of features and number of clusters constant, as 
     \caption{Efficiency (Speedup / $p$) for different dataset sizes and number of processes.}
 \label{tab:efficiency_global}
 \end{table}
-%# TODO: Analysis of the weak scalability and strong scalability
-%# TODO: Analysis of the efficiency of E-step and M-step separately. Comment on the fact that the result is as expected according to the theoretical analysis and propose hybrid parallelization to improve M-step efficiency.
+Analyzing the results from Tables \ref{tab:speedup} and \ref{tab:efficiency_global}, we observe that as the dataset size increases, the speedup approaches linearity, and the efficiency remains relatively high even when the number of processes increases.
+This indicates that our parallel implementation makes effective use of additional computational resources as the workload grows.
+\\Examining the main diagonal of the table, where the problem size grows proportionally to the number of processes, we find that the efficiency remains almost constant. Our implementation is therefore \emph{weakly scalable}.
+\\Conversely, when examining each column of the table, corresponding to a fixed problem size, we observe a gradual decline as the number of processes increases. This is expected, as the communication overhead becomes more significant when the process count increases. Consequently, our implementation does not exhibit perfect \emph{strong scalability}.
 \begin{table}[h!]
     \centering
     \renewcommand{\arraystretch}{1.2}
@@ -150,3 +152,6 @@ In this analysis we keep number of features and number of clusters constant, as 
     \caption{Efficiency of the M-Step for different dataset sizes and number of processes.}
 \label{tab:efficiency_mstep}
 \end{table}
+Analyzing Tables \ref{tab:efficiency_estep} and \ref{tab:efficiency_mstep}, we observe that, in line with our expectations, 
+the E-step maintains high efficiency across various configurations.
+The M-step, however, shows a more pronounced decline in efficiency as the number of processes increases.

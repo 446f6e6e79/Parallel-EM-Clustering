@@ -25,15 +25,16 @@ After receiving their respective chunks, all processes proceed with the computat
 At the end of the execution (specifically after the clustering assignment step) each process holds the predicted labels for its local data chunk.
 These local predicted labels are gathered back to the root process using \emph{MPI\_Gatherv}, in order to be written back to a file for accuracy evaluation.
 
+%#TODO: rewrite this
 \subsubsection*{E-step Implementation}
 As said before, the parallelization of the E-step doesn't involve any change in the sequential algorithm.
 The only notable difference, is that we compute the log-likelihood for the convergence check inside the E-step itself, in order to avoid additional computation.
 
 \subsubsection*{M-step Implementation}
-The M-step implementation follows the design described in Algorithm \ref{parallel_m_step}.
-Each process initializes local accumulators for the sufficient statistics.
-%#TODO: Reinforce the concept of AllReduce (intermidiate results from all processes are combined to produce the final result)
-When the computation of local accumulators is done, we use \emph{MPI\_Allreduce} to aggregate the local results.
-Finally, each process finalizes the parameter updates using the aggregated statistics. 
+The M-step is implemented as outlined in Algorithm \ref{parallel_m_step}.
+Each process first initializes local accumulators for the sufficient statistics and computes their partial distribution.
+Upon completion, the local results are aggregated across all processes via \emph{MPI\_Allreduce}, which is preferred over
+\emph{MPI\_Reduce} followed by a broadcast, since the combined results are needed by all processes for the subsequent steps.
+Finally, each process updates the model parameters using the aggregated statistics.
 
 \subsection{Hybrid Parallel Algorithm Implementation}
