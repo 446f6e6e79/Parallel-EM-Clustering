@@ -11,7 +11,7 @@ Building on the insights of the reviewed literature, our approach adopts a data-
 \subsubsection*{E-step Parallelization}
 The E-step is trivially parallelizable, as responsibilities for each data point are computed independently of each other.
 Each processing unit can execute the standard E-step on its local data chunk, storing the results for the subsequent
-M-step aggregation. This requires minimal modification from the sequential algorithm (Algorithm \ref{e_step_alg}) and involves little to no inter-process communication.
+M-step aggregation.
 
 \subsubsection*{M-step Parallelization}
 Differently, the M-step requires a more coordinated approach to ensure globally consistent parameters updates.
@@ -28,8 +28,9 @@ Once all units complete their local clustering assignments, the results can be g
 Theoretically, this design reduces the computation times associated with the dataset size. Based on the computational complexity analysis in Section \ref{sec:complexity_analysis}, ideally the overall time complexity of the EM algorithm is reduced from $O(NKD)$ to $O\left(\frac{NKD}{P}\right)$, where $P$ is the number of processing units.
 \\We assume that the number of clusters $K$ and dimensionality $D$ are significantly smaller than the number of data points $N$, which is a common characteristic of many real-world large-scale clustering applications.
 Under this assumption, the computational cost is dominated by $N$, making our parallelization strategy particularly effective: distributing the data across processing units yields near-linear reductions in execution time.
-Furthermore, this assumption ensures that the communication overhead during the M-step aggregation remains manageable, as the size of the parameters to be communicated between processing units depends only on $K$ and $D$.
-%#TODO: add a comment on the communication overhead and scalability limitations!!!
+However, as the number of processing units $P$ increases, the benefits of parallelization may diminish due to the communication overhead required for the M-step, which can outweigh the computational gains. 
+This limits the scalability of the approach and reduces its efficiency, resulting in a bottleneck.
+Moreover, the M-step remains manageable, as the size of the parameters that need to be communicated depends only on $K$ and $D$.
 \subsection{Hybrid Parallelism}
 \subsubsection{Data dependencies}
 
