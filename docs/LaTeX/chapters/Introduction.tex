@@ -169,7 +169,7 @@ In the following, we provide pseudocode for the overall EM algorithm for GMMs.
 \For{i $= 1 \dots \text{MAX\_ITER}$}
     \State \textbf{E-step:} compute responsibilities using \eqref{e_step_equation}
     \State \textbf{M-step:} update parameters using \eqref{m_step_equation}
-    \State Compute log-likelihood $\mathcal{L}_{\text{curr}}$ according to \eqref{log_likelihood}
+    \State Compute log-likelihood $\mathcal{L}$ according to \eqref{log_likelihood}
     \If{Converged} 
         \State break 
     \EndIf
