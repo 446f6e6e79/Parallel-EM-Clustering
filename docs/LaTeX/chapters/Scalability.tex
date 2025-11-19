@@ -34,7 +34,7 @@ In this analysis we keep number of features ($D = 50$) and number of clusters ($
 \label{tab:execution_times}
 \end{table}
 \\To better understand the scalability of our implementation, we computed the speedup and efficiency for each configuration.
-\begin{table}[h!]
+\begin{table}[H]
     \centering
     \renewcommand{\arraystretch}{1.2}
     \setlength{\tabcolsep}{4pt}
@@ -63,14 +63,14 @@ In this analysis we keep number of features ($D = 50$) and number of clusters ($
 \label{tab:speedup}
 \end{table}
 
-\begin{figure}[h!]
+\begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{../media/mpi_speedup.png}
     \caption{Speedup plot for different dataset sizes (small, medium, large). The dashed line represents the ideal linear speedup.}
     \label{fig:mpi_speedup_plot}
 \end{figure}
     
-\begin{table}[h!]
+\begin{table}[H]
     \centering
     \renewcommand{\arraystretch}{1.2}
     \setlength{\tabcolsep}{4pt}
@@ -99,10 +99,10 @@ In this analysis we keep number of features ($D = 50$) and number of clusters ($
 \label{tab:efficiency_global}
 \end{table}
 
-\begin{figure}
+\begin{figure}[H]
     \centering
     \includegraphics[width=1\textwidth]{../media/mpi_efficiency.png}
-    \caption{Efficiency plot for different dataset sizes (small, medium, large). The dashed line represents the expected efficiency of 0.70.}
+    \caption{Efficiency plot for different dataset sizes (small, medium, large). The dashed line indicates the target efficiency of 0.70.}
     \label{fig:mpi_efficiency_plot}
 \end{figure}
 
@@ -110,7 +110,7 @@ Analyzing the results from Tables \ref{tab:speedup} and \ref{tab:efficiency_glob
 This indicates that our parallel implementation makes effective use of additional computational resources as the workload grows.
 \\Examining the main diagonal of the table, where the problem size grows proportionally to the number of processes, we find that the efficiency remains almost constant. Our implementation is therefore \emph{weakly scalable}.
 \\Conversely, when examining each column of the table, corresponding to a fixed problem size, we observe a gradual decline as the number of processes increases. This is expected, as the communication overhead becomes more significant when the process count increases. Consequently, our implementation does not exhibit perfect \emph{strong scalability}.
-\begin{table}[h!]
+\begin{table}[H]
     \centering
     \renewcommand{\arraystretch}{1.2}
     \setlength{\tabcolsep}{4pt}
@@ -139,7 +139,7 @@ This indicates that our parallel implementation makes effective use of additiona
 \label{tab:efficiency_estep}
 \end{table}
 
-\begin{table}[h!]
+\begin{table}[H]
     \centering
     \renewcommand{\arraystretch}{1.2}
     \setlength{\tabcolsep}{4pt}
