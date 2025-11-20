@@ -114,3 +114,5 @@ Finally, each process updates the model parameters using the aggregated statisti
 \end{algorithm}
 
 \subsection{Hybrid Parallel Algorithm Implementation}
+An hybrid parallel implementation was developed by integrating OpenMP directives into the MPI-based code. 
+Each MPI process spawns multiple threads, allowing to reduce the communication overhead, utilizing shared memory.

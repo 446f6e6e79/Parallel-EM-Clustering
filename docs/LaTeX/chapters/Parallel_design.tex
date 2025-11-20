@@ -32,7 +32,13 @@ However, as the number of processing units $P$ increases, the benefits of parall
 This limits the scalability of the approach and reduces its efficiency, resulting in a bottleneck.
 Moreover, the M-step remains manageable, as the size of the parameters that need to be communicated depends only on $K$ and $D$.
 \subsection{Hybrid Parallelism}
+An hybrid parallelization strategy could, in principle, mitigate some of the problems observed in pure data-parallel design.
+Since the size of the of data exchanged during inter-process communication depends only on $K$ and $D$, reducing the number of processes while increasing the number of threads per process can help alleviate the communication overhead.
+In such a configuration, each process operates on a larger portion of the dataset, allowing more computation to occur within a shared-memory environment, where threads can efficiently cooperate without the need for expensive message passing.
+As a result, both the frequency and volume of inter-process communication taking place during the M-step can be significantly reduced.
 \subsubsection{Data dependencies}
+To assess the feasibility and potential benefits of hybrid parallelism within our implementation, 
+we first examined the data dependencies inherent to the EM algorithm.
 
 \begin{table}[ht]
 \centering
