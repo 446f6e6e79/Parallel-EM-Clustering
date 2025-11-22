@@ -53,23 +53,55 @@ we first examined the data dependencies inherent to the EM algorithm.
 \cline{2-7}
  & Line & Iteration & Access & Line & Iteration & Access & & \\
 \hline
-\texttt{log\_likelihood} & 22 & $i$ & read & 22 & $i$ & write & no & anti \\ 
+\texttt{log\_likelihood} & 3 & $i$ & write & 22 & $i$ & read & no & flow \\
 \hline
-\texttt{log\_likelihood} & 22 & $i$ & write & 22 & $i + 1$ & write & yes & output \\ 
-\hline
-\texttt{log\_likelihood} & 22 & $i$ & write & 22 & $i + 1$ & read & yes & flow \\ 
-\hline
-\texttt{denom} & 15 & $i,k$   & read  & 15 & $i,k$ & write & no & anti \\
+\texttt{log\_likelihood} & 22 & $i$ & write & 22 & $i + 1$ & read & yes & flow \\
 \hline
 \texttt{denom} & 15 & $i,k$   & write  & 15 & $i,k+1$ & read & yes & flow \\
 \hline
 \texttt{gamma}$(i * k + k)$   & 13 & $i,k$   & write  & 15 & $i,k$ & read & no & flow \\
 \hline
-\texttt{gamma}$(i * k + k)$   & 15 & $i,k$   & read  & 20 & $i,k$ & write & no & flow \\
+\texttt{gamma}$(i * k + k)$   & 15 & $i,k$   & read  & 20 & $i,k$ & write & no & anti \\
+\hline
+\texttt{denom} & 15 & $i,k$   & write  & 20 & $i,k$ & read & no & flow \\
+\hline
+\texttt{denom} & 22 & $i$   & read  & 6 & $i+1$ & write & yes & anti \\
+\hline
+\texttt{denom} & 6 & $i$   & write  & 15 & $i,k$ & read & no & flow \\
 \hline
 \end{tabular}}
 \end{table}
 
+%M-step
+\begin{table}[H]
+\centering
+\small
+\setlength{\tabcolsep}{8pt}
+\renewcommand{\arraystretch}{1.05}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|}
+\hline
+\multirow{2}{*}{Memory Location} & \multicolumn{3}{c|}{Earlier Statement} & \multicolumn{3}{c|}{Later Statement} & \multirow{2}{*}{Loop-carried?} & \multirow{2}{*}{Kind of Dataflow} \\
+\cline{2-7}
+ & Line & Iteration & Access & Line & Iteration & Access & & \\
+\hline
+\texttt{gamma} & e-step $\rightarrow$ 20 & $i,k$ & write & 8 & $i,k$ & read & no & flow \\
+\hline
+\texttt{N\_k} & 8 & $i,k$ & write & 8 & $i+1,k$ & read & yes & flow \\
+\hline
+\texttt{mu\_k} & 11 & $i,k,d$ & write & 11 & $i+1,k,d$ & read & yes & flow \\
+\hline
+\texttt{N\_k} & 8 & $i,k$ & write & 19 & $k$ & read & no & flow \\
+\hline
+\texttt{mu\_k} & 11 & $i,k,d$ & write & 19 & $k,d$ & read & no & flow \\
+\hline
+\texttt{mu} & 19 & $k,d$ & write & 28 & $k,d$ & read & no & flow \\
+\hline
+\texttt{sigma\_k} & 30 & $k,d$ & write & 38 & $k,d$ & read & no & flow \\
+\hline
+\end{tabular}}
+\end{table}
+%#TODO: comment on sigma, mu, pi dependencies between M-step and E-step
 
 \subsubsection*{Different parallelization strategies}
 
