@@ -40,23 +40,32 @@ As a result, both the frequency and volume of inter-process communication taking
 To assess the feasibility and potential benefits of hybrid parallelism within our implementation, 
 we first examined the data dependencies inherent to the EM algorithm.
 
-\begin{table}[ht]
+%#TODO: Reason if the single line comments should be interpreted as atomic or not.
+\begin{table}[H]
 \centering
 \small
 \setlength{\tabcolsep}{8pt}
 \renewcommand{\arraystretch}{1.05}
-\resizebox{\textwidth}{!}{%
+\resizebox{\textwidth}{!}{
 \begin{tabular}{|c|c|c|c|c|c|c|c|c|}
 \hline
 \multirow{2}{*}{Memory Location} & \multicolumn{3}{c|}{Earlier Statement} & \multicolumn{3}{c|}{Later Statement} & \multirow{2}{*}{Loop-carried?} & \multirow{2}{*}{Kind of Dataflow} \\
 \cline{2-7}
  & Line & Iteration & Access & Line & Iteration & Access & & \\
 \hline
-$a(i+1)$ & 20 & $i$   & read  & 10 & $i+1$ & write & yes & anti \\
+\texttt{log\_likelihood} & 22 & $i$ & read & 22 & $i$ & write & no & anti \\ 
 \hline
-$b(i)$   & 30 & $i$   & read  & 20 & $i+1$ & write & yes & anti \\
+\texttt{log\_likelihood} & 22 & $i$ & write & 22 & $i + 1$ & write & yes & output \\ 
 \hline
-$c(2)$   & 40 & $i$   & write & 30 & $i+1$ & read  & yes & flow \\
+\texttt{log\_likelihood} & 22 & $i$ & write & 22 & $i + 1$ & read & yes & flow \\ 
+\hline
+\texttt{denom} & 15 & $i,k$   & read  & 15 & $i,k$ & write & no & anti \\
+\hline
+\texttt{denom} & 15 & $i,k$   & write  & 15 & $i,k+1$ & read & yes & flow \\
+\hline
+\texttt{gamma}$(i * k + k)$   & 13 & $i,k$   & write  & 15 & $i,k$ & read & no & flow \\
+\hline
+\texttt{gamma}$(i * k + k)$   & 15 & $i,k$   & read  & 20 & $i,k$ & write & no & flow \\
 \hline
 \end{tabular}}
 \end{table}
