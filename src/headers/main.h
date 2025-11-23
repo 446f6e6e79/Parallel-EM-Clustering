@@ -10,6 +10,9 @@
 #include "mpi_utils.h"
 #include "types.h"
 #include "debug.h"
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 int main(int argc, char **argv);
 

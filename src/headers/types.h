@@ -75,6 +75,8 @@ typedef struct {
     const char *debug_file_path;
     // Convergence threshold (optional)
     double threshold;
+    // Number of threads to use for OpenMP parallel regions (optional)
+    int num_threads;
 } InputParams_t;
 
 #endif
