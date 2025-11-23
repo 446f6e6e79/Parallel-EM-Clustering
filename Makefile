@@ -3,6 +3,13 @@ MPICC    ?= mpicc
 CFLAGS   ?= -std=gnu11 -O2 -Wall -Wextra -I./src -I./src/headers -D_GNU_SOURCE
 LDFLAGS  ?= -lm
 
+# Enable OpenMP support if OMP=1 is passed
+OMP ?= 0
+ifeq ($(OMP),1)
+  CFLAGS  += -fopenmp
+  LDFLAGS += -fopenmp
+endif
+
 # Enable debug mode if DEBUG=1 is passed
 DEBUG ?= 0
 ifeq ($(DEBUG),1)
@@ -24,7 +31,7 @@ TARGET_MPI := bin/EM_Clustering
 SEQ_MAIN   := src/sequential/multiFeature.c
 TARGET_SEQ := bin/EM_Sequential
 
-# Libreria statica
+# Static library
 LIB_NAME   := libem.a
 LIB_PATH   := bin/$(LIB_NAME)
 
@@ -38,7 +45,7 @@ DEPS_COMMON := $(COMMON_SRC:src/%.c=$(DEPDIR)/%.d)
 DEPS_MPI    := $(MPI_MAIN:src/%.c=$(DEPDIR)/%.d)
 DEPS_SEQ    := $(SEQ_MAIN:src/%.c=$(DEPDIR)/%.d)
 
-.PHONY: all mpi sequential clean debug sequential-debug
+.PHONY: all mpi omp omp-debug sequential clean debug sequential-debug
 
 # Default: build MPI parallel version
 all: mpi
@@ -47,9 +54,16 @@ mpi: $(TARGET_MPI)
 
 sequential: $(LIB_PATH) $(TARGET_SEQ)
 
-# Target comodi per build in debug
+# Target for MPI with OpenMP support
+omp:
+	@$(MAKE) OMP=1 mpi
+
+# Target for debug builds
 debug:
 	@$(MAKE) DEBUG=1 mpi
+
+omp-debug:
+	@$(MAKE) OMP=1 DEBUG=1 mpi
 
 sequential-debug:
 	@$(MAKE) DEBUG=1 sequential
