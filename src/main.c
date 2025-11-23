@@ -143,6 +143,12 @@ int main(int argc, char **argv) {
     double curr_log_likelihood = 0.0;                   // Current log-likelihood
     double local_curr_log_likelihood = 0.0;             // Local log-likelihood for each process
 
+
+    // Create n threads
+    #ifdef _OPENMP
+    omp_set_num_threads(inputParams.num_threads); // instruct OpenMP to use n threads
+    #endif
+
     /*
         EM loop
         The loop runs until MAX_ITER is reached or convergence is achieved based on the threshold (if provided)
@@ -198,7 +204,7 @@ int main(int argc, char **argv) {
     // Report the execution info (only by rank 0)
     if(rank == 0){
         if(inputParams.benchmarks_file_path){
-            if(write_execution_info(inputParams.benchmarks_file_path, size, &metadata, &timers) != 0){
+            if(write_execution_info(inputParams.benchmarks_file_path, size, inputParams.num_threads, &metadata, &timers) != 0){
                 fprintf(stderr, "Failed to write benchmarks info to file: %s\n", inputParams.benchmarks_file_path);
                 MPI_Abort(MPI_COMM_WORLD, 1);
             }

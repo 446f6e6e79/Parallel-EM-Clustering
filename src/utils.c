@@ -146,8 +146,9 @@ int parseParameter(int argc, char **argv, InputParams_t *inputParams) {
     inputParams->output_file_path = NULL;
     inputParams->debug_file_path = NULL;
     inputParams->threshold = 0.0;
+    inputParams->num_threads = 1; // Default to 1 thread
 
-    while ((opt = getopt(argc, argv, "i:m:b:o:d:t:")) != -1) {
+    while ((opt = getopt(argc, argv, "i:m:b:o:d:t:n:")) != -1) {
         switch (opt) {
         case 'i':
             inputParams->dataset_file_path = optarg;
@@ -167,9 +168,12 @@ int parseParameter(int argc, char **argv, InputParams_t *inputParams) {
         case 't':
             inputParams->threshold = atof(optarg);
             break;
+        case 'n':
+            inputParams->num_threads = atoi(optarg);
+            break;
         // If an unknown option is provided print the usage
         default:
-            fprintf(stderr, "Usage: %s -i input_file -m metadata_file -b benchmarks_file -o output_file -d debug_file -t threshold\n", argv[0]);
+            fprintf(stderr, "Usage: %s -i input_file -m metadata_file -b benchmarks_file -o output_file -d debug_file -t threshold -n num_threads\n", argv[0]);
             return -1;
         }
     }

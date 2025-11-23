@@ -102,8 +102,11 @@ void compute_clustering(double *gamma, int N, int K, int *predicted_labels) {
 double e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_params, double *gamma){
     // Initialize log-likelihood
     double log_likelihood = 0.0;
+    #ifdef _OPENMP
+    #pragma omp parallel for reduction(+:log_likelihood) schedule(static)
+    #endif
     for(int i = 0; i < N; i++) {
-        // Initialize denominator for normalization
+        // Initialize denominator for normalization, private for every thread
         double denom = 0.0;
         // Pointer to the i-th data point
         double *x = &X[i*metadata->D];
