@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l select=__NODES__:ncpus=__NCPUS__:mem=__MEM__ 
+#PBS -l select=__NODES__:ncpus=__TOTALP__:mem=__MEM__ 
 #PBS -l place=__PLACEMENT__
 #PBS -l walltime=__WALLTIME__
 #PBS -q __QUEUE__

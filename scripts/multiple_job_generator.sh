@@ -22,19 +22,19 @@ fi
 
 # Output file for job info
 OUTPUT_INFO="$BASE_DIR/data/algorithm_results/execution_info.csv"
-if [-f OUTPUT_INFO ]; then
+if [ ! -f "$OUTPUT_INFO" ]; then
   echo "No output file found in $OUTPUT_INFO"
   exit 
 fi
 
 COMBOS=(
-  "1:1"
-  "1:2"
-  "1:4"
-  "1:8"
-  "2:8"
-  "2:16"
-  "4:16"
+  "1:1:1"
+  "1:1:2"
+  "1:1:4"
+  "1:2:4"
+  "2:2:4"
+  "2:4:4"
+  "4:4:4"
 )
 
 for run in {1..3}; do
@@ -52,22 +52,26 @@ for run in {1..3}; do
       echo "Missing required file(s) for $dataset_name — skipping"
       continue
     fi
-
-    PARAMETERS="-i $input -m $meta -b $OUTPUT_INFO"
-
+         
     for combo in "${COMBOS[@]}"; do
-      IFS=":" read -r NODES NCPUS <<< "$combo"
-      NP=$(( NODES * NCPUS ))
 
-      JOB_SCRIPT="${OUTPUT_DIR}/job_${dataset_name}-run_${run}-nodes_${NODES}-cpus_${NCPUS}.sh"
+      IFS=":" read -r NODES NCPUS THREADS <<< "$combo"
+      TOTAL_PROCESSES=$(( NCPUS * THREADS ))
+      NP=$((NCPUS * NODES))
+
+      PARAMETERS="-i $input -m $meta -b $OUTPUT_INFO -n $THREADS"
+
+      JOB_SCRIPT="${OUTPUT_DIR}/job_${dataset_name}-run_${run}-nodes_${NODES}-cpus_${NCPUS}-threads_${THREADS}.sh"
 
       sed "s|__EXECUTABLE__|$EXECUTABLE|g; \
            s|__PLACEMENT__|$PLACEMENT|g; \
            s|__NODES__|$NODES|g; \
            s|__NCPUS__|$NCPUS|g; \
+           s|__THREADS__|$THREADS|g; \
            s|__MEM__|$MEM|g; \
            s|__WALLTIME__|$WALLTIME|g; \
            s|__QUEUE__|$QUEUE|g; \
+           s|__TOTALP__|$TOTAL_PROCESSES|g; \
            s|__NP__|$NP|g; \
            s|__PARAMETERS__|$PARAMETERS|g" \
            "$TEMPLATE" > "$JOB_SCRIPT"
