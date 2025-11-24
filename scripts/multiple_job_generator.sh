@@ -24,10 +24,19 @@ fi
 OUTPUT_INFO="$BASE_DIR/data/algorithm_results/execution_info.csv"
 if [ ! -f "$OUTPUT_INFO" ]; then
   echo "No output file found in $OUTPUT_INFO"
-  exit 
+  exit
 fi
+MPI_COMBOS=(
+    "1:1:1"
+    "1:2:1"
+    "1:4:1"
+    "1:8:1"
+    "2:8:1"
+    "2:16:1"
+    "4:16:1"
+)
 
-COMBOS=(
+HYBRID_COMBOS=(
   "1:1:1"
   "1:1:2"
   "1:1:4"
@@ -36,6 +45,18 @@ COMBOS=(
   "2:4:4"
   "4:4:4"
 )
+
+# Set mode (MPI, HYBRID, ALL)
+MODE="ALL"
+COMBOS=()
+# Check the specified mode and set combinations accordingly
+if [[ "$MODE" == "MPI" ]]; then
+    COMBOS=("${MPI_COMBOS[@]}")
+elif [[ "$MODE" == "HYBRID" ]]; then
+    COMBOS=("${HYBRID_COMBOS[@]}")
+else
+    echo "Default to $MODE"
+fi
 
 for run in {1..3}; do
   echo "=== Generating jobs for iteration $run ==="
@@ -52,7 +73,7 @@ for run in {1..3}; do
       echo "Missing required file(s) for $dataset_name — skipping"
       continue
     fi
-         
+
     for combo in "${COMBOS[@]}"; do
 
       IFS=":" read -r NODES NCPUS THREADS <<< "$combo"
