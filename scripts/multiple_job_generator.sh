@@ -36,6 +36,16 @@ MPI_COMBOS=(
     "4:16:1"
 )
 
+MPI_COMBOS=(
+    "1:1:1"
+    "1:2:1"
+    "1:4:1"
+    "1:8:1"
+    "2:8:1"
+    "2:16:1"
+    "4:16:1"
+)
+
 HYBRID_COMBOS=(
   "1:1:1"
   "1:1:2"
@@ -47,15 +57,19 @@ HYBRID_COMBOS=(
 )
 
 # Set mode (MPI, HYBRID, ALL)
-MODE="ALL"
 COMBOS=()
-# Check the specified mode and set combinations accordingly
+# Set the default mode to ALL
+: "${MODE:=ALL}"
+
 if [[ "$MODE" == "MPI" ]]; then
     COMBOS=("${MPI_COMBOS[@]}")
 elif [[ "$MODE" == "HYBRID" ]]; then
     COMBOS=("${HYBRID_COMBOS[@]}")
+elif [[ "$MODE" == "ALL" ]]; then
+    COMBOS=("${MPI_COMBOS[@]}" "${HYBRID_COMBOS[@]}")
 else
-    echo "Default to $MODE"
+    echo "Invalid MODE: $MODE. Choose between MPI, HYBRID or ALL"
+    exit 1
 fi
 
 for run in {1..3}; do
