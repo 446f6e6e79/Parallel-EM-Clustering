@@ -65,6 +65,10 @@ void init_params(double *X, Metadata *metadata, ClusterParams *cluster_params) {
  *     - predicted_labels: (N) Output array for predicted labels
  */
 void compute_clustering(double *gamma, int N, int K, int *predicted_labels) {
+    // Parallelize the loop over data points to compute predicted labels concurrently
+    #ifdef _OPENMP
+    #pragma omp parallel for schedule(static)
+    #endif
     for (int i = 0; i < N; i++) {
         // Initialize max_resp to the responsibility of the first cluster
         double max_resp = gamma[i * K];
@@ -102,9 +106,10 @@ void compute_clustering(double *gamma, int N, int K, int *predicted_labels) {
 double e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_params, double *gamma){
     // Initialize log-likelihood
     double log_likelihood = 0.0;
-
+    // Parallelize the loop over data points to compute responsibilities concurrently
     #ifdef _OPENMP
-    #pragma omp parallel for reduction(+:log_likelihood) schedule(static)
+    // Each thread will have a private copy of log_likelihood to accumulate partial sums
+    #pragma omp parallel for reduction(+:log_likelihood) schedule(static)   // Static scheduling for better load balancing
     #endif
     for(int i = 0; i < N; i++) {
         // Initialize denominator for normalization, private for every thread
@@ -226,7 +231,7 @@ void m_step( double *X, Metadata *metadata, ClusterParams *cluster_params, Accum
 void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, ClusterParams *cluster_params, Accumulators *cluster_acc, Accumulators *local_cluster_acc, double *local_gamma){
     // Reset local accumulators
     parallel_reset_accumulators(cluster_acc, local_cluster_acc, metadata);
-
+    // Create thread-private accumulators and perform local accumulation
     #ifdef _OPENMP
     #pragma omp parallel
     #endif
@@ -234,15 +239,17 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
         // Allocate thread-private accumulators
         double *private_N_k = (double *) malloc((size_t)metadata->K * sizeof(double));
         double *private_mu_k = (double *) malloc((size_t)metadata->K * metadata->D * sizeof(double));
+        // Check allocation success
         if(private_N_k == NULL || private_mu_k == NULL){
             fprintf(stderr, "Failed to allocate thread private accumulators in M-step parallelized.\n");
             MPI_Abort(MPI_COMM_WORLD,1);
         }
+        // Initialize thread-private accumulators to zero
         memset(private_N_k, 0, (size_t)metadata->K * sizeof(double));
         memset(private_mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
         // Accumulate Nk and mu_num for each cluster, done by every process
         #ifdef _OPENMP
-        #pragma omp for collapse(2) schedule(static)
+        #pragma omp for collapse(2) schedule(static)    // Collapse to vectorize better over i and k
         #endif
         for (int i = 0; i < local_N; i++) {
             for (int k = 0; k < metadata->K; k++) {
@@ -254,8 +261,9 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
                 }
             }
         } 
+        // Combine thread-private accumulators into local accumulators
         #ifdef _OPENMP
-        #pragma omp critical
+        #pragma omp critical    
         #endif
         {
             for (int k = 0; k < metadata->K; k++)
@@ -263,7 +271,7 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
             for (int k = 0; k < metadata->K*metadata->D; k++)
                 local_cluster_acc->mu_k[k] += private_mu_k[k];
         }
-
+        // Free thread-private accumulators
         free(private_N_k);
         free(private_mu_k);
     }
@@ -273,7 +281,7 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
 
     // Finalize the calculation of the weighted means (for each feature) for each cluster
     #ifdef _OPENMP
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for schedule(static)   // Parallelize over clusters
     #endif
     for (int k = 0; k < metadata->K; k++) {
         // Guard to avoid division by zero
@@ -296,10 +304,11 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
             fprintf(stderr, "Failed to allocate thread private sigma_k in M-step parallelized.\n");
             MPI_Abort(MPI_COMM_WORLD,1);
         }
+        // Initialize thread-private sigma_k to zero
         memset(private_sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
-
+        // Accumulate weighted squared differences for variances 
         #ifdef _OPENMP
-        #pragma omp for collapse(2) schedule(static)
+        #pragma omp for collapse(2) schedule(static)    // Collapse to vectorize better over i and k
         #endif
         for (int i = 0; i < local_N; i++) {
             for (int k = 0; k < metadata->K; k++) {
@@ -313,7 +322,7 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
                 }
             }
         }
-
+        // Combine thread-private sigma_k into local accumulators
         #ifdef _OPENMP
         #pragma omp critical
         #endif
@@ -321,6 +330,7 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
             for (int k = 0; k < metadata->K*metadata->D; k++)
                 local_cluster_acc->sigma_k[k] += private_sigma_k[k];
         }
+        // Free thread-private accumulators
         free(private_sigma_k);
     }
 

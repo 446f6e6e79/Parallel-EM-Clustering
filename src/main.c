@@ -6,7 +6,8 @@
     Expection-Maximization Clustering Algorithm
     MPI parallel implementation of the EM algorithm for multi feature clustering.
 
-    Usage: ./program <dataset_file> <metadata_file> [execution_info_file] [output_labels_file]
+    Usage: ./program <dataset_file> <metadata_file> [execution_info_file] [output_labels_file] [convergence_threshold] [num_threads]
+
 */
 int main(int argc, char **argv) { 
     // Initialize MPI
@@ -142,7 +143,6 @@ int main(int argc, char **argv) {
     double prev_log_likelihood = -INFINITY;             // Previous log-likelihood
     double curr_log_likelihood = 0.0;                   // Current log-likelihood
     double local_curr_log_likelihood = 0.0;             // Local log-likelihood for each process
-
 
     // Create n threads
     #ifdef _OPENMP
