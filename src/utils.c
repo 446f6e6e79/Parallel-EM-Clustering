@@ -132,6 +132,7 @@ void initialize_timers(Timers_t *timers) {
             - -o <fileName>: predicted labels output file (optional)
             - -d <fileName>: debug information file (optional)
             - -t <value>: convergence threshold (optional)
+            - -n <value>: number of threads for OpenMP parallel regions (optional)
     Output:
         - inputParams: struct containing the parsed parameters
     Returns:

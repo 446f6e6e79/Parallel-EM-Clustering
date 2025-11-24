@@ -99,6 +99,7 @@ int read_metadata(const char *meta_data_file_path, Metadata *metadata) {
     Parameters:
         - filename: Path to the output csv file.
         - n_process: Number of processes used in the execution.
+        - n_threads: Number of threads used in the execution.
         - metadata: Metadata structure containing dataset information.
         - timers: Timers structure containing execution times.
     Returns:

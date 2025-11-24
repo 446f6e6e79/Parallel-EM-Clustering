@@ -7,7 +7,7 @@
                          + sum_d log(sigma[d])
                          + sum_d (x[d]-mu[d])^2 / sigma[d] ) )
 */
-//TODO: try OPENMP parallelization here
+//TODO: look for simd optimization
 inline double gaussian_multi_diag(double *x, double *mu, double *sigma, int D) {
     double logdet = 0.0;
     double quad = 0.0;
@@ -102,6 +102,7 @@ void compute_clustering(double *gamma, int N, int K, int *predicted_labels) {
 double e_step(double *X, int N, Metadata *metadata, ClusterParams *cluster_params, double *gamma){
     // Initialize log-likelihood
     double log_likelihood = 0.0;
+
     #ifdef _OPENMP
     #pragma omp parallel for reduction(+:log_likelihood) schedule(static)
     #endif
@@ -243,7 +244,6 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
     MPI_Allreduce(local_cluster_acc->mu_k, cluster_acc->mu_k, metadata->D * metadata->K, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
     // Finalize the calculation of the weighted means (for each feature) for each cluster
-    //TODO: (IN FUTURE, should be done using openmp???)
     for (int k = 0; k < metadata->K; k++) {
         // Guard to avoid division by zero
         if (cluster_acc->N_k[k] <= 0.0) cluster_acc->N_k[k] = GUARD_VALUE;
@@ -271,7 +271,6 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
     MPI_Allreduce(local_cluster_acc->sigma_k, cluster_acc->sigma_k, metadata->K * metadata->D, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
     // Finalize sigma (variance per-dim) and pi
-    //TODO: (IN FUTURE, should be done using openmp???)
     for (int k = 0; k < metadata->K; k++) {
         for (int d = 0; d < metadata->D; d++) {
             // Nk[k] is already guarded
