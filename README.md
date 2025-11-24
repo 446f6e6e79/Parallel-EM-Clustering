@@ -17,6 +17,14 @@ make
 ```
 
 The executable will be generated at `bin/EM_Clustering`.
+
+#### Hybrid version
+The hybrid parallelized version of the algorithm can be compiled using the make file:
+```bash
+make omp
+```
+The executable will be generated at `bin/EM_Clustering`
+
 #### Serial version
 The serial version of the algorithm can also be compiled using the make file:
 ```bash
@@ -31,10 +39,13 @@ For example, to compile the parallel version in debug mode:
 ```bash
 make debug
 ```
-or, for the serial version:
-
+or, for the hybrid version:
 ```bash
-make debug-sequential
+make omp-debug
+```
+or, for the serial version:
+```bash
+make sequential-debug
 ```
 
 #### Compiling on the Cluster
