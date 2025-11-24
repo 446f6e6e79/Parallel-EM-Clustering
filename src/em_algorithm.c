@@ -226,24 +226,50 @@ void m_step( double *X, Metadata *metadata, ClusterParams *cluster_params, Accum
 void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, ClusterParams *cluster_params, Accumulators *cluster_acc, Accumulators *local_cluster_acc, double *local_gamma){
     // Reset local accumulators
     parallel_reset_accumulators(cluster_acc, local_cluster_acc, metadata);
-    
-    // Accumulate Nk and mu_num for each cluster, done by every process
-    for (int i = 0; i < local_N; i++) {
-        double *x = &local_X[i*metadata->D]; // Vector of features for data point i
-        for (int k = 0; k < metadata->K; k++) {
-            local_cluster_acc->N_k[k] += local_gamma[i*metadata->K + k]; // Accumulate responsibilities of a data point to cluster k
-            for (int d = 0; d < metadata->D; d++) { 
-                // Weight the data point by its responsibility and accumulate for mean
-                local_cluster_acc->mu_k[k*metadata->D + d] += local_gamma[i*metadata->K + k] * x[d];
-            }
-        }
-    }
 
+    #pragma omp parallel
+    {
+        // Allocate thread-private accumulators
+        Accumulators thread_private_acc;
+        thread_private_acc.N_k = (double *) malloc((size_t)metadata->K * sizeof(double));
+        thread_private_acc.mu_k = (double *) malloc((size_t)metadata->K * metadata->D * sizeof(double));
+        if(thread_private_acc.N_k == NULL || thread_private_acc.mu_k == NULL){
+            fprintf(stderr, "Failed to allocate thread private accumulators in M-step parallelized.\n");
+            MPI_Abort(MPI_COMM_WORLD,1);
+        }
+        memset(thread_private_acc.N_k, 0, (size_t)metadata->K * sizeof(double));
+        memset(thread_private_acc.mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
+        
+        // Accumulate Nk and mu_num for each cluster, done by every process
+        #pragma omp for collapse(2) schedule(static)
+        for (int i = 0; i < local_N; i++) {
+            for (int k = 0; k < metadata->K; k++) {
+                double *x = &local_X[i*metadata->D]; // Vector of features for data point i
+                thread_private_acc.N_k[k] += local_gamma[i*metadata->K + k]; // Accumulate responsibilities of a data point to cluster k
+                for (int d = 0; d < metadata->D; d++) { 
+                    // Weight the data point by its responsibility and accumulate for mean
+                    thread_private_acc.mu_k[k*metadata->D + d] += local_gamma[i*metadata->K + k] * x[d];
+                }
+            }
+        } 
+
+        #pragma omp critical
+        {
+            for (int k = 0; k < metadata->K; k++)
+                local_cluster_acc->N_k[k] += thread_private_acc.N_k[k];
+            for (int k = 0; k < metadata->K*metadata->D; k++)
+                local_cluster_acc->mu_k[k] += thread_private_acc.mu_k[k];
+        }
+
+        free_accumulators(&thread_private_acc);
+    }
     // Reduce local accumulators into global accumulators (Nk and mu_k) each process will have the final result after this Allreduce
     MPI_Allreduce(local_cluster_acc->N_k, cluster_acc->N_k, metadata->K, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     MPI_Allreduce(local_cluster_acc->mu_k, cluster_acc->mu_k, metadata->D * metadata->K, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
     // Finalize the calculation of the weighted means (for each feature) for each cluster
+    //#TODO: check correctness of parallelization here
+    #pragma omp parallel for schedule(static)
     for (int k = 0; k < metadata->K; k++) {
         // Guard to avoid division by zero
         if (cluster_acc->N_k[k] <= 0.0) cluster_acc->N_k[k] = GUARD_VALUE;
@@ -255,22 +281,44 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
     }
 
     // Accumulate weighted squared differences for variances, done by every process
-    for (int i = 0; i < local_N; i++) {
-        double *x = &local_X[i * metadata->D]; // Vector of features for data point i
-        for (int k = 0; k < metadata->K; k++) {
-            // For each feature dimension compute (x - mu)^2 and weight it by the responsibility
-            for (int d = 0; d < metadata->D; d++) {
-                double diff = x[d] - cluster_params->mu[k * metadata->D + d];
-                // Accumulate weighted squared difference
-                local_cluster_acc->sigma_k[k * metadata->D + d] += local_gamma[i * metadata->K + k] * diff * diff; 
+    #pragma omp parallel 
+    {
+        // Allocate thread-private accumulator for sigma_k
+        double *sigma_k_private = (double *) malloc((size_t)metadata->K * metadata->D * sizeof(double));
+        if(sigma_k_private == NULL){
+            fprintf(stderr, "Failed to allocate thread private sigma_k in M-step parallelized.\n");
+            MPI_Abort(MPI_COMM_WORLD,1);
+        }
+        memset(sigma_k_private, 0, (size_t)metadata->K * metadata->D * sizeof(double));
+
+        #pragma omp for collapse(2) schedule(static)
+        for (int i = 0; i < local_N; i++) {
+            for (int k = 0; k < metadata->K; k++) {
+                double *x = &local_X[i * metadata->D]; // Vector of features for data point i
+
+                // For each feature dimension compute (x - mu)^2 and weight it by the responsibility
+                for (int d = 0; d < metadata->D; d++) {
+                    double diff = x[d] - cluster_params->mu[k * metadata->D + d];
+                    // Accumulate weighted squared difference
+                    sigma_k_private[k * metadata->D + d] += local_gamma[i * metadata->K + k] * diff * diff; 
+                }
             }
         }
+
+        #pragma omp critical
+        {
+            for (int k = 0; k < metadata->K*metadata->D; k++)
+                local_cluster_acc->sigma_k[k] += sigma_k_private[k];
+        }
+        free(sigma_k_private);
     }
-    
+
     // Reduce local accumulators into global accumulators (sigma_k)
     MPI_Allreduce(local_cluster_acc->sigma_k, cluster_acc->sigma_k, metadata->K * metadata->D, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
     // Finalize sigma (variance per-dim) and pi
+    //#TODO: check correctness of parallelization here
+    #pragma omp parallel for schedule(static)
     for (int k = 0; k < metadata->K; k++) {
         for (int d = 0; d < metadata->D; d++) {
             // Nk[k] is already guarded

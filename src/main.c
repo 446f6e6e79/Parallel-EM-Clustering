@@ -83,9 +83,9 @@ int main(int argc, char **argv) {
     }
 
     // Allocate the buffers needed by all processes
-    int cluster_alloc_status = alloc_cluster_params(&cluster_params, &metadata);
     int acc_alloc_status =  alloc_accumulators(&cluster_acc, &metadata); 
-    if(cluster_alloc_status != 0 || acc_alloc_status != 0){
+    int local_alloc_status = alloc_cluster_params(&cluster_params, &metadata);
+    if(local_alloc_status != 0 || acc_alloc_status != 0){
         alloc_fail = 1;
     }
     // Check that all allocations were successful
