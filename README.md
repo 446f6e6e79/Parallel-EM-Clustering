@@ -199,6 +199,12 @@ This script:
 
 - Generates job scripts from `scripts/job_template.sh` by substituting node/core, placement, and parameters.
 - Saves them to a Jobs temporary directory.
+- Allows selecting which combinations to generate using:
+  - `MPI` mode only;
+  - `HYBRID` mode only;
+  - `ALL` (both MPI and HYBRID) modes.
+Default is `ALL`.
+
 
 Another script is provided to run as many jobs as allowed by our cluster. It can be run as:
 ```bash
