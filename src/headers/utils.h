@@ -12,7 +12,7 @@
 
 /* Cleanup helper */
 void reset_accumulators(Accumulators *acc, Metadata *metadata);
-void parallel_reset_accumulators(Accumulators *acc, Accumulators *local_acc, Metadata *metadata);
+void parallel_reset_accumulators(Accumulators *acc, Accumulators *local_acc, Accumulators *thread_acc, int num_threads, Metadata *metadata);
 int alloc_cluster_params(ClusterParams *params, Metadata *metadata);
 void free_cluster_params(ClusterParams *params);
 int alloc_accumulators(Accumulators *acc, Metadata *metadata);

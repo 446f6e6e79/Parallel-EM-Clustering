@@ -149,6 +149,30 @@ int main(int argc, char **argv) {
     omp_set_num_threads(inputParams.num_threads); // instruct OpenMP to use n threads
     #endif
 
+    // TODO: check that this memory allocation are freed at the end
+    // Define a matrix of thread local accumulators. thread_acc[t] corresponds to thread t accumulators
+    Accumulators *thread_acc = malloc(inputParams.num_threads * sizeof(Accumulators));
+    if(!thread_acc){
+        fprintf(stderr, "Thread local accumulators memory allocation failed\n");
+        safe_cleanup(&cluster_params,&cluster_acc,&X,&predicted_labels,&ground_truth_labels, &local_gamma);
+        free_accumulators(&local_cluster_acc);
+        MPI_Abort(MPI_COMM_WORLD,1);
+    }
+    // Create for each thread its local accumulators
+    for(int t = 0; t < inputParams.num_threads; t++){
+        if(alloc_accumulators(&thread_acc[t], &metadata) != 0){
+            fprintf(stderr, "Thread %d local accumulators memory allocation failed\n", t);
+            // Delete all the previously allocated thread accumulators
+            for(int i = 0; i < t; i++){
+                free_accumulators(&thread_acc[i]);
+            }
+            free(thread_acc);
+            safe_cleanup(&cluster_params,&cluster_acc,&X,&predicted_labels,&ground_truth_labels, &local_gamma);
+            free_accumulators(&local_cluster_acc);
+            MPI_Abort(MPI_COMM_WORLD,1);
+        }
+    }
+
     /*
         EM loop
         The loop runs until MAX_ITER is reached or convergence is achieved based on the threshold (if provided)
@@ -162,7 +186,7 @@ int main(int argc, char **argv) {
 
         //M-step
         start_timer(&timers.m_step_start);
-        m_step_parallelized(local_X, local_N, &metadata, &cluster_params, &cluster_acc, &local_cluster_acc, local_gamma);
+        m_step_parallelized(local_X, local_N, &metadata, &cluster_params, &cluster_acc, &local_cluster_acc, thread_acc, inputParams.num_threads, local_gamma);
         stop_timer(&timers.m_step_start, &timers.m_step_time);
 
         // Check for convergence (if threshold is set)
