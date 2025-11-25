@@ -48,12 +48,46 @@ int alloc_accumulators(Accumulators *acc, Metadata *metadata) {
 }
 
 /*
+    Allocates memory for thread accumulators
+*/
+int alloc_thread_accumulators(Accumulators **thread_acc, int num_threads, Metadata *metadata) {
+    *thread_acc = malloc(num_threads * sizeof(Accumulators));
+    if (!*thread_acc) {
+        fprintf(stderr, "Memory allocation failed for thread accumulators\n");
+        return -1; // Allocation failed
+    }
+    for (int t = 0; t < num_threads; t++) {
+        if (alloc_accumulators(&(*thread_acc)[t], metadata) != 0) {
+            fprintf(stderr, "Memory allocation failed for thread %d accumulators\n", t);
+            // Free previously allocated accumulators
+            for (int i = 0; i < t; i++) {
+                free_accumulators(&(*thread_acc)[i]);
+            }
+            free(*thread_acc);
+            *thread_acc = NULL;
+            return -1; // Allocation failed
+        }
+    }
+    return 0; // Success
+}
+
+/*
     Frees memory allocated for cluster accumulators N_k, mu_k, sigma_k
 */
 void free_accumulators(Accumulators *acc) {
     free_and_null((void**)&acc->N_k);
     free_and_null((void**)&acc->mu_k);
     free_and_null((void**)&acc->sigma_k);
+}
+
+/*
+    Frees memory allocated for thread accumulators
+*/
+void free_thread_accumulators(Accumulators *thread_acc, int num_threads) {
+    for (int t = 0; t < num_threads; t++) {
+        free_accumulators(&thread_acc[t]);
+    }
+    free(thread_acc);
 }
 
 /*

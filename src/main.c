@@ -149,28 +149,15 @@ int main(int argc, char **argv) {
     omp_set_num_threads(inputParams.num_threads); // instruct OpenMP to use n threads
     #endif
 
-    // TODO: check that this memory allocation are freed at the end
     // Define a matrix of thread local accumulators. thread_acc[t] corresponds to thread t accumulators
-    Accumulators *thread_acc = malloc(inputParams.num_threads * sizeof(Accumulators));
-    if(!thread_acc){
+    Accumulators *thread_acc = NULL;
+    int thread_acc_alloc_status = alloc_thread_accumulators(&thread_acc, inputParams.num_threads, &metadata);
+    if(thread_acc_alloc_status != 0){
         fprintf(stderr, "Thread local accumulators memory allocation failed\n");
         safe_cleanup(&cluster_params,&cluster_acc,&X,&predicted_labels,&ground_truth_labels, &local_gamma);
         free_accumulators(&local_cluster_acc);
+        free_thread_accumulators(thread_acc, inputParams.num_threads);
         MPI_Abort(MPI_COMM_WORLD,1);
-    }
-    // Create for each thread its local accumulators
-    for(int t = 0; t < inputParams.num_threads; t++){
-        if(alloc_accumulators(&thread_acc[t], &metadata) != 0){
-            fprintf(stderr, "Thread %d local accumulators memory allocation failed\n", t);
-            // Delete all the previously allocated thread accumulators
-            for(int i = 0; i < t; i++){
-                free_accumulators(&thread_acc[i]);
-            }
-            free(thread_acc);
-            safe_cleanup(&cluster_params,&cluster_acc,&X,&predicted_labels,&ground_truth_labels, &local_gamma);
-            free_accumulators(&local_cluster_acc);
-            MPI_Abort(MPI_COMM_WORLD,1);
-        }
     }
 
     /*
@@ -205,7 +192,7 @@ int main(int argc, char **argv) {
     // Compute local predicted labels from responsibilities
     compute_clustering(local_gamma, local_N, metadata.K, local_predicted_labels);
     stop_timer(&timers.compute_start, &timers.compute_time);
-    
+
     // Gather predicted labels from all processes
     gather_dataset(local_predicted_labels, predicted_labels, metadata.N, local_N, rank, size);
 
@@ -238,6 +225,7 @@ int main(int argc, char **argv) {
     // Free all the allocated memory
     safe_cleanup(&cluster_params,&cluster_acc,&X,&predicted_labels,&ground_truth_labels, &local_gamma);
     free_accumulators(&local_cluster_acc);
+    free_thread_accumulators(thread_acc, inputParams.num_threads);
     // Finalize MPI communicator
     MPI_Finalize();
     return 0;

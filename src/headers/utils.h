@@ -17,6 +17,8 @@ int alloc_cluster_params(ClusterParams *params, Metadata *metadata);
 void free_cluster_params(ClusterParams *params);
 int alloc_accumulators(Accumulators *acc, Metadata *metadata);
 void free_accumulators(Accumulators *acc);
+int alloc_thread_accumulators(Accumulators **thread_acc, int num_threads, Metadata *metadata);
+void free_thread_accumulators(Accumulators *thread_acc, int num_threads);
 void safe_cleanup(ClusterParams *cluster_params, Accumulators *cluster_acc, double **X, int **predicted_labels, int **ground_truth_labels, double **resp);
 void start_timer(double *t);
 void stop_timer(double *t, double *accumulator);
