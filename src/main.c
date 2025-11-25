@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
     int *local_predicted_labels = NULL;     // Local predicted cluster labels
     int *ground_truth_labels = NULL;        // Ground truth labels
 
-    // Initialize the timers
+    // Timers for execution time measurement
     Timers_t timers;
     initialize_timers(&timers);
 
@@ -57,10 +57,8 @@ int main(int argc, char **argv) {
     
     // Read metadata from metadata file (only by rank 0)
     start_timer(&timers.io_start);
-    if (rank == 0) {
-        int meta_status = read_metadata(inputParams.meta_data_file_path, &metadata);
-        if(meta_status != 0){
-            fprintf(stderr, "Failed to read metadata from file: %s\n", inputParams.meta_data_file_path);
+    if (rank == 0){
+        if(read_metadata(inputParams.meta_data_file_path, &metadata) != 0) {
             MPI_Abort(MPI_COMM_WORLD,1);
         }
         debug_println("Metadata: samples N=%d, features D=%d, clusters K=%d\n", metadata.N, metadata.D, metadata.K);
@@ -115,7 +113,7 @@ int main(int argc, char **argv) {
     }
     // Broadcast in a single time initial parameters to all processes
     start_timer(&timers.data_distribution_start);
-    broadcast_clusters_parameters(cluster_params, &metadata);
+    broadcast_clusters_parameters(&cluster_params, &metadata);
 
     // Distribute data among processes
     int local_N = compute_local_N(metadata.N, size, rank);
