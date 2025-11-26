@@ -131,7 +131,7 @@ int write_execution_info(const char *filename, int n_process, Metadata *metadata
     fseek(fp, 0, SEEK_END);
     long file_size = ftell(fp);
     if (file_size == 0) {
-        if (fprintf(fp, "n_process,n_samples,n_features,n_clusters,time_seconds,io_time,compute_time,e_step_time,m_step_time,data_distribution_time\n") == -1) {
+        if (fprintf(fp, "n_process,n_threads,n_samples,n_features,n_clusters,time_seconds,io_time,compute_time,e_step_time,m_step_time,data_distribution_time\n") == -1) {
             fprintf(stderr, "Failed to write header to file\n");
             flock(fd, LOCK_UN);
             fclose(fp);
@@ -139,7 +139,7 @@ int write_execution_info(const char *filename, int n_process, Metadata *metadata
         }
     }
     // Write the execution info (note: MPI_Offset is typically a long long)
-    if (fprintf(fp, "%d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n", n_process, metadata->N, metadata->D, metadata->K, timers->total_time, timers->io_time, timers->compute_time, timers->e_step_time, timers->m_step_time, timers->data_distribution_time) == -1) {
+    if (fprintf(fp, "%d,%d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n", n_process, 1, metadata->N, metadata->D, metadata->K, timers->total_time, timers->io_time, timers->compute_time, timers->e_step_time, timers->m_step_time, timers->data_distribution_time) == -1) {
         fprintf(stderr, "Failed to write to file\n");
         flock(fd, LOCK_UN);
         fclose(fp);
