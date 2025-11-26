@@ -118,7 +118,7 @@ void gather_dataset(int *local_predicted_labels, int *predicted_labels, int N, i
     int *displs = NULL;            
     // Allocate counts and displs only on root process
     if (rank == 0) {
-        if (allocate_counts_displs(size, N, 1, &counts, &displs) != 0) {
+        if (init_counts_displs(size, N, 1, &counts, &displs) != 0) {
             fprintf(stderr, "[Rank 0] Failed to allocate counts/displs for gather\n");
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
