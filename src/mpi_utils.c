@@ -51,7 +51,7 @@ void compute_counts_displs(int N, int size, int factor, int *counts, int *displs
     Returns:
         - 0 on success, -1 on allocation failure
 */
-static int init_counts_displs(int size, int N, int factor, int **counts_out, int **displs_out) {
+int init_counts_displs(int size, int N, int factor, int **counts_out, int **displs_out) {
     // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
     *counts_out = malloc(size * sizeof(int));
     // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i  
@@ -118,7 +118,7 @@ void gather_dataset(int *local_predicted_labels, int *predicted_labels, int N, i
     int *displs = NULL;            
     // Allocate counts and displs only on root process
     if (rank == 0) {
-        if (allocate_counts_displs(size, N, 1, &counts, &displs) != 0) {
+        if (init_counts_displs(size, N, 1, &counts, &displs) != 0) {
             fprintf(stderr, "[Rank 0] Failed to allocate counts/displs for gather\n");
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
