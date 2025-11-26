@@ -192,7 +192,7 @@ int write_labels_info(const char *filename, double *X, int *predicted_labels, in
         for(int d = 0; d < metadata->D; d++){
             fprintf(f, "mu_k_%d,sigma_k_%d,", d+1, d+1);
         }
-        fprintf(f, "pi_k,iteration\n");
+        fprintf(f, "pi_k,iteration,mode\n");
     }
 
     // For each sample, write features, predicted label, real label, and cluster parameters
@@ -208,7 +208,7 @@ int write_labels_info(const char *filename, double *X, int *predicted_labels, in
         for(int d = 0; d < metadata->D; d++){
             fprintf(f, "%f,%f,", cluster_params->mu[k * metadata->D + d], cluster_params->sigma[k * metadata->D + d]);
         }
-        fprintf(f, "%f,%d\n", cluster_params->pi[k], iteration);
+        fprintf(f, "%f,%d,HYBRID\n", cluster_params->pi[k], iteration);
     }
     fclose(f);
     return 0;
