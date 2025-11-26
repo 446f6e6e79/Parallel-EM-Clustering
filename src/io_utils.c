@@ -132,15 +132,22 @@ int write_execution_info(const char *filename, int n_process, int n_threads, Met
     fseek(fp, 0, SEEK_END);
     long file_size = ftell(fp);
     if (file_size == 0) {
-        if (fprintf(fp, "n_process,n_threads,n_samples,n_features,n_clusters,time_seconds,io_time,compute_time,e_step_time,m_step_time,data_distribution_time\n") == -1) {
+        if (fprintf(fp, "n_process,n_threads,n_samples,n_features,n_clusters,time_seconds,io_time,compute_time,e_step_time,m_step_time,data_distribution_time,mode\n") == -1) {
             fprintf(stderr, "Failed to write header to file\n");
             flock(fd, LOCK_UN);
             fclose(fp);
             return -1;
         }
     }
+
+    // Determine execution mode based on compilation flags
+    const char *mode = "MPI";
+    #ifdef _OPENMP
+        mode = "HYBRID";
+    #endif
+
     // Write the execution info (note: MPI_Offset is typically a long long)
-    if (fprintf(fp, "%d,%d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n", n_process, n_threads, metadata->N, metadata->D, metadata->K, timers->total_time, timers->io_time, timers->compute_time, timers->e_step_time, timers->m_step_time, timers->data_distribution_time) == -1) {
+    if (fprintf(fp, "%d,%d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%s\n", n_process, n_threads, metadata->N, metadata->D, metadata->K, timers->total_time, timers->io_time, timers->compute_time, timers->e_step_time, timers->m_step_time, timers->data_distribution_time, mode) == -1) {
         fprintf(stderr, "Failed to write to file\n");
         flock(fd, LOCK_UN);
         fclose(fp);
@@ -192,7 +199,7 @@ int write_labels_info(const char *filename, double *X, int *predicted_labels, in
         for(int d = 0; d < metadata->D; d++){
             fprintf(f, "mu_k_%d,sigma_k_%d,", d+1, d+1);
         }
-        fprintf(f, "pi_k,iteration,mode\n");
+        fprintf(f, "pi_k,iteration\n");
     }
 
     // For each sample, write features, predicted label, real label, and cluster parameters
@@ -208,7 +215,7 @@ int write_labels_info(const char *filename, double *X, int *predicted_labels, in
         for(int d = 0; d < metadata->D; d++){
             fprintf(f, "%f,%f,", cluster_params->mu[k * metadata->D + d], cluster_params->sigma[k * metadata->D + d]);
         }
-        fprintf(f, "%f,%d,HYBRID\n", cluster_params->pi[k], iteration);
+        fprintf(f, "%f,%d\n", cluster_params->pi[k], iteration);
     }
     fclose(f);
     return 0;
