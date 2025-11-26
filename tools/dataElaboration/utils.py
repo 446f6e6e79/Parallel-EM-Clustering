@@ -6,6 +6,8 @@ from sklearn.metrics import confusion_matrix
 from scipy.optimize import linear_sum_assignment
 from matplotlib.patches import Ellipse
 import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 def compute_metrics(group):
     """
@@ -311,7 +313,6 @@ def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
     plt.close(fig)
     return image
 
-
 def derive_cluster_mapping(df):
     """
     Convenience wrapper using DataFrame columns 'predicted_cluster' and 'real_cluster'.
@@ -325,3 +326,42 @@ def remap_predicted(y_pred, pred_to_real):
     Remap predicted labels into the real label space using the mapping.
     """
     return np.array([pred_to_real.get(p, p) for p in y_pred])
+
+def plot_heatmap_comparison(table1, table2):
+    """
+        Plot comparison between two pivot tables.
+        Parameters:
+            table1: First pivot table (e.g., efficiency_hybrid_table)
+            table2: Second pivot table (e.g., efficiency_mpi_table)
+    """
+    # Plot each n_samples as a separate line
+    diff_table = table1 - table2
+
+    plt.figure(figsize=(14, 6))
+    sns.heatmap(diff_table, annot=True, cmap='RdBu_r', center=0)
+    plt.xlabel('Dataset (n_samples, n_features, n_clusters)')
+    plt.ylabel('Number of Processes')
+    plt.title('Hybrid Efficiency - MPI Efficiency')
+    plt.show()
+
+def plot_graph_comparison(table1, table2):
+    """
+        Plot comparison between two pivot tables as line graphs.
+        Parameters:
+            table1: First pivot table (e.g., efficiency_hybrid_table)
+            table2: Second pivot table (e.g., efficiency_mpi_table)
+    """
+    # Compute the average efficiency across all datasets (columns)
+    avg_efficiency_hybrid = table1.mean(axis=1)
+    avg_efficiency_mpi = table2.mean(axis=1)
+
+    # Plot
+    plt.figure(figsize=(8, 5))
+    plt.plot(avg_efficiency_hybrid.index, avg_efficiency_hybrid, marker='o', label='Hybrid')
+    plt.plot(avg_efficiency_mpi.index, avg_efficiency_mpi, marker='x', linestyle='--', label='MPI')
+    plt.xlabel('Number of Processes')
+    plt.ylabel('Average Efficiency')
+    plt.title('Average Efficiency per Number of Processes')
+    plt.grid(True)
+    plt.legend()
+    plt.show()

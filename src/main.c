@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
     int *local_predicted_labels = NULL;     // Local predicted cluster labels
     int *ground_truth_labels = NULL;        // Ground truth labels
 
-    // Initialize the timers
+    // Timers for execution time measurement
     Timers_t timers;
     initialize_timers(&timers);
 
@@ -57,10 +57,8 @@ int main(int argc, char **argv) {
     
     // Read metadata from metadata file (only by rank 0)
     start_timer(&timers.io_start);
-    if (rank == 0) {
-        int meta_status = read_metadata(inputParams.meta_data_file_path, &metadata);
-        if(meta_status != 0){
-            fprintf(stderr, "Failed to read metadata from file: %s\n", inputParams.meta_data_file_path);
+    if (rank == 0){
+        if(read_metadata(inputParams.meta_data_file_path, &metadata) != 0) {
             MPI_Abort(MPI_COMM_WORLD,1);
         }
         debug_println("Metadata: samples N=%d, features D=%d, clusters K=%d\n", metadata.N, metadata.D, metadata.K);
@@ -115,7 +113,7 @@ int main(int argc, char **argv) {
     }
     // Broadcast in a single time initial parameters to all processes
     start_timer(&timers.data_distribution_start);
-    broadcast_clusters_parameters(cluster_params, &metadata);
+    broadcast_clusters_parameters(&cluster_params, &metadata);
 
     // Distribute data among processes
     int local_N = compute_local_N(metadata.N, size, rank);
@@ -149,6 +147,17 @@ int main(int argc, char **argv) {
     omp_set_num_threads(inputParams.num_threads); // instruct OpenMP to use n threads
     #endif
 
+    // Define a matrix of thread local accumulators. thread_acc[t] corresponds to thread t accumulators
+    Accumulators *thread_acc = NULL;
+    int thread_acc_alloc_status = alloc_thread_accumulators(&thread_acc, inputParams.num_threads, &metadata);
+    if(thread_acc_alloc_status != 0){
+        fprintf(stderr, "Thread local accumulators memory allocation failed\n");
+        safe_cleanup(&cluster_params,&cluster_acc,&X,&predicted_labels,&ground_truth_labels, &local_gamma);
+        free_accumulators(&local_cluster_acc);
+        free_thread_accumulators(thread_acc, inputParams.num_threads);
+        MPI_Abort(MPI_COMM_WORLD,1);
+    }
+
     /*
         EM loop
         The loop runs until MAX_ITER is reached or convergence is achieved based on the threshold (if provided)
@@ -162,7 +171,7 @@ int main(int argc, char **argv) {
 
         //M-step
         start_timer(&timers.m_step_start);
-        m_step_parallelized(local_X, local_N, &metadata, &cluster_params, &cluster_acc, &local_cluster_acc, local_gamma);
+        m_step_parallelized(local_X, local_N, &metadata, &cluster_params, &cluster_acc, &local_cluster_acc, thread_acc, inputParams.num_threads, local_gamma);
         stop_timer(&timers.m_step_start, &timers.m_step_time);
 
         // Check for convergence (if threshold is set)
@@ -181,7 +190,7 @@ int main(int argc, char **argv) {
     // Compute local predicted labels from responsibilities
     compute_clustering(local_gamma, local_N, metadata.K, local_predicted_labels);
     stop_timer(&timers.compute_start, &timers.compute_time);
-    
+
     // Gather predicted labels from all processes
     gather_dataset(local_predicted_labels, predicted_labels, metadata.N, local_N, rank, size);
 
@@ -214,6 +223,7 @@ int main(int argc, char **argv) {
     // Free all the allocated memory
     safe_cleanup(&cluster_params,&cluster_acc,&X,&predicted_labels,&ground_truth_labels, &local_gamma);
     free_accumulators(&local_cluster_acc);
+    free_thread_accumulators(thread_acc, inputParams.num_threads);
     // Finalize MPI communicator
     MPI_Finalize();
     return 0;

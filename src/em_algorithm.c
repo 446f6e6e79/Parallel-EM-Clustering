@@ -228,52 +228,43 @@ void m_step( double *X, Metadata *metadata, ClusterParams *cluster_params, Accum
  *    - local_gamma: (local_N x K) Local responsibilities matrix
  *    - rank: MPI rank of the current process
 */
-void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, ClusterParams *cluster_params, Accumulators *cluster_acc, Accumulators *local_cluster_acc, double *local_gamma){
+void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, ClusterParams *cluster_params, Accumulators *cluster_acc, Accumulators *local_cluster_acc, Accumulators *thread_acc, int n_threads, double *local_gamma) {
     // Reset local accumulators
-    parallel_reset_accumulators(cluster_acc, local_cluster_acc, metadata);
+    parallel_reset_accumulators(cluster_acc, local_cluster_acc, thread_acc, n_threads, metadata);
     // Create thread-private accumulators and perform local accumulation
     #ifdef _OPENMP
     #pragma omp parallel
     #endif
     {
-        // Allocate thread-private accumulators
-        double *private_N_k = (double *) malloc((size_t)metadata->K * sizeof(double));
-        double *private_mu_k = (double *) malloc((size_t)metadata->K * metadata->D * sizeof(double));
-        // Check allocation success
-        if(private_N_k == NULL || private_mu_k == NULL){
-            fprintf(stderr, "Failed to allocate thread private accumulators in M-step parallelized.\n");
-            MPI_Abort(MPI_COMM_WORLD,1);
-        }
-        // Initialize thread-private accumulators to zero
-        memset(private_N_k, 0, (size_t)metadata->K * sizeof(double));
-        memset(private_mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
-        // Accumulate Nk and mu_num for each cluster, done by every process
+        int thread_id = 0;
         #ifdef _OPENMP
-        #pragma omp for collapse(2) schedule(static)    // Collapse to vectorize better over i and k
+            thread_id = omp_get_thread_num();
+        #endif
+        // Retrieve the private accumulators for this thread
+        Accumulators *local_thread_acc = &thread_acc[thread_id];
+
+        #ifdef _OPENMP
+            #pragma omp for collapse(2) schedule(static)    // Collapse to vectorize better over i and k
         #endif
         for (int i = 0; i < local_N; i++) {
             for (int k = 0; k < metadata->K; k++) {
                 double *x = &local_X[i*metadata->D]; // Vector of features for data point i
-                private_N_k[k] += local_gamma[i*metadata->K + k]; // Accumulate responsibilities of a data point to cluster k
+                local_thread_acc->N_k[k] += local_gamma[i*metadata->K + k]; // Accumulate responsibilities of a data point to cluster k
                 for (int d = 0; d < metadata->D; d++) { 
                     // Weight the data point by its responsibility and accumulate for mean
-                    private_mu_k[k*metadata->D + d] += local_gamma[i*metadata->K + k] * x[d];
+                    local_thread_acc->mu_k[k*metadata->D + d] += local_gamma[i*metadata->K + k] * x[d];
                 }
             }
-        } 
-        // Combine thread-private accumulators into local accumulators
-        #ifdef _OPENMP
-        #pragma omp critical    
-        #endif
-        {
-            for (int k = 0; k < metadata->K; k++)
-                local_cluster_acc->N_k[k] += private_N_k[k];
-            for (int k = 0; k < metadata->K*metadata->D; k++)
-                local_cluster_acc->mu_k[k] += private_mu_k[k];
+        } // All threads joined here
+    }
+    // Combine thread-private accumulators into local accumulators
+    for (int t = 0; t < n_threads; t++) {
+        for (int k = 0; k < metadata->K; k++) {
+            local_cluster_acc->N_k[k] += thread_acc[t].N_k[k];
         }
-        // Free thread-private accumulators
-        free(private_N_k);
-        free(private_mu_k);
+        for (int k = 0; k < metadata->K*metadata->D; k++) {
+            local_cluster_acc->mu_k[k] += thread_acc[t].mu_k[k];
+        }
     }
     // Reduce local accumulators into global accumulators (Nk and mu_k) each process will have the final result after this Allreduce
     MPI_Allreduce(local_cluster_acc->N_k, cluster_acc->N_k, metadata->K, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -298,15 +289,14 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
     #pragma omp parallel 
     #endif
     {
-        // Allocate thread-private accumulator for sigma_k
-        double *private_sigma_k = (double *) malloc((size_t)metadata->K * metadata->D * sizeof(double));
-        if(private_sigma_k == NULL){
-            fprintf(stderr, "Failed to allocate thread private sigma_k in M-step parallelized.\n");
-            MPI_Abort(MPI_COMM_WORLD,1);
-        }
-        // Initialize thread-private sigma_k to zero
-        memset(private_sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
-        // Accumulate weighted squared differences for variances 
+        int thread_id = 0;
+        #ifdef _OPENMP
+            thread_id = omp_get_thread_num();
+        #endif
+        // Retrieve the private accumulators for this thread
+        Accumulators *local_thread_acc = &thread_acc[thread_id];
+
+
         #ifdef _OPENMP
         #pragma omp for collapse(2) schedule(static)    // Collapse to vectorize better over i and k
         #endif
@@ -318,22 +308,17 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
                 for (int d = 0; d < metadata->D; d++) {
                     double diff = x[d] - cluster_params->mu[k * metadata->D + d];
                     // Accumulate weighted squared difference
-                    private_sigma_k[k * metadata->D + d] += local_gamma[i * metadata->K + k] * diff * diff; 
+                    local_thread_acc->sigma_k[k * metadata->D + d] += local_gamma[i * metadata->K + k] * diff * diff;
                 }
             }
         }
-        // Combine thread-private sigma_k into local accumulators
-        #ifdef _OPENMP
-        #pragma omp critical
-        #endif
-        {
-            for (int k = 0; k < metadata->K*metadata->D; k++)
-                local_cluster_acc->sigma_k[k] += private_sigma_k[k];
-        }
-        // Free thread-private accumulators
-        free(private_sigma_k);
     }
-
+    // Combine thread-private accumulators into local accumulators
+    for (int t = 0; t < n_threads; t++) {
+        for (int k = 0; k < metadata->K*metadata->D; k++) {
+            local_cluster_acc->sigma_k[k] += thread_acc[t].sigma_k[k];
+        }
+    }
     // Reduce local accumulators into global accumulators (sigma_k)
     MPI_Allreduce(local_cluster_acc->sigma_k, cluster_acc->sigma_k, metadata->K * metadata->D, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 

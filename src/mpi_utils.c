@@ -2,15 +2,22 @@
 
 
 /*
-    Computes the number of rows assigned to the local process
+    Computes the number of rows assigned to the local process using balanced distribution: 
+    processes 0..(N % size - 1) get ceil(N/size),
+    remaining processes get floor(N/size).
+    
+    Example: N=10, size=3 -> ranks get [4, 3, 3]
     Parameters:
         - N: Total number of samples
         - size: Total number of MPI processes
         - rank: Rank of the current MPI process
+    Returns:
+        - local_N: Number of rows assigned to the local process
 */
 int compute_local_N(int N, int size, int rank) {
     int base = N / size;
-    return base + (rank < N % size);
+    int remainder = N % size;
+    return base + (rank < remainder ? 1 : 0); 
 }
 
 /*
@@ -33,6 +40,36 @@ void compute_counts_displs(int N, int size, int factor, int *counts, int *displs
 }
 
 /*
+    Allocates and initializes counts/displs arrays for MPI_Scatterv/Gatherv.
+    Combines allocation + computation for convenience.
+    Parameters:
+        - size: Total number of MPI processes
+        - N: Total number of samples
+        - factor: Multiplicative factor for each count (e.g., D for data points, 1 for labels)
+        - counts_out: Pointer to output counts array
+        - displs_out: Pointer to output displacements array
+    Returns:
+        - 0 on success, -1 on allocation failure
+*/
+static int init_counts_displs(int size, int N, int factor, int **counts_out, int **displs_out) {
+    // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
+    *counts_out = malloc(size * sizeof(int));
+    // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i  
+    *displs_out = malloc(size * sizeof(int));
+
+    if (!*counts_out || !*displs_out) {
+        free(*counts_out);
+        free(*displs_out);
+        *counts_out = NULL;
+        *displs_out = NULL;
+        return -1;
+    }
+    // Compute counts and displacements
+    compute_counts_displs(N, size, factor, *counts_out, *displs_out);
+    return 0;
+}
+
+/*
     Scatter dataset X from root process to all other processes.
     Each process receives local_N rows in local_X.
     
@@ -45,32 +82,21 @@ void compute_counts_displs(int N, int size, int factor, int *counts, int *displs
      - size: Total number of MPI processes
 */
 void scatter_dataset(double *X, double *local_X, int local_N, Metadata *metadata, int rank, int size) {
-    // Number of elements to send to each process. sendcounts[i] = number of elements sent to process i
-    int *counts = NULL;          
-     // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i   
-    int *displs = NULL;            
+    int *counts = NULL, *displs = NULL;
     // Allocate counts and displs only on root process
-    if(rank == 0){
-        counts = malloc(size * sizeof(int));
-        displs = malloc(size * sizeof(int));
-        if(!counts || !displs){
-                fprintf(stderr, "Memory allocation failed\n");
-                MPI_Abort(MPI_COMM_WORLD,1);
-        }
-    }
-    // Compute counts and displs on root process
     if (rank == 0) {
-        compute_counts_displs(metadata->N, size, metadata->D, counts, displs);
+        if (init_counts_displs(size, metadata->N, metadata->D, &counts, &displs) != 0) {
+            fprintf(stderr, "[Rank 0] Failed to setup counts/displs for scatter\n");
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
     }
     // Scatter the dataset
     MPI_Scatterv(X, counts, displs, MPI_DOUBLE,
-                 local_X, local_N * metadata->D, MPI_DOUBLE, 0, MPI_COMM_WORLD); // local count is ignored by MPI, must match allocation
-    // Free counts and displs on root process
-    if(rank == 0){
+                 local_X, local_N * metadata->D, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    
+    if (rank == 0) {
         free(counts);
         free(displs);
-        counts = NULL;
-        displs = NULL;
     }
 }
 
@@ -91,17 +117,11 @@ void gather_dataset(int *local_predicted_labels, int *predicted_labels, int N, i
      // Displacements for each process. displs[i] = offset in the send buffer from which to take the elements for process i          
     int *displs = NULL;            
     // Allocate counts and displs only on root process
-    if(rank == 0){
-        counts = malloc(size * sizeof(int));
-        displs = malloc(size * sizeof(int));
-        if(!counts || !displs){
-                fprintf(stderr, "Memory allocation failed\n");
-                MPI_Abort(MPI_COMM_WORLD,1);
-        }
-    }
-    // Compute counts and displs on root process
     if (rank == 0) {
-        compute_counts_displs(N, size, 1, counts, displs);
+        if (allocate_counts_displs(size, N, 1, &counts, &displs) != 0) {
+            fprintf(stderr, "[Rank 0] Failed to allocate counts/displs for gather\n");
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
     }
     // Gather the predicted labels
     MPI_Gatherv(local_predicted_labels, local_N, MPI_INT,
@@ -111,8 +131,6 @@ void gather_dataset(int *local_predicted_labels, int *predicted_labels, int N, i
     if(rank == 0){
         free(counts);
         free(displs);
-        counts = NULL;
-        displs = NULL;
     }
 }
 
@@ -136,11 +154,9 @@ void broadcast_metadata(Metadata *metadata, int rank) {
     // Broadcast all metadata in one MPI call
     MPI_Bcast(meta_array, 3, MPI_INT, 0, MPI_COMM_WORLD);
     // All other processes unpack the metadata
-    if (rank != 0) {
-        metadata->N = meta_array[0];
-        metadata->D = meta_array[1];
-        metadata->K = meta_array[2];
-    }
+    metadata->N = meta_array[0];
+    metadata->D = meta_array[1];
+    metadata->K = meta_array[2];
 }
 
 /**
@@ -148,12 +164,13 @@ void broadcast_metadata(Metadata *metadata, int rank) {
  *    using an MPI derived datatype to send all parameters in a single operation.
  *    
  *    Parameters:
- *     - mu: (K x D) Matrix of cluster means
- *     - sigma: (K x D) Matrix of cluster variances  
- *     - pi: (K) Vector of mixture weights
+ *      - Pointer to the cluster params, containing:
+ *         - mu: (K x D) Matrix of cluster means
+ *         - sigma: (K x D) Matrix of cluster variances
+ *         - pi: (K) Vector of mixture weights
  *     - metadata: Metadata structure containing N, D, and K
  */
-void broadcast_clusters_parameters(ClusterParams cluster_params, Metadata *metadata) {
+void broadcast_clusters_parameters(ClusterParams* cluster_params, Metadata *metadata) {
     // Create MPI derived datatype for cluster parameters
     MPI_Datatype mpi_param_type;
     // Define block lengths, displacements, and types
@@ -162,9 +179,9 @@ void broadcast_clusters_parameters(ClusterParams cluster_params, Metadata *metad
     MPI_Datatype types[3] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE};
     // Calculate displacements
     MPI_Aint base_address;
-    MPI_Get_address(cluster_params.mu, &base_address);
-    MPI_Get_address(cluster_params.sigma, &displacements[1]);
-    MPI_Get_address(cluster_params.pi, &displacements[2]);
+    MPI_Get_address(cluster_params->mu, &base_address);
+    MPI_Get_address(cluster_params->sigma, &displacements[1]);
+    MPI_Get_address(cluster_params->pi, &displacements[2]);
     // Adjust displacements relative to base address
     displacements[0] = 0;
     displacements[1] -= base_address;
@@ -174,7 +191,7 @@ void broadcast_clusters_parameters(ClusterParams cluster_params, Metadata *metad
     MPI_Type_commit(&mpi_param_type);
 
     // Broadcast from process 0
-    MPI_Bcast(cluster_params.mu, 1, mpi_param_type, 0, MPI_COMM_WORLD);
+    MPI_Bcast(cluster_params->mu, 1, mpi_param_type, 0, MPI_COMM_WORLD);
 
     // Free the derived datatype
     MPI_Type_free(&mpi_param_type);

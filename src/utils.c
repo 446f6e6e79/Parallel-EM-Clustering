@@ -48,12 +48,46 @@ int alloc_accumulators(Accumulators *acc, Metadata *metadata) {
 }
 
 /*
+    Allocates memory for thread accumulators
+*/
+int alloc_thread_accumulators(Accumulators **thread_acc, int num_threads, Metadata *metadata) {
+    *thread_acc = malloc(num_threads * sizeof(Accumulators));
+    if (!*thread_acc) {
+        fprintf(stderr, "Memory allocation failed for thread accumulators\n");
+        return -1; // Allocation failed
+    }
+    for (int t = 0; t < num_threads; t++) {
+        if (alloc_accumulators(&(*thread_acc)[t], metadata) != 0) {
+            fprintf(stderr, "Memory allocation failed for thread %d accumulators\n", t);
+            // Free previously allocated accumulators
+            for (int i = 0; i < t; i++) {
+                free_accumulators(&(*thread_acc)[i]);
+            }
+            free(*thread_acc);
+            *thread_acc = NULL;
+            return -1; // Allocation failed
+        }
+    }
+    return 0; // Success
+}
+
+/*
     Frees memory allocated for cluster accumulators N_k, mu_k, sigma_k
 */
 void free_accumulators(Accumulators *acc) {
     free_and_null((void**)&acc->N_k);
     free_and_null((void**)&acc->mu_k);
     free_and_null((void**)&acc->sigma_k);
+}
+
+/*
+    Frees memory allocated for thread accumulators
+*/
+void free_thread_accumulators(Accumulators *thread_acc, int num_threads) {
+    for (int t = 0; t < num_threads; t++) {
+        free_accumulators(&thread_acc[t]);
+    }
+    free(thread_acc);
 }
 
 /*
@@ -88,13 +122,19 @@ void reset_accumulators(Accumulators *acc, Metadata *metadata) {
 /*
     Reset accumulators used in the parallel M-step of the EM algorithm
 */
-void parallel_reset_accumulators(Accumulators *acc, Accumulators *local_acc, Metadata *metadata) {
+void parallel_reset_accumulators(Accumulators *acc, Accumulators *local_acc, Accumulators *thread_acc, int num_threads, Metadata *metadata) {
     memset(acc->N_k, 0, (size_t)metadata->K * sizeof(double));
     memset(acc->mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
     memset(acc->sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
     memset(local_acc->N_k, 0, (size_t)metadata->K * sizeof(double));
     memset(local_acc->mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
     memset(local_acc->sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
+    // Reset to zero all thread-private accumulators
+    for (int t = 0; t < num_threads; t++) {
+        memset(thread_acc[t].N_k, 0, (size_t)metadata->K * sizeof(double));
+        memset(thread_acc[t].mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
+        memset(thread_acc[t].sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
+    }
 }
 
 /*
