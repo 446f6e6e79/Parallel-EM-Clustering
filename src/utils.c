@@ -122,19 +122,13 @@ void reset_accumulators(Accumulators *acc, Metadata *metadata) {
 /*
     Reset accumulators used in the parallel M-step of the EM algorithm
 */
-void parallel_reset_accumulators(Accumulators *acc, Accumulators *local_acc, Accumulators *thread_acc, int num_threads, Metadata *metadata) {
+void parallel_reset_accumulators(Accumulators *acc, Accumulators *local_acc, Metadata *metadata) {
     memset(acc->N_k, 0, (size_t)metadata->K * sizeof(double));
     memset(acc->mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
     memset(acc->sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
     memset(local_acc->N_k, 0, (size_t)metadata->K * sizeof(double));
     memset(local_acc->mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
     memset(local_acc->sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
-    // Reset to zero all thread-private accumulators
-    for (int t = 0; t < num_threads; t++) {
-        memset(thread_acc[t].N_k, 0, (size_t)metadata->K * sizeof(double));
-        memset(thread_acc[t].mu_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
-        memset(thread_acc[t].sigma_k, 0, (size_t)metadata->K * metadata->D * sizeof(double));
-    }
 }
 
 /*
