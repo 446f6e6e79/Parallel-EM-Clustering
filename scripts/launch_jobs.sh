@@ -25,7 +25,8 @@ for JOB_SCRIPT in "$SHORT_JOB_DIR"/*.sh; do
     qsub "$JOB_SCRIPT" && rm "$JOB_SCRIPT"
     AVAILABLE_SHORT_SLOTS=$(( AVAILABLE_SHORT_SLOTS - 1 ))
   else
-    echo "No available slots in short queue"
+    echo "No available slots in short queue. Stopping submission"
+    break
   fi
 done
 # === Submit Long queue jobs ===
@@ -44,7 +45,7 @@ for JOB_SCRIPT in "$LONG_JOB_DIR"/*.sh; do
     qsub "$JOB_SCRIPT" && rm "$JOB_SCRIPT"
     AVAILABLE_LONG_SLOTS=$(( AVAILABLE_LONG_SLOTS - 1 ))
   else
-    echo "No available slots in long queue"
-  fi
+    echo "No available slots in long queue. Stopping submission"
+    break
 done
 echo "Job submission process completed."

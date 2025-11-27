@@ -3,6 +3,7 @@
 ITERATION_PER_COMBO=3
 MEM="64gb" # Memory per NODE
 PLACEMENT="pack:excl"
+
 # NODES:NCPUS:THREADS
 COMBOS=( 
   "1:1:1"
@@ -13,8 +14,12 @@ COMBOS=(
   "2:2:8"
   "4:2:8"
 )
+
 SHORT_QUEUE="short_HPC4DS"
 LONG_QUEUE="long_cpuQ"
+SHORT_WALLTIME="06:00:00"
+LONG_WALLTIME="10:00:00"
+
 # === Common parameters ===
 BASE_DIR="$HOME/Parallel-EM-Clustering"
 EXECUTABLE="${BASE_DIR}/bin/EM_Clustering"
@@ -37,12 +42,10 @@ fi
 
 # Create all the output directories for the jobs
 OUTPUT_DIR="${BASE_DIR}/jobs"
-mkdir -p "$OUTPUT_DIR"
-mkdir -p "${OUTPUT_DIR}/long"
-mkdir -p "${OUTPUT_DIR}/short"
+mkdir -p "$OUTPUT_DIR/long" "$OUTPUT_DIR/short"
 
 # === Define the combinations ===
-for run in {1..$ITERATION_PER_COMBO}; do
+for run in $(seq 1 "$ITERATION_PER_COMBO"); do
   echo "=== Generating jobs for iteration $run ==="
 
   for DATA_DIR in "${DATASETS[@]}"; do
@@ -61,17 +64,18 @@ for run in {1..$ITERATION_PER_COMBO}; do
     for combo in "${COMBOS[@]}"; do
 
       IFS=":" read -r NODES NCPUS THREADS <<< "$combo"
+
       TOTAL_PROCESSES=$(( NCPUS * THREADS ))
       NP=$((NCPUS * NODES))
       
       # Choose the queue and the walltime based on the n_process
       if [ "$TOTAL_PROCESSES" -le 2 ] && [[ "$dataset_name" == *_1 ]]; then
-          QUEUE="long_cpuQ"
-          WALLTIME="10:00:00"
+          QUEUE="$LONG_QUEUE"
+          WALLTIME="$LONG_WALLTIME"
           CURRENT_OUTPUT_DIR="${OUTPUT_DIR}/long"
       else
-          QUEUE="short_HPC4DS"
-          WALLTIME="06:00:00"
+          QUEUE="$SHORT_QUEUE"
+          WALLTIME="$SHORT_WALLTIME"
           CURRENT_OUTPUT_DIR="${OUTPUT_DIR}/short"
       fi
       PARAMETERS="-i $input -m $meta -b $OUTPUT_INFO -n $THREADS"
