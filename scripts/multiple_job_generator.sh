@@ -1,32 +1,10 @@
 #!/bin/bash
-
-# === Common parameters ===
-BASE_DIR="$HOME/Parallel-EM-Clustering"
-WALLTIME="06:00:00"
-QUEUE="short_cpuQ"
-MEM="64gb"
+# === Parameters ===
+ITERATION_PER_COMBO=3
+DATASET_INITIAL_NAME="d" # As example, if your datasets are d_1, d_2, d_3 set it to d
+MEM="64gb" # Memory per NODE
 PLACEMENT="pack:excl"
-EXECUTABLE="${BASE_DIR}/bin/EM_Clustering"
-TEMPLATE="${BASE_DIR}/scripts/job_template.sh"
-DATASETS_DIR="${BASE_DIR}/data/datasets"
-
-OUTPUT_DIR="${BASE_DIR}/jobs"
-mkdir -p "$OUTPUT_DIR"
-
-# Detect datasets
-DATASETS=($(find "$DATASETS_DIR" -maxdepth 1 -type d -name "d_*" | sort))
-if [ ${#DATASETS[@]} -eq 0 ]; then
-  echo "No dataset directories found in $DATASETS_DIR"
-  exit 1
-fi
-
-# Output file for job info
-OUTPUT_INFO="$BASE_DIR/data/algorithm_results/execution_info.csv"
-if [-f OUTPUT_INFO ]; then
-  echo "No output file found in $OUTPUT_INFO"
-  exit 
-fi
-
+# NODES:NCPUS
 COMBOS=(
   "1:1"
   "1:2"
@@ -36,8 +14,40 @@ COMBOS=(
   "2:16"
   "4:16"
 )
+# Queues informations
+SHORT_QUEUE="short_HPC4DS"
+SHORT_QUEUE_WALLTIME="06:00:00"
+LONG_QUEUE="long_cpuQ"
+LONG_QUEUE_WALLTIME="10:00:00"
 
-for run in {1..3}; do
+# === Common parameters ===
+BASE_DIR="$HOME/Parallel-EM-Clustering"
+EXECUTABLE="${BASE_DIR}/bin/EM_Clustering"
+TEMPLATE="${BASE_DIR}/scripts/job_template.sh"
+
+DATASETS_DIR="${BASE_DIR}/data/datasets"
+# Detect datasets
+DATASETS=($(find "$DATASETS_DIR" -maxdepth 1 -type d -name "${DATASET_INITIAL_NAME}*" | sort))
+if [ ${#DATASETS[@]} -eq 0 ]; then
+  echo "No dataset directories found in $DATASETS_DIR"
+  exit 1
+fi
+
+# Output file for job info
+OUTPUT_INFO="$BASE_DIR/data/algorithm_results/execution_info.csv"
+if [ ! -f "$OUTPUT_INFO" ]; then
+  echo "No output file found in $OUTPUT_INFO"
+  exit
+fi
+
+# Create all the output directories for the jobs
+OUTPUT_DIR="${BASE_DIR}/jobs"
+mkdir -p "$OUTPUT_DIR"
+mkdir -p "${OUTPUT_DIR}/long"
+mkdir -p "${OUTPUT_DIR}/short"
+
+# === Define the combinations ===
+for run in $(seq 1 "$ITERATION_PER_COMBO"); do
   echo "=== Generating jobs for iteration $run ==="
 
   for DATA_DIR in "${DATASETS[@]}"; do
@@ -53,13 +63,23 @@ for run in {1..3}; do
       continue
     fi
 
-    PARAMETERS="-i $input -m $meta -b $OUTPUT_INFO"
-
     for combo in "${COMBOS[@]}"; do
       IFS=":" read -r NODES NCPUS <<< "$combo"
-      NP=$(( NODES * NCPUS ))
+      NP=$((NCPUS * NODES))
+      
+      # Choose the queue and the walltime based on the n_process
+      if [ "$NP" -le 1 ] && [[ "$dataset_name" == *_1 ]]; then
+          QUEUE="$LONG_QUEUE"
+          WALLTIME=$LONG_QUEUE_WALLTIME
+          CURRENT_OUTPUT_DIR="${OUTPUT_DIR}/long"
+      else
+          QUEUE="$SHORT_QUEUE"
+          WALLTIME=$SHORT_QUEUE_WALLTIME
+          CURRENT_OUTPUT_DIR="${OUTPUT_DIR}/short"
+      fi
+      PARAMETERS="-i $input -m $meta -b $OUTPUT_INFO"
 
-      JOB_SCRIPT="${OUTPUT_DIR}/job_${dataset_name}-run_${run}-nodes_${NODES}-cpus_${NCPUS}.sh"
+      JOB_SCRIPT="${CURRENT_OUTPUT_DIR}/job_${dataset_name}-run_${run}-nodes_${NODES}-cpus_${NCPUS}.sh"
 
       sed "s|__EXECUTABLE__|$EXECUTABLE|g; \
            s|__PLACEMENT__|$PLACEMENT|g; \
