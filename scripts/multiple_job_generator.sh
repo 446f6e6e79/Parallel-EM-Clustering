@@ -26,15 +26,6 @@ if [ ! -f "$OUTPUT_INFO" ]; then
   echo "No output file found in $OUTPUT_INFO"
   exit
 fi
-MPI_COMBOS=(
-    "1:1:1"
-    "1:2:1"
-    "1:4:1"
-    "1:8:1"
-    "2:8:1"
-    "2:16:1"
-    "4:16:1"
-)
 
 MPI_COMBOS=(
     "1:1:1"
