@@ -25,17 +25,8 @@ if [ ! -f "$OUTPUT_INFO" ]; then
   exit
 fi
 
-MPI_COMBOS=(
-    "1:1:1"
-    "1:2:1"
-    "1:4:1"
-    "1:8:1"
-    "2:8:1"
-    "2:16:1"
-    "4:16:1"
-)
-
-HYBRID_COMBOS=(
+# === Define the combinations ===
+COMBOS=(
   "1:1:1"
   "1:1:2"
   "1:1:4"
@@ -44,22 +35,6 @@ HYBRID_COMBOS=(
   "2:2:8"
   "4:2:8"
 )
-
-# Set mode (MPI, HYBRID, ALL)
-COMBOS=()
-# Set the default mode to ALL
-: "${MODE:=ALL}"
-
-if [[ "$MODE" == "MPI" ]]; then
-    COMBOS=("${MPI_COMBOS[@]}")
-elif [[ "$MODE" == "HYBRID" ]]; then
-    COMBOS=("${HYBRID_COMBOS[@]}")
-elif [[ "$MODE" == "ALL" ]]; then
-    COMBOS=("${MPI_COMBOS[@]}" "${HYBRID_COMBOS[@]}")
-else
-    echo "Invalid MODE: $MODE. Choose between MPI, HYBRID or ALL"
-    exit 1
-fi
 
 for run in {1..3}; do
   echo "=== Generating jobs for iteration $run ==="

@@ -140,14 +140,8 @@ int write_execution_info(const char *filename, int n_process, int n_threads, Met
         }
     }
 
-    // Determine execution mode based on compilation flags
-    const char *mode = "MPI";
-    #ifdef _OPENMP
-        mode = "HYBRID";
-    #endif
-
     // Write the execution info (note: MPI_Offset is typically a long long)
-    if (fprintf(fp, "%d,%d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%s\n", n_process, n_threads, metadata->N, metadata->D, metadata->K, timers->total_time, timers->io_time, timers->compute_time, timers->e_step_time, timers->m_step_time, timers->data_distribution_time, mode) == -1) {
+    if (fprintf(fp, "%d,%d,%d,%d,%d,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,HYBRID\n", n_process, n_threads, metadata->N, metadata->D, metadata->K, timers->total_time, timers->io_time, timers->compute_time, timers->e_step_time, timers->m_step_time, timers->data_distribution_time) == -1) {
         fprintf(stderr, "Failed to write to file\n");
         flock(fd, LOCK_UN);
         fclose(fp);
