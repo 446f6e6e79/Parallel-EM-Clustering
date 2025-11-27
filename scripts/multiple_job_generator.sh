@@ -2,8 +2,6 @@
 
 # === Common parameters ===
 BASE_DIR="$HOME/Parallel-EM-Clustering"
-WALLTIME="06:00:00"
-QUEUE="short_cpuQ"
 MEM="64gb"
 PLACEMENT="pack:excl"
 EXECUTABLE="${BASE_DIR}/bin/EM_Clustering"
@@ -26,15 +24,6 @@ if [ ! -f "$OUTPUT_INFO" ]; then
   echo "No output file found in $OUTPUT_INFO"
   exit
 fi
-MPI_COMBOS=(
-    "1:1:1"
-    "1:2:1"
-    "1:4:1"
-    "1:8:1"
-    "2:8:1"
-    "2:16:1"
-    "4:16:1"
-)
 
 MPI_COMBOS=(
     "1:1:1"
@@ -93,7 +82,15 @@ for run in {1..3}; do
       IFS=":" read -r NODES NCPUS THREADS <<< "$combo"
       TOTAL_PROCESSES=$(( NCPUS * THREADS ))
       NP=$((NCPUS * NODES))
-
+      
+      # Choose the queue and the walltime based on the n_process
+      if [ "$TOTAL_PROCESSES" -le 2 ]; then
+          QUEUE="long_cpuQ"
+          WALLTIME="10:00:00"
+      else
+          QUEUE="short_HPC4DS"
+          WALLTIME="06:00:00"
+      fi
       PARAMETERS="-i $input -m $meta -b $OUTPUT_INFO -n $THREADS"
 
       JOB_SCRIPT="${OUTPUT_DIR}/job_${dataset_name}-run_${run}-nodes_${NODES}-cpus_${NCPUS}-threads_${THREADS}.sh"

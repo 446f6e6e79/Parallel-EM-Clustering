@@ -7,7 +7,7 @@ for JOB_SCRIPT in "$OUTPUT_DIR"/*.sh; do
   # Count active jobs
   ACTIVE_JOBS=$(qstat -u "$USER" | grep -E '^[0-9]+' | wc -l)
 
-  if [ "$ACTIVE_JOBS" -lt 30 ]; then
+  if [ "$ACTIVE_JOBS" -lt 100 ]; then
     echo "Submitting $JOB_SCRIPT (active jobs: $ACTIVE_JOBS)"
     qsub "$JOB_SCRIPT" && rm "$JOB_SCRIPT"
   else
