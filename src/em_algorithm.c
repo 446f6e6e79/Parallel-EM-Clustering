@@ -7,7 +7,6 @@
                          + sum_d log(sigma[d])
                          + sum_d (x[d]-mu[d])^2 / sigma[d] ) )
 */
-//TODO: look for simd optimization
 inline double gaussian_multi_diag(double *x, double *mu, double *sigma, int D) {
     double logdet = 0.0;
     double quad = 0.0;
@@ -245,7 +244,7 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
         reset_accumulators(local_thread_acc, metadata);
 
         #ifdef _OPENMP
-            #pragma omp for collapse(2) schedule(static)    // Collapse to vectorize better over i and k
+            #pragma omp for schedule(static)   // Parallelize over data points
         #endif
         for (int i = 0; i < local_N; i++) {
             for (int k = 0; k < metadata->K; k++) {
@@ -316,7 +315,7 @@ void m_step_parallelized(double *local_X, int local_N, Metadata *metadata, Clust
 
 
         #ifdef _OPENMP
-        #pragma omp for collapse(2) schedule(static)    // Collapse to vectorize better over i and k
+        #pragma omp for schedule(static)    // Parallelize over data points
         #endif
         for (int i = 0; i < local_N; i++) {
             for (int k = 0; k < metadata->K; k++) {
