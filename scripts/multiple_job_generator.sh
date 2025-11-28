@@ -1,6 +1,7 @@
 #!/bin/bash
 # === Parameters ===
 ITERATION_PER_COMBO=3
+DATASET_INITIAL_NAME="d" # As example, if your datasets are d_1, d_2, d_3 set it to d
 MEM="64gb" # Memory per NODE
 PLACEMENT="pack:excl"
 
@@ -27,7 +28,7 @@ TEMPLATE="${BASE_DIR}/scripts/job_template.sh"
 
 DATASETS_DIR="${BASE_DIR}/data/datasets"
 # Detect datasets
-DATASETS=($(find "$DATASETS_DIR" -maxdepth 1 -type d -name "d_*" | sort))
+DATASETS=($(find "$DATASETS_DIR" -maxdepth 1 -type d -name "${DATASET_INITIAL_NAME}*" | sort))
 if [ ${#DATASETS[@]} -eq 0 ]; then
   echo "No dataset directories found in $DATASETS_DIR"
   exit 1
