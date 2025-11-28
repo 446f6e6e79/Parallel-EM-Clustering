@@ -79,7 +79,7 @@ def format_scientific(size):
 
 def plot_metrics(filtered_df, metric, fixed_parameters=None):
     """
-        Create a Speedup figure using Plotly
+        Plot speedup or efficiency using matplotlib.
         Parameters:
             filtered_df: DataFrame filtered for selected datasets
             metric: Metric to plot ('speedup' or 'efficiency')
@@ -87,84 +87,48 @@ def plot_metrics(filtered_df, metric, fixed_parameters=None):
     """
     if metric not in ['speedup', 'efficiency']:
         raise ValueError("Metric must be 'speedup' or 'efficiency'")
-    
+
     if fixed_parameters is None:
         fixed_parameters = ['n_samples', 'n_features', 'n_clusters']
 
-    # Color palette
-    colors = px.colors.qualitative.Set1
-    
-    # Create Speedup figure
-    fig = go.Figure()
-
-    n_proc = np.sort(filtered_df['n_process'].unique())
-    if metric == 'speedup':
-        # Draw ideal speedup line
-        fig.add_trace(go.Scatter(
-            x=n_proc, y=n_proc,
-            mode='lines',
-            name='Ideal Speedup',
-            line=dict(dash='dash', color='red', width=2)
-        )) 
-    else:
-        # Draw acceptable efficiency line (constant = 0.70)
-        fig.add_trace(go.Scatter(
-            x=n_proc,
-            y=[0.70] * len(n_proc),
-            mode='lines',
-            name='Acceptable Efficiency (0.70)',
-            line=dict(dash='dot', color='red', width=2)
-        ))
-
     filtered_df = filtered_df.copy()
 
-    # Build a dataset label string for plotting.
+    # Build a dataset label string for plotting
     def build_label(row):
-        parts = []
-        for col in fixed_parameters:
-            parts.append(f"{format_scientific(int(row[col]))}")
+        parts = [format_scientific(int(row[col])) for col in fixed_parameters]
         return " - ".join(parts)
-    
+
     filtered_df['dataset_label'] = filtered_df.apply(build_label, axis=1)
-    
     unique_labels = filtered_df['dataset_label'].unique()
 
-    # Plot data for each dataset
+    plt.figure(figsize=(10, 6))
+    colors = plt.cm.tab10.colors  # color palette
+
+    n_proc = np.sort(filtered_df['n_process'].unique())
+
+    # Plot ideal/reference lines
+    if metric == 'speedup':
+        plt.plot(n_proc, n_proc, 'r--', label='Ideal Speedup', linewidth=2)
+    else:
+        plt.plot(n_proc, [0.7]*len(n_proc), 'r:', label='Acceptable Efficiency (0.70)', linewidth=2)
+
+    # Plot each dataset
     for i, label in enumerate(unique_labels):
         subset = filtered_df[filtered_df['dataset_label'] == label]
-        fig.add_trace(go.Scatter(
-            x=subset['n_process'],
-            y=subset[metric],
-            mode='lines+markers',
-            name=f"Dataset {label}",
-            line=dict(width=3, color=colors[i % len(colors)]),
-            marker=dict(size=8)
-        ))
+        plt.plot(subset['n_process'], subset[metric], 
+                 marker='o', linestyle='-', linewidth=2, markersize=6,
+                 color=colors[i % len(colors)], label=f"Dataset {label}")
 
-    # Layout settings
-    if metric == 'speedup':
-        fig.update_layout(
-            title='Speedup Analysis',
-            xaxis_title='Number of Processes (P)',
-            yaxis_title='Speedup (T₁ / Tₚ)',
-            template='plotly_white',
-            font=dict(size=12),
-            height=500,
-            showlegend=True
-        )
-    else:
-        fig.update_layout(
-        title='Parallel Efficiency Analysis',
-        xaxis_title='Number of Processes (P)',
-        yaxis_title='Efficiency (Speedup / P)',
-        template='plotly_white',
-        font=dict(size=12),
-        height=500,
-        showlegend=True,
-        yaxis=dict(range=[0, 1.05])
-)
-    # Return the figure to the caller
-    return fig
+    plt.xlabel('Number of Processes (P)')
+    ylabel = 'Speedup (T₁/Tₚ)' if metric == 'speedup' else 'Efficiency (Speedup / P)'
+    plt.ylabel(ylabel)
+    title = 'Speedup Analysis' if metric == 'speedup' else 'Parallel Efficiency Analysis'
+    plt.title(title)
+    plt.grid(True, linestyle='-', alpha=0.6)
+    plt.legend(frameon=False)
+    plt.tight_layout()
+    return plt
+
 
 def cluster_mapping(y_true, y_pred):
     """
@@ -356,7 +320,7 @@ def plot_graph_comparison(table1, table2):
     avg_efficiency_mpi = table2.mean(axis=1)
 
     # Plot
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=(10, 6))
     plt.plot(avg_efficiency_hybrid.index, avg_efficiency_hybrid, marker='o', label='Hybrid')
     plt.plot(avg_efficiency_mpi.index, avg_efficiency_mpi, marker='x', linestyle='--', label='MPI')
     plt.xlabel('Number of Processes')
