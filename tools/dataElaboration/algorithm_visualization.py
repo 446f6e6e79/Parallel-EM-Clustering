@@ -38,7 +38,8 @@ def visualize_em(csv_path, output_gif, iterations=None):
 
     frames = []
     for it in sorted(df['iteration'].unique()):
-        frames.append(create_clustering_frame(df, it, xlim=xlim, ylim=ylim, show_iteration=True))
+        frame, plt = create_clustering_frame(df, it, xlim=xlim, ylim=ylim, show_iteration=True)
+        frames.append(frame)
 
     imageio.mimsave(output_gif, frames, fps=min(2, len(frames)))
     print(f"Saved animation to {output_gif}")

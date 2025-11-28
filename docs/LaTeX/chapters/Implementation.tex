@@ -17,6 +17,7 @@ For each dataset, an additional metadata file is created, containing the relevan
 This metadata simplifies the initialization of the EM algorithm by providing all necessary information without requiring manual configuration.
 
 \subsubsection*{Accuracy Checks}
+%#TODO: comment on the fact that we cold do this since the dataser were genetated. Fore the algoritm instead we ignored the labels
 To ensure the correctness of the implementation, especially during initial testing we performed extensive validation checks 
 by comparing the outputs of the algorithm against the real labels provided by the data generator.
 Clustering performance were evaluated using permutation-invariant accuracy metrics (using the Python library \emph{scikit-learn}), which account for the arbitrary nature of cluster labeling in unsupervised learning.
@@ -127,6 +128,7 @@ Each MPI process spawns multiple threads, allowing to reduce the communication o
 We now focus on the specific implementation details of both the E-step and M-step, but we also parallelized the clustering assignment step in a similar manner to the E-step.
 
 \subsubsection*{E-step Implementation}
+%#TODO: comment on how the data dependiencies reflect on the implementation choices
 The E-step was parallelized using the \emph{\#pragma omp parallel for} directive to distribute the computation of the responsibilities across multiple threads.
 A \emph{reduction} clause was required to safely accumulate the log-likelihood, ensuring correctness and avoiding data races during parallel execution.
 A static scheduling strategy was chosen, since the workload per iteration is uniform across threads.

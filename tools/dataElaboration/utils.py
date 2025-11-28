@@ -313,7 +313,7 @@ def plot_cov_ellipses(mean, cov, ax, color,
 
 def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
     """
-    Create a matplotlib figure for a specific iteration of clustering.
+    Create a numpy array representing the figure for a specific iteration of clustering.
     Parameters:
         df: DataFrame containing clustering data
         it: Iteration number to visualize
@@ -321,6 +321,7 @@ def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
         ylim: Tuple (ymin, ymax) for y-axis limits
     Returns:
         image: Numpy array representing the figure
+        plt: Matplotlib pyplot module for further manipulation if needed
     """
     df_it = df[df['iteration'] == it]
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -361,11 +362,9 @@ def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
     if show_iteration:
         ax.set_title(f"Iteration {it}")
     plt.tight_layout()
-
     fig.canvas.draw()
     image = np.array(fig.canvas.renderer.buffer_rgba())[:, :, :3]
-    plt.close(fig)
-    return image
+    return image, plt
 
 def derive_cluster_mapping(df):
     """
