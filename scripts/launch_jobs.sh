@@ -47,5 +47,6 @@ for JOB_SCRIPT in "$LONG_JOB_DIR"/*.sh; do
   else
     echo "No available slots in long queue. Stopping submission"
     break
+  fi
 done
 echo "Job submission process completed."
