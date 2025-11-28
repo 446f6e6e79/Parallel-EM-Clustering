@@ -66,5 +66,6 @@ list_jobs "$LONG_JOB_DIR" | while read -r JOB_SCRIPT; do
   else
     echo "No available slots in long queue. Stopping submission"
     break
+  fi
 done
 echo "Job submission process completed."
