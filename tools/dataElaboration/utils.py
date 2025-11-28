@@ -8,6 +8,70 @@ from matplotlib.patches import Ellipse
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+def _get_palette():
+    """Return a consistent color palette."""
+    return plt.cm.tab10.colors
+
+def create_line_figure(xlabel, ylabel, title, figsize=(10, 6), grid=True):
+    """
+    Create a matplotlib figure/axes with consistent styling for line plots.
+    Returns (fig, ax, colors).
+    """
+    # Create figure and axis
+    fig, ax = plt.subplots(figsize=figsize)
+    # Define color palette from the universal color map
+    colors = _get_palette()
+    # Set labels and title
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    # Set the grid if requested
+    if grid:
+        ax.grid(True, linestyle='-', alpha=0.6)
+    return fig, ax, colors
+
+def styled_line_plot(x_list, y_list, labels,
+                     xlabel, ylabel, title,
+                     y_min=None, y_max=None,
+                     figsize=(10, 6), grid=True, legend=True):
+    """
+    Generic multi‑line plot with consistent style.
+
+    Parameters:
+        x_list : sequence of 1D arrays
+        y_list : sequence of 1D arrays
+        labels : sequence of str
+        xlabel : str, x-axis label
+        ylabel : str, y-axis label
+        title : str, title of the plot
+        grid : bool
+        legend : bool
+    Returns:
+        fig, ax : matplotlib Figure and Axes objects
+    """
+    # Create the figure from the baseline
+    fig, ax, colors = create_line_figure(xlabel, ylabel, title, figsize, grid)
+    # Plot each line with consistent styling
+    for i, (x, y, lab) in enumerate(zip(x_list, y_list, labels)):
+        ax.plot(
+            x,
+            y,
+            marker='o',
+            linestyle='-',
+            linewidth=2,
+            markersize=6,
+            color=colors[i % len(colors)],
+            label=lab,
+        )
+     # Set fixed y-limits if requested
+    if y_min is not None or y_max is not None:
+        ax.set_ylim(y_min, y_max)
+    # Add legend if requested
+    if legend:
+        ax.legend(frameon=True)
+    # Adjust layout
+    fig.tight_layout()
+    return fig, ax
 
 def compute_metrics(group):
     """
@@ -91,44 +155,60 @@ def plot_metrics(filtered_df, metric, fixed_parameters=None):
     if fixed_parameters is None:
         fixed_parameters = ['n_samples', 'n_features', 'n_clusters']
 
-    filtered_df = filtered_df.copy()
+    df = filtered_df.copy()
 
     # Build a dataset label string for plotting
     def build_label(row):
         parts = [format_scientific(int(row[col])) for col in fixed_parameters]
         return " - ".join(parts)
+    
+    # Label each dataset size with its relative scientific notation 
+    df['dataset_label'] = df.apply(build_label, axis=1)
+    unique_labels = df['dataset_label'].unique()
 
-    filtered_df['dataset_label'] = filtered_df.apply(build_label, axis=1)
-    unique_labels = filtered_df['dataset_label'].unique()
+    # Prepare data for generic line plot
+    x_list, y_list, labels = [], [], []
+    n_proc = np.sort(df['n_process'].unique())
 
-    plt.figure(figsize=(10, 6))
-    colors = plt.cm.tab10.colors  # color palette
-
-    n_proc = np.sort(filtered_df['n_process'].unique())
-
-    # Plot ideal/reference lines
-    if metric == 'speedup':
-        plt.plot(n_proc, n_proc, 'r--', label='Ideal Speedup', linewidth=2)
-    else:
-        plt.plot(n_proc, [0.7]*len(n_proc), 'r:', label='Acceptable Efficiency (0.70)', linewidth=2)
-
-    # Plot each dataset
-    for i, label in enumerate(unique_labels):
-        subset = filtered_df[filtered_df['dataset_label'] == label]
-        plt.plot(subset['n_process'], subset[metric], 
-                 marker='o', linestyle='-', linewidth=2, markersize=6,
-                 color=colors[i % len(colors)], label=f"Dataset {label}")
-
-    plt.xlabel('Number of Processes (P)')
+    # For each dataset, add its data to the plot lists
+    for label in unique_labels:
+        subset = df[df['dataset_label'] == label].sort_values('n_process')
+        x_list.append(subset['n_process'].to_numpy())
+        y_list.append(subset[metric].to_numpy())
+        labels.append(f"Dataset {label}")
+    # Add labels and titles
     ylabel = 'Speedup (T₁/Tₚ)' if metric == 'speedup' else 'Efficiency (Speedup / P)'
-    plt.ylabel(ylabel)
     title = 'Speedup Analysis' if metric == 'speedup' else 'Parallel Efficiency Analysis'
-    plt.title(title)
-    plt.grid(True, linestyle='-', alpha=0.6)
-    plt.legend(frameon=False)
-    plt.tight_layout()
-    return plt
 
+    fig, ax = styled_line_plot(
+        x_list,
+        y_list,
+        labels,
+        xlabel='Number of Processes (P)',
+        ylabel=ylabel,
+        title=title,
+        figsize=(10, 6),
+        grid=True,
+        legend=True,
+        y_min=0, y_max=None
+    )
+
+    # Add the ideal lines for reference
+    if metric == 'speedup':
+        ax.plot(n_proc, n_proc, 'r--', label='Ideal Speedup', linewidth=2)
+    else:
+        ax.plot(
+            n_proc,
+            [0.7] * len(n_proc),
+            'r:',
+            label='Acceptable Efficiency (0.70)',
+            linewidth=2,
+        )
+
+    # Re‑draw legend to include reference line
+    ax.legend(frameon=True)
+    fig.tight_layout()
+    return plt
 
 def cluster_mapping(y_true, y_pred):
     """
@@ -241,7 +321,8 @@ def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
     ax.set_ylim(*ylim)
 
     unique_clusters = sorted(df_it['predicted_cluster'].unique())
-    color_map = {c: plt.cm.tab10(i % 10) for i, c in enumerate(unique_clusters)}
+    colors = _get_palette()
+    color_map = {c: colors[i % len(colors)] for i, c in enumerate(unique_clusters)}
 
     for c in unique_clusters:
         data = df_it[df_it['predicted_cluster'] == c]
@@ -263,7 +344,7 @@ def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
     for h, l in zip(handles, labels):
         if l not in by_label:
             by_label[l] = h
-    ax.legend(by_label.values(), by_label.keys(), frameon=False)
+    ax.legend(by_label.values(), by_label.keys(), frameon=True)
     # Add label for feature axes
     ax.set_xlabel("Feature 1")
     ax.set_ylabel("Feature 2")
@@ -311,21 +392,25 @@ def plot_heatmap_comparison(table1, table2):
 def plot_graph_comparison(table1, table2):
     """
         Plot comparison between two pivot tables as line graphs.
-        Parameters:
-            table1: First pivot table (e.g., efficiency_hybrid_table)
-            table2: Second pivot table (e.g., efficiency_mpi_table)
     """
-    # Compute the average efficiency across all datasets (columns)
     avg_efficiency_hybrid = table1.mean(axis=1)
     avg_efficiency_mpi = table2.mean(axis=1)
+    # Prepare data for generic line plot. On the x size we have number of processes, on y size average efficiency
+    x_list = [avg_efficiency_hybrid.index, avg_efficiency_mpi.index]
+    y_list = [avg_efficiency_hybrid.values, avg_efficiency_mpi.values]
+    labels = ['Hybrid', 'MPI']
 
-    # Plot
-    plt.figure(figsize=(10, 6))
-    plt.plot(avg_efficiency_hybrid.index, avg_efficiency_hybrid, marker='o', label='Hybrid')
-    plt.plot(avg_efficiency_mpi.index, avg_efficiency_mpi, marker='x', linestyle='--', label='MPI')
-    plt.xlabel('Number of Processes')
-    plt.ylabel('Average Efficiency')
-    plt.title('Average Efficiency per Number of Processes')
-    plt.grid(True)
-    plt.legend()
+    fig, ax = styled_line_plot(
+        x_list,
+        y_list,
+        labels,
+        xlabel='Number of Processes',
+        ylabel='Average Efficiency',
+        title='Average Efficiency per Number of Processes',
+        figsize=(10, 6),
+        grid=True,
+        legend=True,
+        y_min=0, y_max=None
+    )
+    fig.tight_layout()
     plt.show()
