@@ -4,7 +4,7 @@
 # Automatically find the base directory (where this script lives)
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON_SCRIPT="${BASE_DIR}/tools/dataGeneration/data-generator.py"  # Your dataset generator script
-
+DATASET_NAME="d"
 # Where the generated datasets will go
 DATA_DIR="${BASE_DIR}/data/datasets"
 mkdir -p "$DATA_DIR"
@@ -32,7 +32,10 @@ done
 
 # === Dataset configurations ===
 # Each line: n_examples n_features n_clusters
-COMBOS=(
+
+# Dataset 1
+: '
+COMBOS = (
   "10000000 50 15"
   "5000000 50 15"
   "2500000 50 15"
@@ -40,6 +43,17 @@ COMBOS=(
   "625000 50 15"
   "312500 50 15"
   "156250 50 15"
+)
+'
+# DATASET 2
+COMBOS=(
+  "2097152 300 20"
+  "1048576 300 20"
+  "524288 300 20"
+  "262144 300 20"
+  "131072 300 20"
+  "65536 300 20"
+  "32768 300 20"
 )
 
 # Each line: n_examples n_features n_clusters mean1 mean2 mean3
@@ -56,7 +70,7 @@ if [[ "$MODE" == "benchmark" ]]; then
   for combo in "${COMBOS[@]}"; do
     read -r N_EXAMPLES N_FEATURES N_CLUSTERS <<< "$combo"
 
-    DATASET_SUBDIR="${DATA_DIR}/d_${i}"
+    DATASET_SUBDIR="${DATA_DIR}/${DATASET_NAME}_${i}"
     mkdir -p "$DATASET_SUBDIR"
 
     echo "Generating dataset ${DATASET_SUBDIR} (examples=$N_EXAMPLES, features=$N_FEATURES, clusters=$N_CLUSTERS)"
