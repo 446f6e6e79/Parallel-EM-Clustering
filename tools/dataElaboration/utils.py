@@ -21,10 +21,19 @@ def create_line_figure(xlabel, ylabel, title, figsize=(10, 6), grid=True):
     fig, ax = plt.subplots(figsize=figsize)
     # Define color palette from the universal color map
     colors = _get_palette()
-    # Set labels and title
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    ax.set_title(title)
+
+    # Font sizes
+    title_fs = 18
+    label_fs = 14
+    tick_fs = 12
+
+    ax.set_xlabel(xlabel, fontsize=label_fs)
+    ax.set_ylabel(ylabel, fontsize=label_fs)
+    ax.set_title(title, fontsize=title_fs)
+
+    # Tick label size
+    ax.tick_params(axis='both', labelsize=tick_fs)
+
     # Set the grid if requested
     if grid:
         ax.grid(True, linestyle='-', alpha=0.6)
@@ -68,7 +77,7 @@ def styled_line_plot(x_list, y_list, labels,
         ax.set_ylim(y_min, y_max)
     # Add legend if requested
     if legend:
-        ax.legend(frameon=True)
+        ax.legend(frameon=True, fontsize=12)
     # Adjust layout
     fig.tight_layout()
     return fig, ax
@@ -206,7 +215,7 @@ def plot_metrics(filtered_df, metric, fixed_parameters=None):
         )
 
     # Re‑draw legend to include reference line
-    ax.legend(frameon=True)
+    ax.legend(frameon=True, fontsize=12)
     fig.tight_layout()
     return plt
 
@@ -344,7 +353,7 @@ def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
     for h, l in zip(handles, labels):
         if l not in by_label:
             by_label[l] = h
-    ax.legend(by_label.values(), by_label.keys(), frameon=True)
+    ax.legend(by_label.values(), by_label.keys(), frameon=True, fontsize=12)
     # Add label for feature axes
     ax.set_xlabel("Feature 1")
     ax.set_ylabel("Feature 2")

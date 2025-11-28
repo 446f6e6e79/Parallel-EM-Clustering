@@ -12,22 +12,15 @@ In this analysis we keep number of features ($D = 50$) and number of clusters ($
     \footnotesize
     \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
         \hline
-        \textbf{N\_Processes} & 
-        \textbf{0.156M} & 
-        \textbf{0.312M} & 
-        \textbf{0.625M} & 
-        \textbf{1.25M} & 
-        \textbf{2.5M} & 
-        \textbf{5M} & 
-        \textbf{10M} \\
+        \textbf{N\_Processes} & \textbf{0.156M} & \textbf{0.312M} & \textbf{0.625M} & \textbf{1.25M} & \textbf{2.5M} & \textbf{5M} & \textbf{10M} \\
         \hline
-        1  & 281.444 & 563.894 & 1027.496 & 2116.075 & 4553.415 & 8741.255 & 18373.160 \\
-        2  & 140.678 & 261.653 & 572.785 & 1013.512 & 2058.963 & 4206.922 & 8887.230 \\
-        4  & 71.339 & 132.982 & 283.020 & 522.856 & 1054.098 & 2112.717 & 4437.170 \\
-        8  & 34.587 & 67.079 & 146.560 & 280.315 & 510.900 & 1100.518 & 2319.220 \\
+        1  & 281.444 & 563.894 & 1027.496 & 2116.075 & 4553.415 & 8741.255 & 18373.166 \\
+        2  & 140.678 & 261.653 & 572.785 & 1013.512 & 2058.963 & 4206.922 & 8887.233 \\
+        4  & 71.339 & 132.982 & 283.020 & 522.856 & 1054.098 & 2112.717 & 4437.179 \\
+        8  & 34.587 & 67.079 & 146.560 & 280.315 & 510.900 & 1100.518 & 2319.227 \\
         16 & 19.760 & 34.806 & 69.208 & 139.989 & 264.852 & 582.296 & 1153.750 \\
-        32 & 9.425 & 18.796 & 40.770 & 75.046 & 146.378 & 290.347 & 601.700 \\
-        64 & 5.164 & 10.042 & 20.823 & 41.247 & 77.118 & 150.703 & 321.380 \\
+        32 & 9.425 & 18.796 & 40.770 & 75.046 & 146.378 & 290.347 & 601.705 \\
+        64 & 5.164 & 10.042 & 20.823 & 41.247 & 77.118 & 150.703 & 321.383 \\
         \hline
     \end{tabularx}
     \caption{Execution times (in seconds) for different dataset sizes and number of processes.}
@@ -41,14 +34,7 @@ In this analysis we keep number of features ($D = 50$) and number of clusters ($
     \footnotesize
     \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
         \hline
-        \textbf{N\_Processes} & 
-        \textbf{0.156M} & 
-        \textbf{0.312M} & 
-        \textbf{0.625M} & 
-        \textbf{1.25M} & 
-        \textbf{2.5M} & 
-        \textbf{5M} & 
-        \textbf{10M} \\
+        \textbf{N\_Processes} & \textbf{0.156M} & \textbf{0.312M} & \textbf{0.625M} & \textbf{1.25M} & \textbf{2.5M} & \textbf{5M} & \textbf{10M} \\
         \hline
         1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
         2  & 2.001 & 2.155 & 1.794 & 2.088 & 2.212 & 2.078 & 2.067 \\
@@ -77,14 +63,7 @@ In this analysis we keep number of features ($D = 50$) and number of clusters ($
     \footnotesize
     \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
         \hline
-        \textbf{N\_Processes} & 
-        \textbf{0.156M} & 
-        \textbf{0.312M} & 
-        \textbf{0.625M} & 
-        \textbf{1.25M} & 
-        \textbf{2.5M} & 
-        \textbf{5M} & 
-        \textbf{10M} \\
+        \textbf{N\_Processes} & \textbf{0.156M} & \textbf{0.312M} & \textbf{0.625M} & \textbf{1.25M} & \textbf{2.5M} & \textbf{5M} & \textbf{10M} \\
         \hline
         1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
         2  & 1.000 & 1.078 & 0.897 & 1.044 & 1.106 & 1.039 & 1.034 \\
@@ -167,14 +146,7 @@ To further investigate this behavior, we conducted additional experiments on dat
     \footnotesize
     \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
         \hline
-        \textbf{N\_Processes} & 
-        \textbf{0.033M} & 
-        \textbf{0.066M} & 
-        \textbf{0.131M} & 
-        \textbf{0.262M} & 
-        \textbf{0.524M} & 
-        \textbf{1.049M} &
-        \textbf{Na} \\
+        \textbf{N\_Processes} & \textbf{0.033M} & \textbf{0.066M} & \textbf{0.131M} & \textbf{0.262M} & \textbf{0.524M} & \textbf{1.049M} & \textbf{Na} \\
         \hline
         1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & Na \\
         2  & 1.038 & 1.063 & 0.944 & 1.086 & 1.000 & 1.056 & Na \\
@@ -196,14 +168,7 @@ To further investigate this behavior, we conducted additional experiments on dat
     \footnotesize
     \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
         \hline
-        \textbf{N\_Processes} & 
-        \textbf{0.033M} & 
-        \textbf{0.066M} & 
-        \textbf{0.131M} & 
-        \textbf{0.262M} & 
-        \textbf{0.524M} & 
-        \textbf{1.049M} &
-        \textbf{Na} \\
+        \textbf{N\_Processes} & \textbf{0.033M} & \textbf{0.066M} & \textbf{0.131M} & \textbf{0.262M} & \textbf{0.524M} & \textbf{1.049M} & \textbf{Na} \\
         \hline
         1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & Na \\
         2  & 1.026 & 1.074 & 0.694 & 1.037 & 1.024 & 1.021 & Na \\
