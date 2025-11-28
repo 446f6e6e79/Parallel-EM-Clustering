@@ -3,7 +3,7 @@ To evaluate the performance and scalability of our parallel EM clustering implem
 Each configuration was executed multiple times to ensure the reliability of the results, only reporting the average execution times.
 \\To ensure a fair comparison, all the experiments were conducted ignoring the convergence criterion, thus running a fixed number of 100 EM iterations for each configuration.
 
-\subsection*{Our Approach Results}
+\subsection{Our Approach Results}
 In this analysis we keep number of features ($D = 50$) and number of clusters ($K = 15$) constant, while varying the number of data points ($N$) and the number of processes ($P$).
 \begin{table}[h!]
     \centering
@@ -112,61 +112,57 @@ This indicates that our parallel implementation makes effective use of additiona
 \\Conversely, when examining each column of the table, corresponding to a fixed problem size, we observe a gradual decline as the number of processes increases. This is expected, as the communication overhead becomes more significant when the process count increases. Consequently, our implementation does not exhibit perfect \emph{strong scalability}.
 \begin{table}[H]
     \centering
-    \renewcommand{\arraystretch}{1.2}
-    \setlength{\tabcolsep}{4pt}
-    \footnotesize
-    \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
-        \hline
-        \textbf{N\_Processes} & 
-        \textbf{0.156M} & 
-        \textbf{0.312M} & 
-        \textbf{0.625M} & 
-        \textbf{1.25M} & 
-        \textbf{2.5M} & 
-        \textbf{5M} & 
-        \textbf{10M} \\
-        \hline
-        1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
-        2  & 1.003 & 1.084 & 0.898 & 1.045 & 1.106 & 1.042 & 1.035 \\
-        4  & 0.996 & 1.070 & 0.918 & 1.016 & 1.081 & 1.041 & 1.033 \\
-        8  & 1.028 & 1.081 & 0.910 & 0.967 & 1.142 & 1.050 & 1.039 \\
-        16 & 0.921 & 1.031 & 0.943 & 0.969 & 1.093 & 0.949 & 1.028 \\
-        32 & 0.956 & 0.962 & 0.830 & 0.910 & 1.008 & 0.963 & 0.981 \\
-        64 & 0.883 & 0.925 & 0.821 & 0.849 & 0.961 & 0.944 & 0.923 \\
-        \hline
-    \end{tabularx}
-    \caption{Efficiency of the E-Step for different dataset sizes and number of processes.}
-\label{tab:efficiency_estep}
+    \scriptsize
+    \setlength{\tabcolsep}{4pt} % tighter column spacing
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \renewcommand{\arraystretch}{1.1}
+        \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
+            \hline
+            \textbf{NP} & 0.156 & 0.312 & 0.625 & 1.25 & 2.5 & 5 & 10 \\
+            \hline
+            1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
+            2  & 1.003 & 1.084 & 0.898 & 1.045 & 1.106 & 1.042 & 1.035 \\
+            4  & 0.996 & 1.070 & 0.918 & 1.016 & 1.081 & 1.041 & 1.033 \\
+            8  & 1.028 & 1.081 & 0.910 & 0.967 & 1.142 & 1.050 & 1.039 \\
+            16 & 0.921 & 1.031 & 0.943 & 0.969 & 1.093 & 0.949 & 1.028 \\
+            32 & 0.956 & 0.962 & 0.830 & 0.910 & 1.008 & 0.963 & 0.981 \\
+            64 & 0.883 & 0.925 & 0.821 & 0.849 & 0.961 & 0.944 & 0.923 \\
+            \hline
+        \end{tabularx}
+        \caption{E-Step efficiency for different dataset sizes and number of processes.}
+        \label{tab:efficiency_estep}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \renewcommand{\arraystretch}{1.1}
+        \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
+            \hline
+            \textbf{NP} & 0.156 & 0.312 & 0.625 & 1.25 & 2.5 & 5 & 10 \\
+            \hline
+            1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
+            2  & 0.963 & 0.993 & 0.875 & 1.035 & 1.107 & 0.995 & 1.022 \\
+            4  & 0.857 & 0.924 & 0.773 & 0.947 & 1.064 & 0.949 & 1.072 \\
+            8  & 0.866 & 0.738 & 0.557 & 0.691 & 0.826 & 0.549 & 0.601 \\
+            16 & 0.576 & 0.793 & 0.745 & 0.685 & 0.866 & 0.800 & 0.690 \\
+            32 & 0.673 & 0.673 & 0.441 & 0.594 & 0.644 & 0.701 & 0.695 \\
+            64 & 0.543 & 0.490 & 0.398 & 0.437 & 0.584 & 0.568 & 0.617 \\
+            \hline
+        \end{tabularx}
+        \caption{M-Step efficiency for different dataset sizes and number of processes.}
+        \label{tab:efficiency_mstep}
+    \end{minipage}
 \end{table}
+Analyzing the results presented in tables \ref{tab:efficiency_estep} and \ref{tab:efficiency_mstep}, we observe that, as expected, 
+the E-step maintains consistent high efficiency across all tested configurations.
+In contrast, the M-step exhibits a noticeable decline in efficiency as the number of processes increases.
+\paragraph{Other datasets}
+To further investigate this behavior, we conducted additional experiments on datasets with varying characteristics. Specifically, we increased the number of features ($D = 300$) and the number of clusters ($K = 20$). The results are summarized in table \ref{tab:efficiency_hybrid}.
+%#TODO: add results table for general efficiency and M-step efficiency
+The findings confirm our initial observation. The E-step remains efficient across different configurations, whereas the M-step efficiency deteriorates due to increased communication costs associated with larger feature dimensions and more clusters.
+\subsection{Hybrid Approach Results}
 
-\begin{table}[H]
-    \centering
-    \renewcommand{\arraystretch}{1.2}
-    \setlength{\tabcolsep}{4pt}
-    \footnotesize
-    \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
-        \hline
-        \textbf{N\_Processes} & 
-        \textbf{0.156M} & 
-        \textbf{0.312M} & 
-        \textbf{0.625M} & 
-        \textbf{1.25M} & 
-        \textbf{2.5M} & 
-        \textbf{5M} & 
-        \textbf{10M} \\
-        \hline
-        1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
-        2  & 0.963 & 0.993 & 0.875 & 1.035 & 1.107 & 0.995 & 1.022 \\
-        4  & 0.857 & 0.924 & 0.773 & 0.947 & 1.064 & 0.949 & 1.072 \\
-        8  & 0.866 & 0.738 & 0.557 & 0.691 & 0.826 & 0.549 & 0.601 \\
-        16 & 0.576 & 0.793 & 0.745 & 0.685 & 0.866 & 0.800 & 0.690 \\
-        32 & 0.673 & 0.673 & 0.441 & 0.594 & 0.644 & 0.701 & 0.695 \\
-        64 & 0.543 & 0.490 & 0.398 & 0.437 & 0.584 & 0.568 & 0.617 \\
-        \hline
-    \end{tabularx}
-    \caption{Efficiency of the M-Step for different dataset sizes and number of processes.}
-\label{tab:efficiency_mstep}
-\end{table}
-Analyzing Tables \ref{tab:efficiency_estep} and \ref{tab:efficiency_mstep}, we observe that, in line with our expectations, 
-the E-step maintains high efficiency across various configurations.
-The M-step, however, shows a more pronounced decline in efficiency as the number of processes increases.
+
+
+

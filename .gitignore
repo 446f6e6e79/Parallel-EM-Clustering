@@ -84,3 +84,5 @@ idea/
 tools/dataElaboration/tmp.ipynb
 # Ignore temporary jobs file
 /file
+tools/__pycache__/__init__.cpython-313.pyc
+.ipynb_checkpoints/elaborate_data-checkpoint.ipynb
