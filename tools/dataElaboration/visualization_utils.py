@@ -1,9 +1,4 @@
-import plotly.graph_objects as go
-import plotly.express as px
 import numpy as np
-import pandas as pd
-from sklearn.metrics import confusion_matrix
-from scipy.optimize import linear_sum_assignment
 from matplotlib.patches import Ellipse
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -21,10 +16,19 @@ def create_line_figure(xlabel, ylabel, title, figsize=(10, 6), grid=True):
     fig, ax = plt.subplots(figsize=figsize)
     # Define color palette from the universal color map
     colors = _get_palette()
-    # Set labels and title
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    ax.set_title(title)
+
+    # Font sizes
+    title_fs = 18
+    label_fs = 14
+    tick_fs = 12
+
+    ax.set_xlabel(xlabel, fontsize=label_fs)
+    ax.set_ylabel(ylabel, fontsize=label_fs)
+    ax.set_title(title, fontsize=title_fs)
+
+    # Tick label size
+    ax.tick_params(axis='both', labelsize=tick_fs)
+
     # Set the grid if requested
     if grid:
         ax.grid(True, linestyle='-', alpha=0.6)
@@ -33,7 +37,8 @@ def create_line_figure(xlabel, ylabel, title, figsize=(10, 6), grid=True):
 def styled_line_plot(x_list, y_list, labels,
                      xlabel, ylabel, title,
                      y_min=None, y_max=None,
-                     figsize=(10, 6), grid=True, legend=True):
+                     figsize=(10, 6), grid=True, legend=True, 
+                     lineStyles=['-'], markers=['o']):
     """
     Generic multi‑line plot with consistent style.
 
@@ -46,6 +51,7 @@ def styled_line_plot(x_list, y_list, labels,
         title : str, title of the plot
         grid : bool
         legend : bool
+        lineStyles : list of str, line styles for each line
     Returns:
         fig, ax : matplotlib Figure and Axes objects
     """
@@ -56,8 +62,8 @@ def styled_line_plot(x_list, y_list, labels,
         ax.plot(
             x,
             y,
-            marker='o',
-            linestyle='-',
+            marker=markers[i % len(markers)],
+            linestyle=lineStyles[i % len(lineStyles)],
             linewidth=2,
             markersize=6,
             color=colors[i % len(colors)],
@@ -68,7 +74,7 @@ def styled_line_plot(x_list, y_list, labels,
         ax.set_ylim(y_min, y_max)
     # Add legend if requested
     if legend:
-        ax.legend(frameon=True)
+        ax.legend(frameon=True, fontsize=12)
     # Adjust layout
     fig.tight_layout()
     return fig, ax
@@ -206,42 +212,9 @@ def plot_metrics(filtered_df, metric, fixed_parameters=None):
         )
 
     # Re‑draw legend to include reference line
-    ax.legend(frameon=True)
+    ax.legend(frameon=True, fontsize=12)
     fig.tight_layout()
     return plt
-
-def cluster_mapping(y_true, y_pred):
-    """
-    Return:
-      - pred_to_real: dict mapping predicted_label -> real_label
-      - real_to_pred: dict mapping real_label -> predicted_label
-      - accuracy: permutation-invariant accuracy in [0,1]
-    """
-    labels_true = np.unique(y_true)
-    labels_pred = np.unique(y_pred)
-    # Use same label order on rows/cols (union), so we can map indices back to labels
-    labels = np.unique(np.concatenate([labels_true, labels_pred]))
-    cm = confusion_matrix(y_true, y_pred, labels=labels)
-    row_ind, col_ind = linear_sum_assignment(-cm)
-
-    pred_to_real = {labels[c]: labels[r] for r, c in zip(row_ind, col_ind) if labels[c] in set(labels_pred)}
-    real_to_pred = {labels[r]: labels[c] for r, c in zip(row_ind, col_ind) if labels[r] in set(labels_true)}
-    acc = (cm[row_ind, col_ind].sum() / cm.sum()) if cm.sum() > 0 else 0.0
-    return pred_to_real, real_to_pred, acc
-
-def clustering_accuracy(df):
-    """
-        Calculate clustering accuracy from a DataFrame containing 'predicted' and 'real' columns.
-        Uses the Hungarian algorithm to find the best matching between predicted and real labels.
-        Parameters:
-            df: DataFrame containing the clustering results
-        Returns:
-            accuracy: Clustering accuracy as a float
-    """
-    y_pred = df['predicted_cluster'].to_numpy()
-    y_true = df['real_cluster'].to_numpy()
-    _, _, accuracy = cluster_mapping(y_true, y_pred)
-    return accuracy
 
 def plot_cov_ellipses(mean, cov, ax, color,
                       sigmas=(1, 2, 3),
@@ -304,7 +277,7 @@ def plot_cov_ellipses(mean, cov, ax, color,
 
 def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
     """
-    Create a matplotlib figure for a specific iteration of clustering.
+    Create a numpy array representing the figure for a specific iteration of clustering.
     Parameters:
         df: DataFrame containing clustering data
         it: Iteration number to visualize
@@ -312,6 +285,7 @@ def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
         ylim: Tuple (ymin, ymax) for y-axis limits
     Returns:
         image: Numpy array representing the figure
+        plt: Matplotlib pyplot module for further manipulation if needed
     """
     df_it = df[df['iteration'] == it]
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -344,7 +318,7 @@ def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
     for h, l in zip(handles, labels):
         if l not in by_label:
             by_label[l] = h
-    ax.legend(by_label.values(), by_label.keys(), frameon=True)
+    ax.legend(by_label.values(), by_label.keys(), frameon=True, fontsize=12)
     # Add label for feature axes
     ax.set_xlabel("Feature 1")
     ax.set_ylabel("Feature 2")
@@ -352,25 +326,9 @@ def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
     if show_iteration:
         ax.set_title(f"Iteration {it}")
     plt.tight_layout()
-
     fig.canvas.draw()
     image = np.array(fig.canvas.renderer.buffer_rgba())[:, :, :3]
-    plt.close(fig)
-    return image
-
-def derive_cluster_mapping(df):
-    """
-    Convenience wrapper using DataFrame columns 'predicted_cluster' and 'real_cluster'.
-    """
-    y_pred = df['predicted_cluster'].to_numpy()
-    y_true = df['real_cluster'].to_numpy()
-    return cluster_mapping(y_true, y_pred)
-
-def remap_predicted(y_pred, pred_to_real):
-    """
-    Remap predicted labels into the real label space using the mapping.
-    """
-    return np.array([pred_to_real.get(p, p) for p in y_pred])
+    return image, plt
 
 def plot_heatmap_comparison(table1, table2):
     """
@@ -410,7 +368,8 @@ def plot_graph_comparison(table1, table2):
         figsize=(10, 6),
         grid=True,
         legend=True,
-        y_min=0, y_max=None
+        y_min=0, y_max=None,
+        lineStyles=['-', '--'], markers=['o', 'x']
     )
     fig.tight_layout()
     plt.show()

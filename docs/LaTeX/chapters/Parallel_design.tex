@@ -42,7 +42,7 @@ As a result, both the frequency and volume of inter-process communication taking
 To assess the feasibility and potential benefits of hybrid parallelism within our implementation, 
 we first examined the data dependencies inherent to the EM algorithm.
 
-%#TODO: Reason if the single line comments should be interpreted as atomic or not.
+\paragraph{E-step}
 \begin{table}[H]
 \centering
 \small
@@ -73,8 +73,10 @@ we first examined the data dependencies inherent to the EM algorithm.
 \hline
 \end{tabular}}
 \end{table}
-
+%#TODO: add a comment on what are the real dependencies here and how we address to resolve them.
+%IN EXAMPLE: the variables that are used by the same thread, are not real dependencies
 %M-step
+\paragraph{M-step}
 \begin{table}[H]
 \centering
 \small
@@ -106,7 +108,7 @@ we first examined the data dependencies inherent to the EM algorithm.
 %#TODO: comment on sigma, mu, pi dependencies between M-step and E-step
 
 \subsubsection*{Different parallelization strategies}
-
+%#TODO: disccuss more in depth
 Other parallelization approaches were considered but ultimately not implemented for this project.
 \\\emph{Task parallelization} was deemed unsuitable due to the inherent characteristics of the EM algorithm. Each task 
 would require access to the entire dataset in order to compute the responsibilities and update the parameters.
