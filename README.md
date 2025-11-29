@@ -281,7 +281,7 @@ The debug file will contain, for each iteration, the current parameters of the G
 
 We provide a Python script to create an animation of the clustering process using the debug file:
 ```bash
-python tools/dataElaboration/algorithm_visualization.py -i data/algorithm_results/debug.csv -o data/elaborated/em_visualization.gif
+python -m tools.dataElaboration.algorithm_visualization -i data/algorithm_results/debug.csv -o data/elaborated/em_visualization.gif
 ```
 The output GIF will be saved at the specified path (default: `data/elaborated/em_visualization.gif`).
 

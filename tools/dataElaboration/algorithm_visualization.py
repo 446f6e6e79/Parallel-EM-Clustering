@@ -1,8 +1,7 @@
 import pandas as pd
-import numpy as np
 import imageio
-from utils import create_clustering_frame, remap_predicted, derive_cluster_mapping
-
+from .visualization_utils import create_clustering_frame
+from .EM_utils import *
 def visualize_em(csv_path, output_gif, iterations=None):
     """
     Visualizes the progression of the EM clustering algorithm as a GIF.
