@@ -400,7 +400,7 @@ def plot_cov_ellipsoids_3d(mean, cov, ax, color,
             center_kwargs = dict(marker='o', s=45, linewidths=2, color='k', zorder=10)
         ax.scatter([mean[0]], [mean[1]], [mean[2]], **center_kwargs)
 
-def create_clustering_frame_2d(df_it, xlim, ylim, title="", show_errors=True, show_ellipsoid=True, colors=None):
+def create_clustering_frame_2d(df_it, xlim, ylim, title="", show_errors=True, show_ellipsoid=True, colors=None, legend=True):
     """
     Create a 2d plot for a specific iteration of clustering.
     Parameters:
@@ -411,6 +411,7 @@ def create_clustering_frame_2d(df_it, xlim, ylim, title="", show_errors=True, sh
         show_errors: Whether to highlight misclassified points
         show_ellipsoid: Whether to show covariance ellipses
         colors: List of colors to use for clusters (default None, uses consistent palette)
+        legend: Whether to show legend
     Returns:
         image: Numpy array representing the figure
         fig: Matplotlib figure object
@@ -452,12 +453,13 @@ def create_clustering_frame_2d(df_it, xlim, ylim, title="", show_errors=True, sh
                        color=color, alpha=1.0, zorder=10)
 
     # Create legend, removing duplicates
-    handles, labels = ax.get_legend_handles_labels()
-    by_label = {}
-    for h, l in zip(handles, labels):
-        if l not in by_label:
-            by_label[l] = h
-    ax.legend(by_label.values(), by_label.keys(), frameon=True, fontsize=12, loc='upper right')
+    if legend:
+        handles, labels = ax.get_legend_handles_labels()
+        by_label = {}
+        for h, l in zip(handles, labels):
+            if l not in by_label:
+                by_label[l] = h
+        ax.legend(by_label.values(), by_label.keys(), frameon=True, fontsize=12, loc='upper right')
     # Add label for feature axes
     ax.set_xlabel("Feature 1")
     ax.set_ylabel("Feature 2")
@@ -471,7 +473,7 @@ def create_clustering_frame_2d(df_it, xlim, ylim, title="", show_errors=True, sh
     image = np.array(fig.canvas.renderer.buffer_rgba())[:, :, :3]
     return image, fig
 
-def create_clustering_frame_3d(df_it, xlim, ylim, zlim, title="", show_errors=True, show_ellipsoid=True, colors=None):
+def create_clustering_frame_3d(df_it, xlim, ylim, zlim, title="", show_errors=True, show_ellipsoid=True, colors=None, legend=True):
     """
     Create a 3d plot for a specific iteration of clustering.
     Parameters:
@@ -523,13 +525,15 @@ def create_clustering_frame_3d(df_it, xlim, ylim, zlim, title="", show_errors=Tr
             ax.scatter(wrong['feature_1'], wrong['feature_2'], wrong['feature_3'], marker='x', s=45, linewidths=2,
                        color=color, alpha=1.0, zorder=10)
         
-    # Create legend, removing duplicates
-    handles, labels = ax.get_legend_handles_labels()
-    by_label = {}
-    for h, l in zip(handles, labels):
-        if l not in by_label:
-            by_label[l] = h
-    ax.legend(by_label.values(), by_label.keys(), frameon=True, fontsize=12, loc='upper right')
+    if legend:
+        # Create legend, removing duplicates
+        handles, labels = ax.get_legend_handles_labels()
+        by_label = {}
+        for h, l in zip(handles, labels):
+            if l not in by_label:
+                by_label[l] = h
+        ax.legend(by_label.values(), by_label.keys(), frameon=True, fontsize=12, loc='upper right')
+   
     # Add label for feature axes
     ax.set_xlabel("Feature 1")
     ax.set_ylabel("Feature 2")

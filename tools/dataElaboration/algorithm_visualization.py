@@ -78,48 +78,71 @@ def __visualize_3d_clustering(df, show_iteration=True, PAD=0.1):
         plts.append(plt)
     return frames, plts
 
-def visualize_dataset(csv_path, output_png=None):
+def visualize_dataset(csv_path, output_path="data/elaborated/initial_dataset.png", PAD=0.1):
     """
     Visualizes the initial dataset before clustering.
     Args:
         csv_path (str): Path to the CSV file containing the dataset.
-        output_png (str, optional): Path to save the output PNG. If None, does not save.
+        output_path (str, optional): Path to save the output PNG. Defaults to "data/elaborated/initial_dataset.png".
+        PAD (float, optional): Padding factor for the plot limits.
     Returns:
         int: 0 on success.
     """   
     # See how many features we have
     df = pd.read_csv(csv_path)
     feature_cols = [col for col in df.columns if col.startswith('feature_')]
+    
+    # Fix the axis limits, based on the data range. This ensures consistent axes with other plots.
+    x_min, x_max = df['feature_1'].min(), df['feature_1'].max()
+    y_min, y_max = df['feature_2'].min(), df['feature_2'].max()
+    pad_x = PAD * (x_max - x_min)
+    pad_y = PAD * (y_max - y_min)
+    
     if len(feature_cols) < 2 or len(feature_cols) > 3:
         raise ValueError(f"This visualization function only supports 2D and 3D visualizations. You have {len(feature_cols)}.")
     if len(feature_cols) == 2:
         print("Creating 2D dataset visualization...")
         # Create a simple scatter plot of the dataset
         frame, plot = create_clustering_frame_2d(df,
-                                   xlim=(df['feature_1'].min()-1, df['feature_1'].max()+1),
-                                   ylim=(df['feature_2'].min()-1, df['feature_2'].max()+1),
+                                   xlim=(x_min - pad_x, x_max + pad_x),
+                                   ylim=(y_min - pad_y, y_max + pad_y),
                                    title="Initial Dataset Visualization (2D)",
                                    colors=['gray'],
                                    show_ellipsoid=False,
-                                   show_errors=False)   
+                                   show_errors=False,
+                                   legend=False)
+        # Add legend manually
+        ax = plot.gca()
+        handle = ax.scatter([], [], s=12, color='gray')
+        ax.legend([handle], ["Datapoint"], frameon=True,
+                  fontsize=12, loc='upper right')
+
     else:
         print("Creating 3D dataset visualization...")
+        # Compute the z limits
+        z_min, z_max = df['feature_3'].min(), df['feature_3'].max()
+        pad_z = PAD * (z_max - z_min)
         # Create a simple 3D scatter plot of the dataset
         frame, plot = create_clustering_frame_3d(df,
-                                   xlim=(df['feature_1'].min()-1, df['feature_1'].max()+1),
-                                   ylim=(df['feature_2'].min()-1, df['feature_2'].max()+1),
-                                   zlim=(df['feature_3'].min()-1, df['feature_3'].max()+1),
+                                   xlim=(x_min - pad_x, x_max + pad_x),
+                                   ylim=(y_min - pad_y, y_max + pad_y),
+                                   zlim=(z_min - pad_z, z_max + pad_z),
                                    title="Initial Dataset Visualization (3D)",
                                    colors=['gray'],
                                    show_errors=False,
-                                   show_ellipsoid=False)
-    plot.gca().legend_.remove() if plot.gca().get_legend() else None
-    if output_png is not None:
-        plot.savefig(output_png)
-        print(f"Saved initial dataset visualization to {output_png}")
-    return 0    
+                                   show_ellipsoid=False,
+                                   legend=False)
+        # Add legend manually
+        ax = plot.gca()
+        handle = ax.scatter([], [], s=12, color='gray')
+        ax.legend([handle], ["Datapoint"], frameon=True,
+                  fontsize=12, loc='upper right')
+        
+    plot.savefig(output_path)
+    print(f"Saved initial dataset visualization to {output_path}")
+    return 0
 
-def visualize_em(csv_path, output_gif, iterations=None):
+def visualize_em(csv_path, output_path, iterations=None):
     """
     Visualizes the progression of the EM clustering algorithm as a GIF.
     Args:
@@ -153,20 +176,20 @@ def visualize_em(csv_path, output_gif, iterations=None):
 
     if len(feature_cols) == 2:
         print("Creating 2D clustering visualization...")
-        frames, plts = __visualize_2d_clustering(df, output_gif)
+        frames, plts = __visualize_2d_clustering(df, output_path)
     
     # We are in the 3D case
     else:
         print("Creating 3D clustering visualization...")
-        frames, plts = __visualize_3d_clustering(df, output_gif)
+        frames, plts = __visualize_3d_clustering(df, output_path)
 
     # If we specified a single iteration, just save that frame
     if iterations is not None and len(iterations) == 1:
-        plts[0].savefig(output_gif.replace('.gif', '.png'))
+        plts[0].savefig(output_path.replace('.gif', '.png'))
         return
     # Otherwise, save the full animation
-    imageio.mimsave(output_gif, frames, fps=min(2, len(frames)))
-    print(f"Saved animation to {output_gif}")
+    imageio.mimsave(output_path, frames, fps=min(2, len(frames)))
+    print(f"Saved animation to {output_path}")
 
 if __name__ == "__main__":
     import argparse
@@ -175,7 +198,7 @@ if __name__ == "__main__":
                         help="Path to the debug CSV file (default: data/algorithm_results/debug.csv)")
     parser.add_argument("-o", "--out", dest="output_gif", default="data/elaborated/em_visualization.gif",
                         help="Output GIF path (default: data/elaborated/em_visualization.gif)")
-    parser.add_argument("--show-initial", dest="output_png", default= "data/elaborated/initial_dataset.png", 
+    parser.add_argument("--show-initial", dest="output_png", const= "data/elaborated/initial_dataset.png", nargs='?', default=None,
                         help="If provided, saves an initial dataset visualization to this PNG path.")
     parser.add_argument("--iterations", dest="iterations", nargs='+', type=int, default=None,
                         help="Specific iterations to include in the GIF, provide one or more iteration numbers (default: all iterations).")
@@ -183,8 +206,6 @@ if __name__ == "__main__":
 
     if args.output_png is not None and args.iterations is not None:
         parser.error("--show-initial cannot be combined with --iterations")
-    if args.output_png is not None and args.output_gif is not None:
-        parser.error("--show-initial cannot be combined with --out")
 
     if args.output_png is not None:
         visualize_dataset(args.csv_path, args.output_png)
