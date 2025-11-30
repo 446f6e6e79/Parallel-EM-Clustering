@@ -22,6 +22,11 @@ by comparing the outputs of the algorithm against the real labels provided by th
 Clustering performance were evaluated using permutation-invariant accuracy metrics (using the Python library \emph{scikit-learn}), which account for the arbitrary nature of cluster labeling in unsupervised learning.
 By resolving label permutations, we could accurately measure how well the algorithm clustered the data points according to their true underlying distributions.
 
+\subsubsection*{Gaussian Density Computation}
+The Gaussian density function was implemented as a diagonal multivariate Gaussian, consistent with the data generation process.
+This assumption does not diminish the overall parallel workload. Since the density function must still be computed for each data point and cluster indipendently, 
+the parallelization remains effective nomatter the covariance structure.
+
 \subsection{Parallel Algorithm Implementation}
 
 \subsubsection*{Data distribution}
@@ -133,7 +138,7 @@ A \emph{reduction} clause was required to safely accumulate the log-likelihood, 
 A static scheduling strategy was chosen, since the workload per iteration is uniform across threads.
 
 Regarding the Gaussian density computation, we wanted to use the \emph{\#pragma simd} directive to enable vectorization.
-Theoretically improve performance by allowing the compiler to generate SIMD instructions for parallel processing of data.
+Theoretically it would have improved performance by allowing the compiler to generate SIMD instructions for parallel processing of data.
 However, due to uncompatibilities with the compiler used by the HPC cluster, we were unable to successfully apply it. 
 
 \subsubsection*{M-step Implementation}
