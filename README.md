@@ -2,6 +2,19 @@
 
 Implementation of **Expectation–Maximization** (EM) algorithm for clustering, using **MPI** for distributed processing.
 
+## 🧭 Table of Contents
+
+* [Repository Structure](#repository-contents)
+* [Program Execution](#program-execution)
+    * [Compilation](#1-compilation)
+    * [Input Data Generation](#2-generating-the-input-data)
+    * [Running the Program](#3-running-the-program)
+        * [Available Parameters](#available-parameters)
+        * [Batch Runs (Cluster)](#batch-runs-on-the-cluster-for-performance-experiments)
+* [Outputs](#outputs)
+    * [Visualize Clustering Process](#visualize-the-algorithms-clustering-process)
+* [License & Authors](#license--authors)
+
 ## Repository Contents
 
 - **`src/`**: C source code for the EM clustering algorithm
@@ -271,7 +284,7 @@ The program produces different outputs depending on the provided parameters.
 By providing the `-d <debug_filePath>` parameter to the sequential version, the program will output intermediate results at each iteration of the algorithm.
 Example usage:
 ```bash
-./bin/EM_sequential -i data/raw/em_dataset.csv -m data/raw/em_metadata.txt -d data/algorithm_results/debug.csv
+./bin/EM_sequential -i data/raw/em_dataset.csv -m data/raw/em_metadata.txt -d data/algorithm_results/debug.csv -t 0.001
 ```
 The debug file will contain, for each iteration, the current parameters of the GMM and the clustering assignments for each data point. Those can be used to visualize the clustering process of the algorithm over time.
 

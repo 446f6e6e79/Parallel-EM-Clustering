@@ -1,6 +1,7 @@
 import numpy as np
 from matplotlib.patches import Ellipse
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
 
 def _get_palette():
@@ -216,7 +217,51 @@ def plot_metrics(filtered_df, metric, fixed_parameters=None):
     fig.tight_layout()
     return plt
 
-def plot_cov_ellipses(mean, cov, ax, color,
+def plot_heatmap_comparison(table1, table2):
+    """
+        Plot comparison between two pivot tables.
+        Parameters:
+            table1: First pivot table (e.g., efficiency_hybrid_table)
+            table2: Second pivot table (e.g., efficiency_mpi_table)
+    """
+    # Plot each n_samples as a separate line
+    diff_table = table1 - table2
+
+    plt.figure(figsize=(14, 6))
+    sns.heatmap(diff_table, annot=True, cmap='RdBu_r', center=0)
+    plt.xlabel('Dataset (n_samples, n_features, n_clusters)')
+    plt.ylabel('Number of Processes')
+    plt.title('Hybrid Efficiency - MPI Efficiency')
+    plt.show()
+
+def plot_graph_comparison(table1, table2):
+    """
+        Plot comparison between two pivot tables as line graphs.
+    """
+    avg_efficiency_hybrid = table1.mean(axis=1)
+    avg_efficiency_mpi = table2.mean(axis=1)
+    # Prepare data for generic line plot. On the x size we have number of processes, on y size average efficiency
+    x_list = [avg_efficiency_hybrid.index, avg_efficiency_mpi.index]
+    y_list = [avg_efficiency_hybrid.values, avg_efficiency_mpi.values]
+    labels = ['Hybrid', 'MPI']
+
+    fig, ax = styled_line_plot(
+        x_list,
+        y_list,
+        labels,
+        xlabel='Number of Processes',
+        ylabel='Average Efficiency',
+        title='Average Efficiency per Number of Processes',
+        figsize=(10, 6),
+        grid=True,
+        legend=True,
+        y_min=0, y_max=None,
+        lineStyles=['-', '--'], markers=['o', 'x']
+    )
+    fig.tight_layout()
+    plt.show()
+
+def plot_cov_ellipses_2d(mean, cov, ax, color,
                       sigmas=(1, 2, 3),
                       alphas=None,
                       edge_alpha=0.9,
@@ -275,19 +320,101 @@ def plot_cov_ellipses(mean, cov, ax, color,
             center_kwargs = dict(marker='x', s=64, linewidths=2, color=color, zorder=6)
         ax.scatter([mean[0]], [mean[1]], **center_kwargs)
 
-def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
+def plot_cov_ellipsoids_3d(mean, cov, ax, color,
+                           sigmas=(1, 2, 3),
+                           alphas=None,
+                           edge_alpha=0.9,
+                           show_center=True,
+                           center_kwargs=None):
     """
-    Create a numpy array representing the figure for a specific iteration of clustering.
+    Draw concentric covariance ellipsoids for multiple sigma levels.
+    (Simplified for diagonal 3x3 covariance matrix, no rotation needed)
+
     Parameters:
-        df: DataFrame containing clustering data
-        it: Iteration number to visualize
+        mean (np.array): 3D center (mu_x, mu_y, mu_z).
+        cov (np.array): Diagonal 3x3 covariance matrix.
+        ax (Axes3D): Matplotlib 3D axis object.
+        color (str): Color for the surface.
+        sigmas (tuple): Iterable of sigma radii (e.g., (1, 2, 3)).
+        alphas (iterable): Iterable of face transparency (same length as sigmas). If None, auto.
+        edge_alpha (float): Transparency for edges (unused in simple surface plot).
+        show_center (bool): Draw an 'x' at center.
+    """
+    
+    sigmas = list(sigmas)
+    # Largest first (so smaller ellipsoids draw on top)
+    sigmas.sort(reverse=True)
+
+    # Check for diagonal covariance and extract standard deviations
+    if cov.shape != (3, 3) or not np.allclose(cov - np.diag(np.diag(cov)), 0):
+        print("Warning: Function is optimized for diagonal 3x3 covariance matrices.")
+        
+    # Get the square root of diagonal elements (variances) to get standard deviations
+    stds = np.sqrt(np.diag(cov))
+    
+    mu_x, mu_y, mu_z = mean
+    sigma_x, sigma_y, sigma_z = stds
+
+    # If alphas not provided, compute inversely proportional to sigmas
+    if alphas is None:
+        base = 0.35
+        alphas = []
+        for s in sigmas:
+            alphas.append(base / (0.6 + 0.6 * s))
+    else:
+        if len(alphas) != len(sigmas):
+            raise ValueError("alphas length must match sigmas length")
+
+    # 1. Create the base sphere surface points using spherical coordinates
+    u = np.linspace(0, 2 * np.pi, 50) # Use 50 points for resolution
+    v = np.linspace(0, np.pi, 50)
+    
+    # Generate coordinates for a unit sphere (radius 1)
+    x_unit = np.outer(np.cos(u), np.sin(v))
+    y_unit = np.outer(np.sin(u), np.sin(v))
+    z_unit = np.outer(np.ones(np.size(u)), np.cos(v))
+
+    # 2. Scale and plot the ellipsoids for each sigma level
+    for s, a in zip(sigmas, alphas):
+        # Scale the unit sphere by (s * sigma_i) for each axis
+        # and shift by the mean (mu_i)
+        x = s * sigma_x * x_unit + mu_x
+        y = s * sigma_y * y_unit + mu_y
+        z = s * sigma_z * z_unit + mu_z
+
+        # Plot the 3D surface
+        ax.plot_surface(
+            x, y, z,
+            rstride=4, cstride=4,
+            color=color,
+            alpha=a,
+            edgecolor=color,
+            linewidth=0.5 * edge_alpha,
+            shade=False, # Disable shading for a cleaner look
+            zorder=-1 # Draw below data points
+        )
+        
+    # 3. Plot the center point
+    if show_center:
+        if center_kwargs is None:
+            center_kwargs = dict(marker='o', s=45, linewidths=2, color='k', zorder=10)
+        ax.scatter([mean[0]], [mean[1]], [mean[2]], **center_kwargs)
+
+def create_clustering_frame_2d(df_it, xlim, ylim, title="", show_errors=True, colors=None):
+    """
+    Create a 2d plot for a specific iteration of clustering.
+    Parameters:
+        df_it: DataFrame containing clustering data for a specific iteration
         xlim: Tuple (xmin, xmax) for x-axis limits
         ylim: Tuple (ymin, ymax) for y-axis limits
+        title: Title for the plot
+        show_errors: Whether to highlight misclassified points
+        colors: List of colors to use for clusters (default None, uses consistent palette)
     Returns:
         image: Numpy array representing the figure
-        plt: Matplotlib pyplot module for further manipulation if needed
+        fig: Matplotlib figure object
     """
-    df_it = df[df['iteration'] == it]
+    # Create figure and axis
     fig, ax = plt.subplots(figsize=(6, 6))
 
     # Set axis limits
@@ -295,19 +422,29 @@ def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
     ax.set_ylim(*ylim)
 
     unique_clusters = sorted(df_it['predicted_cluster'].unique())
-    colors = _get_palette()
+    # Define color map, using the default consistent palette
+    colors = _get_palette() if colors is None else colors
     color_map = {c: colors[i % len(colors)] for i, c in enumerate(unique_clusters)}
 
+    # For each cluster, plot points and covariance ellipses
     for c in unique_clusters:
-        data = df_it[df_it['predicted_cluster'] == c]
+        # Select data for the current cluster
+        data_c = df_it[df_it['predicted_cluster'] == c]
         color = color_map[c]
-        ax.scatter(data['feature_1'], data['feature_2'], s=12, label=f'Cluster {c}', color=color, alpha=0.85)
+        
+        # Plot the data points for cluster c
+        ax.scatter(data_c['feature_1'], data_c['feature_2'], s=12, label=f'Cluster {c}', color=color, alpha=0.85)
 
-        mean = [data['mu_k_1'].iloc[0], data['mu_k_2'].iloc[0]]
-        cov = np.diag([data['sigma_k_1'].iloc[0], data['sigma_k_2'].iloc[0]])
-        plot_cov_ellipses(mean, cov, ax, color, sigmas=(1,2,3))
+        # Plot covariance ellipse
+        mean = [data_c['mu_k_1'].iloc[0], data_c['mu_k_2'].iloc[0]]
+        cov = np.diag([data_c['sigma_k_1'].iloc[0], data_c['sigma_k_2'].iloc[0]])
+        plot_cov_ellipses_2d(mean, cov, ax, color, sigmas=(1,2,3))
 
-        wrong = data[data['real_cluster'] != data['predicted_cluster']]
+        # If not showing errors, skip
+        if not show_errors:
+            continue
+        # Highlight misclassified points with 'x' marker
+        wrong = data_c[data_c['real_cluster'] != data_c['predicted_cluster']]
         if not wrong.empty:
             ax.scatter(wrong['feature_1'], wrong['feature_2'], marker='x', s=45, linewidths=2,
                        color=color, alpha=1.0, zorder=10)
@@ -318,58 +455,86 @@ def create_clustering_frame(df, it, xlim, ylim, show_iteration=True):
     for h, l in zip(handles, labels):
         if l not in by_label:
             by_label[l] = h
-    ax.legend(by_label.values(), by_label.keys(), frameon=True, fontsize=12)
+    ax.legend(by_label.values(), by_label.keys(), frameon=True, fontsize=12, loc='upper right')
     # Add label for feature axes
     ax.set_xlabel("Feature 1")
     ax.set_ylabel("Feature 2")
     
-    if show_iteration:
-        ax.set_title(f"Iteration {it}")
+    # Add iteration title if requested
+    if title:
+        ax.set_title(title, fontsize=16)
+        
     plt.tight_layout()
     fig.canvas.draw()
     image = np.array(fig.canvas.renderer.buffer_rgba())[:, :, :3]
-    return image, plt
+    return image, fig
 
-def plot_heatmap_comparison(table1, table2):
+def create_clustering_frame_3d(df_it, xlim, ylim, zlim, title="", show_errors=True, colors=None):
     """
-        Plot comparison between two pivot tables.
-        Parameters:
-            table1: First pivot table (e.g., efficiency_hybrid_table)
-            table2: Second pivot table (e.g., efficiency_mpi_table)
+    Create a 3d plot for a specific iteration of clustering.
+    Parameters:
+        df: DataFrame containing clustering data for a specific iteration
+        xlim: Tuple (xmin, xmax) for x-axis limits
+        ylim: Tuple (ymin, ymax) for y-axis limits
+        zlim: Tuple (zmin, zmax) for z-axis limits
+        title: Title for the plot
+        show_errors: Whether to highlight misclassified points
+        colors: List of colors to use for clusters (default None, uses consistent palette)
+    Returns:
+        image: Numpy array representing the figure
+        fig: Matplotlib figure object
     """
-    # Plot each n_samples as a separate line
-    diff_table = table1 - table2
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    # Set axis limit
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+    ax.set_zlim(*zlim)
 
-    plt.figure(figsize=(14, 6))
-    sns.heatmap(diff_table, annot=True, cmap='RdBu_r', center=0)
-    plt.xlabel('Dataset (n_samples, n_features, n_clusters)')
-    plt.ylabel('Number of Processes')
-    plt.title('Hybrid Efficiency - MPI Efficiency')
-    plt.show()
+    unique_clusters = sorted(df_it['predicted_cluster'].unique())
+    # Define color map, using the default consistent palette
+    colors = _get_palette()
+    color_map = {c: colors[i % len(colors)] for i, c in enumerate(unique_clusters)}
 
-def plot_graph_comparison(table1, table2):
-    """
-        Plot comparison between two pivot tables as line graphs.
-    """
-    avg_efficiency_hybrid = table1.mean(axis=1)
-    avg_efficiency_mpi = table2.mean(axis=1)
-    # Prepare data for generic line plot. On the x size we have number of processes, on y size average efficiency
-    x_list = [avg_efficiency_hybrid.index, avg_efficiency_mpi.index]
-    y_list = [avg_efficiency_hybrid.values, avg_efficiency_mpi.values]
-    labels = ['Hybrid', 'MPI']
+    for c in unique_clusters:
+        # Select data for the current cluster
+        data_c = df_it[df_it['predicted_cluster'] == c]
+        color = color_map[c]
+        
+        # Plot the data points for cluster c
+        ax.scatter(data_c['feature_1'], data_c['feature_2'], data_c['feature_3'], s=12, label=f'Cluster {c}', color=color, alpha=0.85)
+        
+        # Plot covariance ellipsoid
+        mean = [data_c['mu_k_1'].iloc[0], data_c['mu_k_2'].iloc[0], data_c['mu_k_3'].iloc[0]]
+        cov = np.diag([data_c['sigma_k_1'].iloc[0], data_c['sigma_k_2'].iloc[0], data_c['sigma_k_3'].iloc[0]])
+        plot_cov_ellipsoids_3d(mean, cov, ax, color, sigmas=(1,2,3))
 
-    fig, ax = styled_line_plot(
-        x_list,
-        y_list,
-        labels,
-        xlabel='Number of Processes',
-        ylabel='Average Efficiency',
-        title='Average Efficiency per Number of Processes',
-        figsize=(10, 6),
-        grid=True,
-        legend=True,
-        y_min=0, y_max=None,
-        lineStyles=['-', '--'], markers=['o', 'x']
-    )
-    fig.tight_layout()
-    plt.show()
+        # If not showing errors, skip
+        if not show_errors:
+            continue
+        # Highlight misclassified points with 'x' marker
+        wrong = data_c[data_c['real_cluster'] != data_c['predicted_cluster']]
+        if not wrong.empty:
+            ax.scatter(wrong['feature_1'], wrong['feature_2'], wrong['feature_3'], marker='x', s=45, linewidths=2,
+                       color=color, alpha=1.0, zorder=10)
+        
+    # Create legend, removing duplicates
+    handles, labels = ax.get_legend_handles_labels()
+    by_label = {}
+    for h, l in zip(handles, labels):
+        if l not in by_label:
+            by_label[l] = h
+    ax.legend(by_label.values(), by_label.keys(), frameon=True, fontsize=12, loc='upper right')
+    # Add label for feature axes
+    ax.set_xlabel("Feature 1")
+    ax.set_ylabel("Feature 2")
+    ax.set_zlabel("Feature 3")
+    
+    # Add iteration title if requested
+    if title:
+        ax.set_title(title, fontsize=16)
+        
+    plt.tight_layout()
+    fig.canvas.draw()
+    image = np.array(fig.canvas.renderer.buffer_rgba())[:, :, :3]
+    return image, fig
