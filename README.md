@@ -323,3 +323,6 @@ This will generate a GIF showing the progression of clustering over the selected
 ---
 
 ## License & Authors
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
