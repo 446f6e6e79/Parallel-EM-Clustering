@@ -287,6 +287,7 @@ Example usage:
 ./bin/EM_sequential -i data/raw/em_dataset.csv -m data/raw/em_metadata.txt -d data/algorithm_results/debug.csv -t 0.001
 ```
 The debug file will contain, for each iteration, the current parameters of the GMM and the clustering assignments for each data point. Those can be used to visualize the clustering process of the algorithm over time.
+This script supports both 2D and 3D visualizations.
 
 <p align="center">
   <img src="docs/media/em_progress.gif" alt="EM clustering progression" width="500" />
@@ -296,8 +297,29 @@ We provide a Python script to create an animation of the clustering process usin
 ```bash
 python -m tools.dataElaboration.algorithm_visualization -i data/algorithm_results/debug.csv -o data/elaborated/em_visualization.gif
 ```
-The output GIF will be saved at the specified path (default: `data/elaborated/em_visualization.gif`).
+The available options are: 
 
+- `-i` / `--csv`  
+  Path to the debug CSV file (default: `data/algorithm_results/debug.csv`).
+
+- `-o` / `--out`  
+  Output GIF path (default: `data/elaborated/em_visualization.gif`).
+
+- `--show-initial`  
+  If provided, saves an initial dataset visualization as a PNG before starting the animation. Example:
+
+```bash
+python -m tools.dataElaboration.algorithm_visualization -i data/algorithm_results/debug.csv --show-initial data/elaborated/initial_dataset.png
+```
+
+- `--iterations`  
+  Specify one or more iteration numbers to include in the GIF. By default, all iterations are included. Example:
+
+```bash
+python -m tools.dataElaboration.algorithm_visualization -i data/algorithm_results/debug.csv -o data/elaborated/em_visualization.gif --iterations 0 5 10 15
+```
+
+This will generate a GIF showing the progression of clustering over the selected iterations.
 ---
 
 ## License & Authors

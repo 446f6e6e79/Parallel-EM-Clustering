@@ -400,7 +400,7 @@ def plot_cov_ellipsoids_3d(mean, cov, ax, color,
             center_kwargs = dict(marker='o', s=45, linewidths=2, color='k', zorder=10)
         ax.scatter([mean[0]], [mean[1]], [mean[2]], **center_kwargs)
 
-def create_clustering_frame_2d(df_it, xlim, ylim, title="", show_errors=True, colors=None):
+def create_clustering_frame_2d(df_it, xlim, ylim, title="", show_errors=True, show_ellipsoid=True, colors=None):
     """
     Create a 2d plot for a specific iteration of clustering.
     Parameters:
@@ -409,6 +409,7 @@ def create_clustering_frame_2d(df_it, xlim, ylim, title="", show_errors=True, co
         ylim: Tuple (ymin, ymax) for y-axis limits
         title: Title for the plot
         show_errors: Whether to highlight misclassified points
+        show_ellipsoid: Whether to show covariance ellipses
         colors: List of colors to use for clusters (default None, uses consistent palette)
     Returns:
         image: Numpy array representing the figure
@@ -438,7 +439,8 @@ def create_clustering_frame_2d(df_it, xlim, ylim, title="", show_errors=True, co
         # Plot covariance ellipse
         mean = [data_c['mu_k_1'].iloc[0], data_c['mu_k_2'].iloc[0]]
         cov = np.diag([data_c['sigma_k_1'].iloc[0], data_c['sigma_k_2'].iloc[0]])
-        plot_cov_ellipses_2d(mean, cov, ax, color, sigmas=(1,2,3))
+        if show_ellipsoid:
+            plot_cov_ellipses_2d(mean, cov, ax, color, sigmas=(1,2,3))
 
         # If not showing errors, skip
         if not show_errors:
@@ -469,7 +471,7 @@ def create_clustering_frame_2d(df_it, xlim, ylim, title="", show_errors=True, co
     image = np.array(fig.canvas.renderer.buffer_rgba())[:, :, :3]
     return image, fig
 
-def create_clustering_frame_3d(df_it, xlim, ylim, zlim, title="", show_errors=True, colors=None):
+def create_clustering_frame_3d(df_it, xlim, ylim, zlim, title="", show_errors=True, show_ellipsoid=True, colors=None):
     """
     Create a 3d plot for a specific iteration of clustering.
     Parameters:
@@ -479,6 +481,7 @@ def create_clustering_frame_3d(df_it, xlim, ylim, zlim, title="", show_errors=Tr
         zlim: Tuple (zmin, zmax) for z-axis limits
         title: Title for the plot
         show_errors: Whether to highlight misclassified points
+        show_ellipsoid: Whether to show covariance ellipsoids
         colors: List of colors to use for clusters (default None, uses consistent palette)
     Returns:
         image: Numpy array representing the figure
@@ -493,7 +496,8 @@ def create_clustering_frame_3d(df_it, xlim, ylim, zlim, title="", show_errors=Tr
 
     unique_clusters = sorted(df_it['predicted_cluster'].unique())
     # Define color map, using the default consistent palette
-    colors = _get_palette()
+    if colors is None:
+        colors = _get_palette()
     color_map = {c: colors[i % len(colors)] for i, c in enumerate(unique_clusters)}
 
     for c in unique_clusters:
@@ -507,7 +511,8 @@ def create_clustering_frame_3d(df_it, xlim, ylim, zlim, title="", show_errors=Tr
         # Plot covariance ellipsoid
         mean = [data_c['mu_k_1'].iloc[0], data_c['mu_k_2'].iloc[0], data_c['mu_k_3'].iloc[0]]
         cov = np.diag([data_c['sigma_k_1'].iloc[0], data_c['sigma_k_2'].iloc[0], data_c['sigma_k_3'].iloc[0]])
-        plot_cov_ellipsoids_3d(mean, cov, ax, color, sigmas=(1,2,3))
+        if show_ellipsoid:
+            plot_cov_ellipsoids_3d(mean, cov, ax, color, sigmas=(1,2,3))
 
         # If not showing errors, skip
         if not show_errors:
