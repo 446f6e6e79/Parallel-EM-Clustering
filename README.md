@@ -286,8 +286,8 @@ Example usage:
 ```bash
 ./bin/EM_sequential -i data/raw/em_dataset.csv -m data/raw/em_metadata.txt -d data/algorithm_results/debug.csv -t 0.001
 ```
-The debug file will contain, for each iteration, the current parameters of the GMM and the clustering assignments for each data point. Those can be used to visualize the clustering process of the algorithm over time.
-This script supports both 2D and 3D visualizations.
+The debug file will contain, for each iteration, the current parameters of the GMM and the clustering assignments for each data point. 
+The script visualizes the clustering process over time, based on the 2D or 3D debug dataset provided as input.
 
 <p align="center">
   <img src="docs/media/em_progress.gif" alt="EM clustering progression" width="500" />
@@ -320,6 +320,7 @@ python -m tools.dataElaboration.algorithm_visualization -i data/algorithm_result
 ```
 
 This will generate a GIF showing the progression of clustering over the selected iterations.
+
 ---
 
 ## License & Authors

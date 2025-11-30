@@ -40,7 +40,6 @@ def __visualize_2d_clustering(df, show_iteration=True, PAD=0.1):
         plts.append(plt)
     return frames, plts
 
-#TODO: report this on the readme
 def __visualize_3d_clustering(df, show_iteration=True, PAD=0.1):
     """
     Create a visualization frame for 3D clustering.

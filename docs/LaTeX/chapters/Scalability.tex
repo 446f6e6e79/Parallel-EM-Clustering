@@ -185,8 +185,28 @@ To further investigate this behavior, we conducted additional experiments on dat
 The findings confirm our initial observation. The E-step remains efficient across different configurations, whereas the M-step efficiency deteriorates due to increased communication costs associated with larger feature dimensions and more clusters.
 
 \subsection{Hybrid Approach Results}
-%#TODO: report here the n_process and n_threads used for the hybrid approach, saying that
-%for semplicity and clarity with previous tables, in the tables we report only the n_processes * n_thread used.
+
+For the hybrid approach experiments, we explored different combinations of nodes, CPUs per node, and threads per process. 
+All combinations are listed in table \ref{tab:hybrid_combos}.
+To maintain consistency and facilitate comparison with previous results, we used the total number of processes as a reference.
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{c c c}
+    \hline
+    \textbf{Nodes} & \textbf{NCPUs} & \textbf{Threads} \\
+    \hline
+    1 & 1 & 1 \\
+    1 & 1 & 2 \\
+    1 & 1 & 4 \\
+    1 & 1 & 8 \\
+    2 & 1 & 8 \\
+    2 & 2 & 8 \\
+    4 & 2 & 8 \\
+    \hline
+    \end{tabular}
+    \label{tab:hybrid_combos}
+\end{table}
+
 For full results of the Hybrid approach, consult the appendix.
 \begin{table}[H]
     \centering

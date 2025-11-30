@@ -17,7 +17,6 @@ For each dataset, an additional metadata file is created, containing the relevan
 This metadata simplifies the initialization of the EM algorithm by providing all necessary information without requiring manual configuration.
 
 \subsubsection*{Accuracy Checks}
-%#TODO: comment on the fact that we cold do this since the dataser were genetated. Fore the algoritm instead we ignored the labels
 To ensure the correctness of the implementation, especially during initial testing we performed extensive validation checks 
 by comparing the outputs of the algorithm against the real labels provided by the data generator.
 Clustering performance were evaluated using permutation-invariant accuracy metrics (using the Python library \emph{scikit-learn}), which account for the arbitrary nature of cluster labeling in unsupervised learning.
