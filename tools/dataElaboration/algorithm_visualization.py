@@ -119,7 +119,7 @@ def visualize_dataset(csv_path, output_png=None):
         print(f"Saved initial dataset visualization to {output_png}")
     return 0    
 
-def visualize_em(csv_path, output_gif, dims=None, iterations=None):
+def visualize_em(csv_path, output_gif, iterations=None):
     """
     Visualizes the progression of the EM clustering algorithm as a GIF.
     Args:
@@ -175,11 +175,16 @@ if __name__ == "__main__":
                         help="Path to the debug CSV file (default: data/algorithm_results/debug.csv)")
     parser.add_argument("-o", "--out", dest="output_gif", default="data/elaborated/em_visualization.gif",
                         help="Output GIF path (default: data/elaborated/em_visualization.gif)")
-    parser.add_argument("--show-initial", dest="output_png", default=None, 
+    parser.add_argument("--show-initial", dest="output_png", default= "data/elaborated/initial_dataset.png", 
                         help="If provided, saves an initial dataset visualization to this PNG path.")
     parser.add_argument("--iterations", dest="iterations", nargs='+', type=int, default=None,
                         help="Specific iterations to include in the GIF, provide one or more iteration numbers (default: all iterations).")
     args = parser.parse_args()
+
+    if args.output_png is not None and args.iterations is not None:
+        parser.error("--show-initial cannot be combined with --iterations")
+    if args.output_png is not None and args.output_gif is not None:
+        parser.error("--show-initial cannot be combined with --out")
 
     if args.output_png is not None:
         visualize_dataset(args.csv_path, args.output_png)

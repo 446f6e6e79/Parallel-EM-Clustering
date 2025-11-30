@@ -305,13 +305,6 @@ The available options are:
 - `-o` / `--out`  
   Output GIF path (default: `data/elaborated/em_visualization.gif`).
 
-- `--show-initial`  
-  If provided, saves an initial dataset visualization as a PNG before starting the animation. Example:
-
-```bash
-python -m tools.dataElaboration.algorithm_visualization -i data/algorithm_results/debug.csv --show-initial data/elaborated/initial_dataset.png
-```
-
 - `--iterations`  
   Specify one or more iteration numbers to include in the GIF. By default, all iterations are included. Example:
 
@@ -321,6 +314,16 @@ python -m tools.dataElaboration.algorithm_visualization -i data/algorithm_result
 
 This will generate a GIF showing the progression of clustering over the selected iterations.
 
+- `--show-initial`  
+  If provided, saves an initial dataset visualization as a PNG before starting the animation. 
+  Exclusive option: cannot be combined with `--out` or `--iterations`.
+  Example:
+
+```bash
+python -m tools.dataElaboration.algorithm_visualization -i data/algorithm_results/debug.csv --show-initial data/elaborated/initial_dataset.png
+```
+
+This will generate a PNG showing the initial state of the dataset.
 ---
 
 ## License & Authors
