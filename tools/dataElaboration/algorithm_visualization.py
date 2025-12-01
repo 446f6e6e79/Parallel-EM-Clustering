@@ -188,7 +188,7 @@ def visualize_em(csv_path, output_path, iterations=None):
         plts[0].savefig(output_path.replace('.gif', '.png'))
         return
     # Otherwise, save the full animation
-    imageio.mimsave(output_path, frames, fps=min(2, len(frames)))
+    imageio.mimsave(output_path, frames, fps=min(2, len(frames)), loop=0)
     print(f"Saved animation to {output_path}")
 
 if __name__ == "__main__":

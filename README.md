@@ -289,9 +289,12 @@ Example usage:
 The debug file will contain, for each iteration, the current parameters of the GMM and the clustering assignments for each data point. 
 The script visualizes the clustering process over time, based on the 2D or 3D debug dataset provided as input.
 
-<p align="center">
-  <img src="docs/media/em_progress.gif" alt="EM clustering progression" width="500" />
-</p>
+| | |
+|---|---|
+| <img src="docs/media/em_progress.gif" width="500" /> | <img src="docs/media/em-3d_progress.gif" width="500" /> |
+
+
+
 
 We provide a Python script to create an animation of the clustering process using the debug file:
 ```bash
