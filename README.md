@@ -2,7 +2,7 @@
 
 Implementation of **Expectation–Maximization** (EM) algorithm for clustering, using **MPI** for distributed processing.
 
-## 🧭 Table of Contents
+## Table of Contents
 
 * [Repository Structure](#repository-contents)
 * [Program Execution](#program-execution)

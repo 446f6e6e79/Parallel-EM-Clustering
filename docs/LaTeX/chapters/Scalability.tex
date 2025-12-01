@@ -188,25 +188,25 @@ The findings confirm our initial observation. The E-step remains efficient acros
 
 For the hybrid approach experiments, we explored different combinations of nodes, CPUs per node, and threads per process. 
 All combinations are listed in table \ref{tab:hybrid_combos}.
-To maintain consistency and facilitate comparison with previous results, we used the total number of processes as a reference.
+$Nodes$ represents the number of computing nodes used, $Rank/Node$ indicates the number of MPI processes per node, $Threads/Rank$ is the number of threads allocated to each MPI process, and $Threads$ is the total number of threads used in the configuration.
 \begin{table}[h!]
     \centering
-    \begin{tabular}{c c c}
+    \begin{tabular}{c c c c}
     \hline
-    \textbf{Nodes} & \textbf{NCPUs} & \textbf{Threads} \\
+    \textbf{Nodes} & \textbf{Rank/Node} & \textbf{Threads / Rank} & \textbf{Threads} \\
     \hline
-    1 & 1 & 1 \\
-    1 & 1 & 2 \\
-    1 & 1 & 4 \\
-    1 & 1 & 8 \\
-    2 & 1 & 8 \\
-    2 & 2 & 8 \\
-    4 & 2 & 8 \\
+    1 & 1 & 1 & 1   \\
+    1 & 1 & 2  & 2  \\
+    1 & 1 & 4  & 4  \\
+    1 & 1 & 8  & 8  \\
+    2 & 1 & 8  & 16 \\
+    2 & 2 & 8  & 32 \\
+    4 & 2 & 8  & 64 \\
     \hline
     \end{tabular}
     \label{tab:hybrid_combos}
 \end{table}
-
+By matching the threads to number of CPUs, we can compare the hybrid approach directly to the pure MPI implementation.
 For full results of the Hybrid approach, consult the appendix.
 \begin{table}[H]
     \centering

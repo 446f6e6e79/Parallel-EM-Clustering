@@ -204,7 +204,7 @@ if __name__ == "__main__":
                         help="Specific iterations to include in the GIF, provide one or more iteration numbers (default: all iterations).")
     args = parser.parse_args()
 
-    if args.show_initial is not None and args.iterations is not None:
+    if args.show_initial and args.iterations is not None:
         parser.error("--show-initial cannot be combined with --iterations")
 
     if args.show_initial:
