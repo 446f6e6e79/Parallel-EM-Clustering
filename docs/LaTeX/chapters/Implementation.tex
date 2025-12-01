@@ -23,9 +23,9 @@ Clustering performance were evaluated using permutation-invariant accuracy metri
 By resolving label permutations, we could accurately measure how well the algorithm clustered the data points according to their true underlying distributions.
 
 \subsubsection*{Gaussian Density Computation}
-The computation of the Gaussian density function is implemented as a diagonal multivariate Gaussian, which aligns with the data generation process 
-Importantly, this simplification does not reduce the computational complexity of the parallel algorithm, since the density must still be computed for each data point and cluster independently. 
-Thus, the workload is unaffected by the chosen parallelization strategy.
+The Gaussian density function was implemented as a diagonal multivariate Gaussian, consistent with the data generation process.
+This assumption does not diminish the overall parallel workload. Since the density function must still be computed for each data point and cluster indipendently, 
+the parallelization remains effective nomatter the covariance structure.
 
 \subsection{Parallel Algorithm Implementation}
 
