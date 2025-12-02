@@ -79,7 +79,7 @@
 \end{algorithm}
 
 \subsection*{Hybrid Full Results}
-
+Here are the complete results for the Hybrid approach, including execution time, speedup, and E-Step efficiency.
 \begin{table}[H]
     \centering
     \renewcommand{\arraystretch}{1.2}
@@ -87,22 +87,15 @@
     \footnotesize
     \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
         \hline
-        \textbf{N\_Processes} & 
-        \textbf{0.033M} & 
-        \textbf{0.066M} & 
-        \textbf{0.131M} & 
-        \textbf{0.262M} & 
-        \textbf{0.524M} & 
-        \textbf{1.049M} &
-        \textbf{Na} \\
+        \textbf{N\_Processes} & \textbf{0.033M} & \textbf{0.066M} & \textbf{0.131M} & \textbf{0.262M} & \textbf{0.524M} & \textbf{1.049M} &\textbf{2.097M} \\
         \hline
-        1  & 633.233 & 1177.423 & 2191.697 & 4637.819 & 8652.474 & 17008.507 & Na \\
-        2  & 304.441 & 603.905 & 1113.554 & 2354.183 & 4471.163 & 8265.101 & Na \\
-        4  & 147.311 & 278.408 & 565.111 & 1085.605 & 2265.491 & 4041.279 & Na \\
-        8  & 75.020 & 149.955 & 280.005 & 579.793 & 1085.627 & 2048.421 & Na \\
-        16 & 39.447 & 79.223 & 155.722 & 324.658 & 590.897 & 1151.906 & Na \\
-        32 & 20.313 & 42.183 & 82.698 & 149.456 & 304.556 & 588.653 & Na \\
-        64 & 10.694 & 21.348 & 40.104 & 78.604 & 148.252 & 296.361 & Na \\
+        1  & 633.233 & 1177.423 & 2191.697 & 4637.819 & 8652.474 & 17008.507 & 30070.722 \\
+        2  & 304.441 & 603.905 & 1113.554 & 2354.183 & 4471.163 & 8265.101 & 17905.912 \\
+        4  & 147.311 & 278.408 & 565.111 & 1085.605 & 2265.491 & 4041.279 & 8094.882 \\
+        8  & 75.020 & 149.955 & 280.005 & 579.793 & 1085.627 & 2048.421 & 4145.526 \\
+        16 & 39.447 & 79.223 & 155.722 & 324.658 & 590.897 & 1151.906 & 2186.361 \\
+        32 & 20.313 & 42.183 & 82.698 & 149.456 & 304.556 & 588.653 & 1143.465 \\
+        64 & 10.694 & 21.348 & 40.104 & 78.604 & 148.252 & 296.361 & 541.036 \\
         \hline
     \end{tabularx}
     \caption{Execution Time (seconds) for different dataset sizes and number of processes.}
@@ -115,23 +108,15 @@
     \setlength{\tabcolsep}{4pt}
     \footnotesize
     \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
+        \hline \textbf{N\_Processes} &  \textbf{0.033M} &  \textbf{0.066M} &  \textbf{0.131M} &  \textbf{0.262M} &  \textbf{0.524M} &  \textbf{1.049M} & \textbf{2.097M} \\
         \hline
-        \textbf{N\_Processes} & 
-        \textbf{0.033M} & 
-        \textbf{0.066M} & 
-        \textbf{0.131M} & 
-        \textbf{0.262M} & 
-        \textbf{0.524M} & 
-        \textbf{1.049M} &
-        \textbf{Na} \\
-        \hline
-        1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & Na \\
-        2  & 2.080 & 1.950 & 1.968 & 1.970 & 1.935 & 2.058 & Na \\
-        4  & 4.299 & 4.229 & 3.878 & 4.272 & 3.819 & 4.209 & Na \\
-        8  & 8.441 & 7.852 & 7.827 & 7.999 & 7.970 & 8.303 & Na \\
-        16 & 16.053 & 14.862 & 14.074 & 14.285 & 14.643 & 14.766 & Na \\
-        32 & 31.173 & 27.912 & 26.503 & 31.031 & 28.410 & 28.894 & Na \\
-        64 & 59.214 & 55.155 & 54.650 & 59.002 & 58.363 & 57.391 & Na \\
+        1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
+        2  & 2.080 & 1.950 & 1.968 & 1.970 & 1.935 & 2.058 & 1.679 \\
+        4  & 4.299 & 4.229 & 3.878 & 4.272 & 3.819 & 4.209 & 3.715 \\
+        8  & 8.441 & 7.852 & 7.827 & 7.999 & 7.970 & 8.303 & 7.254 \\
+        16 & 16.053 & 14.862 & 14.074 & 14.285 & 14.643 & 14.766 & 13.754 \\
+        32 & 31.173 & 27.912 & 26.503 & 31.031 & 28.410 & 28.894 & 26.298 \\
+        64 & 59.214 & 55.155 & 54.650 & 59.002 & 58.363 & 57.391 & 55.580 \\
         \hline
     \end{tabularx}
     \caption{Speedup (T1/Tp) for different dataset sizes and number of processes.}
@@ -144,25 +129,17 @@
     \setlength{\tabcolsep}{4pt}
     \footnotesize
     \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
+        \hline \textbf{N\_Processes} &  \textbf{0.033M} &  \textbf{0.066M} &  \textbf{0.131M} &  \textbf{0.262M} &  \textbf{0.524M} &  \textbf{1.049M} & \textbf{2.097M} \\
         \hline
-        \textbf{N\_Processes} & 
-        \textbf{0.033M} & 
-        \textbf{0.066M} & 
-        \textbf{0.131M} & 
-        \textbf{0.262M} & 
-        \textbf{0.524M} & 
-        \textbf{1.049M} &
-        \textbf{Na} \\
-        \hline
-        1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & Na \\
-        2  & 1.040 & 0.977 & 0.984 & 0.982 & 0.966 & 1.024 & Na \\
-        4  & 1.074 & 1.058 & 0.970 & 1.067 & 0.957 & 1.050 & Na \\
-        8  & 1.055 & 0.982 & 0.979 & 1.001 & 0.994 & 1.036 & Na \\
-        16 & 1.013 & 0.935 & 0.898 & 0.929 & 0.919 & 0.937 & Na \\
-        32 & 0.984 & 0.896 & 0.854 & 0.990 & 0.902 & 0.913 & Na \\
-        64 & 0.948 & 0.895 & 0.863 & 0.955 & 0.924 & 0.914 & Na \\
+        1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
+        2  & 1.040 & 0.977 & 0.984 & 0.982 & 0.966 & 1.024 & 0.845 \\
+        4  & 1.074 & 1.058 & 0.970 & 1.067 & 0.957 & 1.050 & 0.935 \\
+        8  & 1.055 & 0.982 & 0.979 & 1.001 & 0.994 & 1.036 & 0.917 \\
+        16 & 1.013 & 0.935 & 0.898 & 0.929 & 0.919 & 0.937 & 0.872 \\
+        32 & 0.984 & 0.896 & 0.854 & 0.990 & 0.902 & 0.913 & 0.845 \\
+        64 & 0.948 & 0.895 & 0.863 & 0.955 & 0.924 & 0.914 & 0.893 \\
         \hline
     \end{tabularx}
-    \caption{Efficiency for different dataset sizes and number of processes.}
+    \caption{E-Step efficiency for different dataset sizes and number of processes.}
 \label{tab:efficiency_estep_hybrid}
 \end{table}
