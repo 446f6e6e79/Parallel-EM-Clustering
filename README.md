@@ -1,25 +1,28 @@
 # Parallel-EM-Clustering
 
-Implementation of **Expectation–Maximization** (EM) algorithm for clustering, using **MPI** for distributed processing.
+Implementation of **Expectation–Maximization** (EM) algorithm for clustering, using **MPI** for distributed processing. 
+
+The project was developed as part of the course "High Performance Computing For Data Science (HPC4DS)", held by Prof. Sandro Luigi Fiore at the University of Trento, Master's Degree in Computer Science
 
 ## Table of Contents
 
-* [Repository Structure](#repository-contents)
-* [Program Execution](#program-execution)
-    * [Compilation](#1-compilation)
-    * [Input Data Generation](#2-generating-the-input-data)
-    * [Running the Program](#3-running-the-program)
+* [1. Repository Structure](#repository-contents)
+* [2. Requirements](#requirements)
+* [3. Program Execution](#program-execution)
+    * [3.1 Compilation](#1-compilation)
+    * [3.2 Generating the Input Data](#2-generating-the-input-data)
+    * [3.3 Running the Program](#3-running-the-program)
         * [Available Parameters](#available-parameters)
         * [Batch Runs (Cluster)](#batch-runs-on-the-cluster-for-performance-experiments)
-* [Outputs](#outputs)
+* [4. Outputs](#outputs)
     * [Visualize Clustering Process](#visualize-the-algorithms-clustering-process)
-* [License & Authors](#license--authors)
+* [5. License & Authors](#license--authors)
 
-## Repository Contents
-
-- **`src/`**: C source code for the EM clustering algorithm
+---
+## 1. Repository Contents
+- **`src/`**: Directory containing the C source code for the EM clustering algorithm
   - **`headers/`**: Header files (data structures, function prototypes)
-  - **`main.c`**: Entry point for the parallel (MPI) version
+  - **`main.c`**: Entry point for the parallel (MPI and OpenMP) version
   - **`em_algorithm.c`**: Core EM algorithm implementation
   - **`mpi_utils.c`**: MPI communication utilities
   - **`io_utils.c`**: Input/output file operations
@@ -33,8 +36,8 @@ Implementation of **Expectation–Maximization** (EM) algorithm for clustering, 
 
 - **`scripts/`**: Shell scripts for automation
   - **`dataset_generator.sh`**: Batch dataset generation
-  - **`multiple_job_generator.sh`**: Generate and submit cluster jobs
-  - **`launch_jobs.sh`**: Submit generated jobs to the cluster
+  - **`multiple_job_generator.sh`**: Generate multiple cluster job scripts based on the configurations provided
+  - **`launch_jobs.sh`**: Submit generated jobs to the cluster, respecting cluster limits
   - **`job_template.sh`**: Template for cluster job scripts
   - **`sequentialJob.sh`**: Single sequential job submission
   - **`singleParallelJob.sh`**: Single parallel job submission
@@ -52,11 +55,17 @@ Implementation of **Expectation–Maximization** (EM) algorithm for clustering, 
 
 - **`Makefile`**: Build system for compiling all versions
 
----
+## 2. Requirements
+  - MPI Compiler (mpicc):
+      The core parallel functionality requires the Message Passing Interface (MPI). You must have an MPI implementation installed (like OpenMPI or MPICH) and the associated compiler wrapper (mpicc) available in your system's PATH.
+  - OpenMP Support:
+      For hybrid parallelization, ensure your C compiler supports OpenMP. NB: if openMP is not supported, the hybrid version will still compile, but without parallelization in the shared memory sections.
+  - Python 3:
+      The provided tools for data generation and visualization require Python 3.x. The additional packages needed can be installed via the provided `requirements.txt` file (See section [3.2. Generating the Input Data](#32-generating-the-input-data) for details).
 
-## Program Execution
+## 3. Program Execution
 
-### 1. Compilation
+### 3.1. Compilation
 
 To build the project, a Makefile is provided:
 
@@ -108,7 +117,7 @@ available during compilation.
 
 ---
 
-### 2. Generating the Input Data
+### 3.2. Generating the Input Data
 We provide a script for generating synthetic datasets tailored to the clustering problem addressed in this project, allowing you to test and evaluate the algorithm under different configurations
 
 Before running the Python scripts on your personal machine, a virtual environment should be created with all the required dependencies, provided in the `requirements.txt` file.
@@ -189,7 +198,7 @@ The list of possible parameters for the script are:
 
 ---
 
-### 3. Running the Program
+### 3.3. Running the Program
 
 #### Sequential Version
 
@@ -275,8 +284,8 @@ You can submit the job to the cluster with:
 ```bash
    qsub scripts/singleParallelJob.sh
 ```
----
-## Outputs
+
+## 4. Outputs
 The program produces different outputs depending on the provided parameters.
 ### Evaluating scalability and performance
 
@@ -327,9 +336,11 @@ python -m tools.dataElaboration.algorithm_visualization -i data/algorithm_result
 ```
 
 This will generate a PNG showing the initial state of the dataset.
----
 
-## License & Authors
+## 5. License & Authors
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Authors
+- Davide Donà - [GitHub](https://github.com/446f6e6e79) - [Email](mailto:davidedona03@gmail.com)
+- Andrea Blushi - [GitHub](https://github.com/andreablushi) - [Email](mailto:andreablushi@gmail.com)
 
