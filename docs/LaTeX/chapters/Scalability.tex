@@ -2,7 +2,7 @@
 To evaluate the performance and scalability of our parallel EM clustering implementation, we conducted a series of experiments, focusing on different dataset sizes and varying the number of processes. 
 Each configuration was executed multiple times to ensure the reliability of the results, only reporting the average execution times.
 \\To ensure a fair comparison, all the experiments were conducted ignoring the convergence criterion, thus running a fixed number of 100 EM iterations for each configuration.
-
+%#TODO: Comment on the chosen pack:excl
 \subsection{Our Approach Results}
 In this analysis we keep number of features ($D = 50$) and number of clusters ($K = 15$) constant, while varying the number of data points ($N$) and the number of processes ($P$).
 \begin{table}[h!]
@@ -161,6 +161,14 @@ To further investigate this behavior, we conducted additional experiments on dat
 \label{tab:efficiency_global_other}
 \end{table}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{../media/mpi_efficiency_other.png}
+    \caption{Efficiency plot for different dataset sizes (small, medium, large) with increased features and clusters. The dashed line indicates the target efficiency of 0.70.}
+    \label{fig:mpi_efficiency_plot_other}
+\end{figure}
+
+
 \begin{table}[H]
     \centering
     \renewcommand{\arraystretch}{1.2}
@@ -230,6 +238,13 @@ For full results of the Hybrid approach, consult the appendix.
 \label{tab:efficiency_hybrid}
 \end{table}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{../media/hybrid_efficiency.png}
+    \caption{Hybrid Efficiency plot for different dataset sizes (small, medium, large). The dashed line indicates the target efficiency of 0.70.}
+    \label{fig:hybrid_efficiency_plot}
+\end{figure}
+
 \begin{table}[H]
     \centering
     \renewcommand{\arraystretch}{1.2}
@@ -252,6 +267,19 @@ For full results of the Hybrid approach, consult the appendix.
 \label{tab:efficiency_hybrid_mstep}
 \end{table}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{../media/mstep_heatmap.png}
+    \caption{M-Step Efficiency Heatmap for difference between Pure MPI and Hybrid approach.}
+    \label{fig:mstep_efficiency_heatmap}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{../media/mstep_comparison.png}
+    \caption{Average M-Step Efficiency Comparison between Pure MPI and Hybrid approach.}
+    \label{fig:hybrid_speedup_plot}
+\end{figure}
 
 
 
