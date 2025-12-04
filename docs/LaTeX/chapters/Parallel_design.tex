@@ -27,14 +27,14 @@ Once all units complete their local clustering assignments, the results can be g
 \subsubsection*{Performance Considerations}
 Theoretically, this design reduces the computation times associated with the dataset size. Based on the computational complexity analysis in Section \ref{sec:complexity_analysis}, ideally the overall time complexity of the EM algorithm is reduced from $O(NKD)$ to $O\left(\frac{NKD}{P}\right)$, where $P$ is the number of processing units.
 \\We assume that the number of clusters $K$ and dimensionality $D$ are significantly smaller than the number of data points $N$, which is a common characteristic of many real-world large-scale clustering applications.
-Under this assumption, the computational cost is dominated by $N$, making our parallelization strategy particularly effective: distributing the data across processing units yields near-linear reductions in execution time.
-However, as the number of processing units $P$ increases, the benefits of parallelization may diminish due to the communication overhead required for the M-step, which can outweigh the computational gains. 
-This limits the scalability of the approach and reduces its efficiency, resulting in a bottleneck.
-Moreover, the M-step remains manageable, as the size of the parameters that need to be communicated depends only on $K$ and $D$.
+Under this assumption, we can consider $K$ and $D$ as multiplicative constants. The computational cost is dominated by $N$, making our parallelization strategy particularly effective: distributing the data across processing units yields near-linear reductions in execution time.
+However, as the number of processing units $P$ increases, the benefits of parallelization can diminish due to the communication overhead required for the M-step, which can outweigh the computational gains.
+This limits the scalability of the approach and creates a bottleneck.
+Nevertheless, the M-step itself remains manageable, as the size of the parameters that need to be communicated depends only on $K$ and $D$.
 
 \subsection{Hybrid Parallelism}
-An hybrid parallelization strategy could, in principle, mitigate some of the problems observed in pure data-parallel design.
-Since the size of the of data exchanged during inter-process communication depends only on $K$ and $D$, reducing the number of processes while increasing the number of threads per process can help alleviate the communication overhead.
+An hybrid parallelization strategy could, in principle, mitigate some of the problems observed in pure process-based data-parallel design.
+Since the size of the of data exchanged during inter-process communication depends only on $K$ and $D$, reducing the number of processes while increasing the number of threads per process reduces the number of communication events, thus lowering the overall communication overhead.
 In such a configuration, each process operates on a larger portion of the dataset, allowing more computation to occur within a shared-memory environment, where threads can efficiently cooperate without the need for expensive message passing.
 As a result, both the frequency and volume of inter-process communication taking place during the M-step can be significantly reduced.
 
@@ -107,7 +107,7 @@ we first examined the data dependencies inherent to the EM algorithm.
 \end{table}
 %#TODO: comment on sigma, mu, pi dependencies between M-step and E-step
 
-\subsubsection*{Different parallelization strategies}
+\subsection{Different parallelization strategies}
 %#TODO: disccuss more in depth
 Other parallelization approaches were considered but ultimately not implemented for this project.
 \\\emph{Task parallelization} was deemed unsuitable due to the inherent characteristics of the EM algorithm. Each task 

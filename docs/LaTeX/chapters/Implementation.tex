@@ -45,23 +45,23 @@ The key implementation detail is that the log-likelihood, used for the convergen
 This avoids the need for a separate computation.
 
 \begin{algorithm}[H]
-\caption{E-step: Computation of Responsibilities}
-\begin{algorithmic}[1]
-\Require Dataset $X \in \mathbb{R}^{N \times D}$, parameters $\mu_{k}, \sigma_{k}, \pi_{k}$ for $k=1,\dots,K$
-\Ensure Responsibilities $\gamma_{ik}$
-\For{$i = 1$ to $N$}
-    \State $\text{denom} \gets 0$
-    \For{$k = 1$ to $K$}
-        \State $\gamma_{ik}  \gets \pi_k \cdot \mathcal{N}(X[i] \mid \mu_k, \Sigma_k)$ \Comment{Gaussian density using \ref{gaussian_alg}}
-        \State $\text{denom} \gets \text{denom} + \gamma_{ik}$
-    \EndFor
+    \caption{E-step: Computation of Responsibilities}
+    \begin{algorithmic}[1]
+        \Require Local data chunk $X_{\text{loc}} \in \mathbb{R}^{N_{\text{loc}} \times D}$, local parameters $\mu_{k}^{\text{loc}}, \sigma_{k}^{\text{loc}}, \pi_{k}^{\text{loc}}$ for $k=1,\dots,K$
+        \Ensure Local responsibilities $\gamma_{ik}^{\text{loc}}$
+        \For{$i = 1$ to $N_{\text{loc}}$}
+            \State $\text{denom} \gets 0$
+            \For{$k = 1$ to $K$}
+                \State $\gamma_{ik}^{\text{loc}}  \gets \pi_k^{\text{loc}} \cdot \mathcal{N}(X_{\text{loc}}[i] \mid \mu_k^{\text{loc}}, \Sigma_k^{\text{loc}})$ \Comment{Gaussian density using \ref{gaussian_alg}}
+                \State $\text{denom} \gets \text{denom} + \gamma_{ik}$
+            \EndFor
 
-    \For{$k = 1$ to $K$}
-        \State $\gamma_{ik} \gets \gamma_{ik} / \text{denom}$ 
-   \EndFor
-\EndFor
-\end{algorithmic}
-\label{e_step_alg}
+            \For{$k = 1$ to $K$}
+                \State $\gamma_{ik}^{\text{loc}} \gets \gamma_{ik}^{\text{loc}} / \text{denom}$ 
+        \EndFor
+        \EndFor
+    \end{algorithmic}
+    \label{e_step_parallel}
 \end{algorithm}
 
 \subsubsection*{M-step Implementation}

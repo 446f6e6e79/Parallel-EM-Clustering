@@ -2,80 +2,103 @@
 \section{Appendix}
 
 \subsection*{Pseudocode}
-
+%E-step
 \begin{algorithm}[H]
-\caption{Compute multivariate Gaussian density with diagonal covariance}
-\begin{algorithmic}[1]
-\Require $x \in \mathbb{R}^D$, $\mu \in \mathbb{R}^D$, $\sigma \in \mathbb{R}^D$ 
-\Ensure $\mathcal{N}(x \mid \mu, \sigma)$
-\State $\text{logdet} \gets 0$
-\State $\text{quad} \gets 0$
-\For{$d = 1$ to $D$}
-    \State $var \gets \sigma[d]$
-    \State $\text{logdet} \gets \text{logdet} + \log(var)$
-    \State $\text{diff} \gets x[d] - \mu[d]$
-    \State $\text{quad} \gets \text{quad} + \frac{\text{diff}^2}{var}$
-\EndFor
-\State $\text{exponent} \gets -0.5 \cdot ( D \cdot \log 2\pi + \text{logdet} + \text{quad} )$
-\State \Return $\exp(\text{exponent})$
-\end{algorithmic}
-\label{gaussian_alg}
-\caption{Gaussian Density Computation with Diagonal Covariance}
+    \caption{E-step: Computation of Responsibilities}
+    \begin{algorithmic}[1]
+        \Require Dataset $X \in \mathbb{R}^{N \times D}$, parameters $\mu_{k}, \sigma_{k}, \pi_{k}$ for $k=1,\dots,K$
+        \Ensure Responsibilities $\gamma_{ik}$
+        \For{$i = 1$ to $N$}
+            \State $\text{denom} \gets 0$
+            \For{$k = 1$ to $K$}
+                \State $\gamma_{ik}  \gets \pi_k \cdot \mathcal{N}(X[i] \mid \mu_k, \Sigma_k)$ \Comment{Gaussian density using \ref{gaussian_alg}}
+                \State $\text{denom} \gets \text{denom} + \gamma_{ik}$
+            \EndFor
+
+            \For{$k = 1$ to $K$}
+                \State $\gamma_{ik} \gets \gamma_{ik} / \text{denom}$ 
+        \EndFor
+        \EndFor
+    \end{algorithmic}
+    \label{e_step_alg}
 \end{algorithm}
 
+%M-step
 \begin{algorithm}[H]
-\caption{Clustering: Label Assignment from Responsibilities}
-\begin{algorithmic}[1]
-\Require Responsibilities matrix $\gamma \in \mathbb{R}^{N \times K}$
-\Ensure Predicted labels $\hat{y} \in \{1,\dots,K\}^N$
-\For{$i = 1$ to $N$}
-    \State $\text{max\_resp} \gets \gamma_{i1}$ \Comment{Initialize with first cluster responsibility}
-    \State $\hat{y}_i \gets 1$
-    \For{$k = 2$ to $K$}
-        \If{$\gamma_{ik} > \text{max\_resp}$}
-            \State $\text{max\_resp} \gets \gamma_{ik}$
-            \State $\hat{y}_i \gets k$
-        \EndIf
-    \EndFor
-\EndFor
-\end{algorithmic}
+    \caption{M-step: Parameter Update}
+    \begin{algorithmic}[1]
+        \Require Dataset $X \in \mathbb{R}^{N \times D}$, responsibilities $\gamma_{ik}$
+        \Ensure Updated parameters $\mu_k$, $\sigma_k$, $\pi_k$
+        \State Initialize accumulators: $N_k \gets 0$, $\mu^{\text{acc}}_{kd} \gets 0$, $\sigma^{\text{acc}}_{kd} \gets 0$
+        \For{$i = 1$ to $N$}
+            \For{$k = 1$ to $K$}
+                \State $N_k \gets N_k + \gamma_{ik}$
+                \For{$d = 1$ to $D$}
+                    \State $\mu^{\text{acc}}_{kd} \gets \mu^{\text{acc}}_{kd} + \gamma_{ik} \cdot X[i,d]$
+                \EndFor
+            \EndFor
+        \EndFor
+        \For{$k = 1$ to $K$}
+            \For{$d = 1$ to $D$}
+                \State $\mu_{kd} \gets \mu^{\text{acc}}_{kd} / N_k$
+            \EndFor
+        \EndFor
+        \For{$i = 1$ to $N$}
+            \For{$k = 1$ to $K$}
+                \For{$d = 1$ to $D$}
+                    \State $\sigma^{\text{acc}}_{kd} \gets \sigma^{\text{acc}}_{kd} + \gamma_{ik} \cdot (X[i,d] - \mu_{kd})^2$
+                \EndFor
+            \EndFor
+        \EndFor
+        \For{$k = 1$ to $K$}
+            \For{$d = 1$ to $D$}
+                \State $\sigma_{kd} \gets \sigma^{\text{acc}}_{kd} / N_k$
+            \EndFor
+            \State $\pi_k \gets N_k / N$
+        \EndFor
+    \end{algorithmic}
+    \label{m_step_alg}
+\end{algorithm}
+
+%Multivariate Gaussian Density with Diagonal Covariance
+\begin{algorithm}[H]
+    \caption{Compute multivariate Gaussian density with diagonal covariance}
+    \begin{algorithmic}[1]
+        \Require $x \in \mathbb{R}^D$, $\mu \in \mathbb{R}^D$, $\sigma \in \mathbb{R}^D$ 
+        \Ensure $\mathcal{N}(x \mid \mu, \sigma)$
+        \State $\text{logdet} \gets 0$
+        \State $\text{quad} \gets 0$
+        \For{$d = 1$ to $D$}
+            \State $var \gets \sigma[d]$
+            \State $\text{logdet} \gets \text{logdet} + \log(var)$
+            \State $\text{diff} \gets x[d] - \mu[d]$
+            \State $\text{quad} \gets \text{quad} + \frac{\text{diff}^2}{var}$
+        \EndFor
+        \State $\text{exponent} \gets -0.5 \cdot ( D \cdot \log 2\pi + \text{logdet} + \text{quad} )$
+        \State \Return $\exp(\text{exponent})$
+    \end{algorithmic}
+    \label{gaussian_alg}
+    \caption{Gaussian Density Computation with Diagonal Covariance}
+\end{algorithm}
+
+%Clustering Label Assignment
+\begin{algorithm}[H]
+    \caption{Clustering: Label Assignment from Responsibilities}
+    \begin{algorithmic}[1]
+        \Require Responsibilities matrix $\gamma \in \mathbb{R}^{N \times K}$
+        \Ensure Predicted labels $\hat{y} \in \{1,\dots,K\}^N$
+        \For{$i = 1$ to $N$}
+            \State $\text{max\_resp} \gets \gamma_{i1}$ \Comment{Initialize with first cluster responsibility}
+            \State $\hat{y}_i \gets 1$
+            \For{$k = 2$ to $K$}
+                \If{$\gamma_{ik} > \text{max\_resp}$}
+                    \State $\text{max\_resp} \gets \gamma_{ik}$
+                    \State $\hat{y}_i \gets k$
+                \EndIf
+            \EndFor
+        \EndFor
+    \end{algorithmic}
 \label{clustering_alg}
-\end{algorithm}
-
-\begin{algorithm}[H]
-\caption{M-step: Parameter Update}
-\begin{algorithmic}[1]
-\Require Dataset $X \in \mathbb{R}^{N \times D}$, responsibilities $\gamma_{ik}$
-\Ensure Updated parameters $\mu_k$, $\sigma_k$, $\pi_k$
-\State Initialize accumulators: $N_k \gets 0$, $\mu^{\text{acc}}_{kd} \gets 0$, $\sigma^{\text{acc}}_{kd} \gets 0$
-\For{$i = 1$ to $N$}
-    \For{$k = 1$ to $K$}
-        \State $N_k \gets N_k + \gamma_{ik}$
-        \For{$d = 1$ to $D$}
-            \State $\mu^{\text{acc}}_{kd} \gets \mu^{\text{acc}}_{kd} + \gamma_{ik} \cdot X[i,d]$
-        \EndFor
-    \EndFor
-\EndFor
-\For{$k = 1$ to $K$}
-    \For{$d = 1$ to $D$}
-        \State $\mu_{kd} \gets \mu^{\text{acc}}_{kd} / N_k$
-    \EndFor
-\EndFor
-\For{$i = 1$ to $N$}
-    \For{$k = 1$ to $K$}
-        \For{$d = 1$ to $D$}
-            \State $\sigma^{\text{acc}}_{kd} \gets \sigma^{\text{acc}}_{kd} + \gamma_{ik} \cdot (X[i,d] - \mu_{kd})^2$
-        \EndFor
-    \EndFor
-\EndFor
-\For{$k = 1$ to $K$}
-    \For{$d = 1$ to $D$}
-        \State $\sigma_{kd} \gets \sigma^{\text{acc}}_{kd} / N_k$
-    \EndFor
-    \State $\pi_k \gets N_k / N$
-\EndFor
-\end{algorithmic}
-\label{m_step_alg}
 \end{algorithm}
 
 \subsection*{Other Datasets Full Results}
