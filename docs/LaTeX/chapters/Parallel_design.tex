@@ -1,4 +1,13 @@
 \section{Parallel Design}
+\begin{comment}
+    Preliminary study about the opportunities for parallelism inherent in the problem sequential algorithm.
+    - State of the art analysis should be performed on parallel design strategies
+    - Alternative designs, related to different parallelization strategies, should be considered and discussed at
+     this stage, appropriately motivating why some operations lend themselves to effective parallelization and
+     others do not as well as why some data structures may or may not minimize the burden of communication and synchronization.
+    - Reference to prior work as well as link with related work must be clearly stated in the report.
+    - Hybrid parallelization strategies, with data dependencies must be discussed too
+\end{comment}
 Current state-of-the-art parallelization techniques for the EM algorithm primarily focus on data parallelism approaches, where
 the dataset is partitioned across multiple processing units so that computations can be performed simultaneously on different subsets of the data.
 \cite{altinigneli2013massively} present a GPU-based implementation of the EM algorithm that leverages the massive parallelism of GPUs to accelerate the computation of both the E-step and M-step using Asynchronous Model Update strategy.
@@ -38,6 +47,12 @@ Since the size of the of data exchanged during inter-process communication depen
 In such a configuration, each process operates on a larger portion of the dataset, allowing more computation to occur within a shared-memory environment, where threads can efficiently cooperate without the need for expensive message passing.
 As a result, both the frequency and volume of inter-process communication taking place during the M-step can be significantly reduced.
 
+\begin{comment}
+    #TODO: considerare una sola data dependiency che avviene su una stessa riga
+    ex: x = x + 1.
+    Non è una vera dipendenza, perchè la stessa thread legge e scrive sulla stessa variabile, ma non c'è dipendenza tra thread diverse.
+    Considerare solo quelle principali e spiegare come le abbiamo risolte.
+\end{comment}
 \subsubsection{Data dependencies}
 To assess the feasibility and potential benefits of hybrid parallelism within our implementation, 
 we first examined the data dependencies inherent to the EM algorithm.

@@ -1,4 +1,9 @@
 \section{Introduction}
+\begin{comment}
+    An accurate description of the assigned project should be provided,
+    including analysis of the sequential algorithm that solves the problem addressed in the project.
+    Pseudo-code, examples, graphs, figures, application instances etc. may be provided.
+\end{comment}
 
 In this work, we address the problem of clustering large datasets using a parallel implementation of the
 Expectation-Maximization (EM) algorithm for Gaussian Mixture Models (GMMs).
@@ -174,8 +179,7 @@ to the Gaussian component with the highest responsibility. This is only done aft
 
 \subsubsection*{Pseudocode}
 
-In the following, we provide pseudocode for the overall EM algorithm for GMMs.
-
+In the following, we provide pseudocode for the overall EM algorithm for GMMs. More in depth pseudocode for each step is provided in the Appendix \ref{app:pseudocode}.
 \begin{algorithm}[H]
 \caption{Expectation-Maximization for GMM clustering}
 \begin{algorithmic}[1]
@@ -193,15 +197,8 @@ In the following, we provide pseudocode for the overall EM algorithm for GMMs.
 \label{em_alg}
 \end{algorithm}
 
-
 \subsection{Computational Complexity analysis}
 \label{sec:complexity_analysis}
 The computational cost of the EM algorithm is determined by the number of data points $N$, clusters $K$, and feature dimensions $D$.  
 Both the E-step and M-step require $O(NKD)$ operations per iteration, resulting in an overall per-iteration complexity of $O(NKD)$.  
 For large datasets, this can become a significant bottleneck, motivating the need for parallelization to improve its efficiency.
-
-
-
-
-
-
