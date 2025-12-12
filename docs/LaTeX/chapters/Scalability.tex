@@ -1,8 +1,12 @@
 \section{Performance and Scalability Analysis}
 To evaluate the performance and scalability of our parallel EM clustering implementation, we conducted a series of experiments, focusing on different dataset sizes and varying the number of processes. 
 Each configuration was executed multiple times to ensure the reliability of the results, only reporting the average execution times.
+We ignored the initial data loading and scattering phases, as they are not part of the core EM algorithm and would skew the performance measurements.
+Also, this would be easily resolvable in a real-world scenario by using a distributed file system or parallel I/O techniques.
 \\To ensure a fair comparison, all the experiments were conducted ignoring the convergence criterion, thus running a fixed number of 100 EM iterations for each configuration.
-%#TODO: Comment on the chosen pack:excl
+
+For our benchmarking experiments, we used a \texttt{pack:excl} setting on the cluster to have exclusive access to the allocated nodes and tries to allocate all processes on the same node.
+
 \subsection{Our Approach Results}
 In this analysis we keep number of features ($D = 50$) and number of clusters ($K = 15$) constant, while varying the number of data points ($N$) and the number of processes ($P$).
 \begin{table}[h!]
@@ -281,6 +285,8 @@ For full results of the Hybrid approach, consult the appendix.
     \label{fig:hybrid_speedup_plot}
 \end{figure}
 
-\begin{comment}
-    #TODO: add a final comment about the obtained results
-\end{comment}
+\paragraph{Final Comment}
+From the results obtained, it is evident that both approaches exhibit excellent efficiency, demostrating weak scalability proprierties and obtaining efficiencies above 0.70 in most configurations.
+The pure MPI implementation demonstrates strong scalability, but once the communication became relevant the efficiency starts to drop.
+The hybrid approach, on the other hand, manages to maintain a more consistent efficiency across different configurations, particularly in the M-step, where it outperforms the pure MPI implementation in several scenarios.
+Unfortunately, we were unable to confront our implementation with other existing solutions on the same hardware, however the results obtained respect the state-of-the-art literature.
