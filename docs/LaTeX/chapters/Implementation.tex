@@ -5,14 +5,27 @@ The parallelization was achieved using MPI to enable distributed computing acros
 In addition, Python and Bash scripts were developed to support systematic validation and analysis of the performance of our implementation.
 
 \subsubsection*{Data generation}
-Synthetic datasets were generated in Python to produce GMM-distributed data points, allowing full control over the number of clusters, dimensionality, and sample size.
-The generator also provided metadata about the generated samples, along with the true labels for each data point. 
+Synthetic datasets were generated in Python to produce GMM-distributed data points.
+This approach allows us to specify the number of samples, dimensions, and clusters, as well as the means and variances of each Gaussian component.
+In this way, we can create controlled environments to rigorously test and validate the correctness and performance of our parallel EM implementation.
+
+An important remark is that the data generator produces clusters with diagonal covariance matrices, meaning that features within each cluster are uncorrelated.
+The implementation also supports both balanced (equal number of samples per cluster) and unbalanced cluster sizes.
+
+True cluster labels are generated together with the data points, enabling us to evaluate the clustering accuracy of the algorithm.
+For each dataset, an additional metadata file is created, containing the relevant generation parameters such as the number of samples, dimensionality, cluster weights, means, and variances.
+This metadata simplifies the initialization of the EM algorithm by providing all necessary information without requiring manual configuration.
 
 \subsubsection*{Accuracy Checks}
 To ensure the correctness of the implementation, especially during initial testing we performed extensive validation checks 
 by comparing the outputs of the algorithm against the real labels provided by the data generator.
 Clustering performance were evaluated using permutation-invariant accuracy metrics (using the Python library \emph{scikit-learn}), which account for the arbitrary nature of cluster labeling in unsupervised learning.
 By resolving label permutations, we could accurately measure how well the algorithm clustered the data points according to their true underlying distributions.
+
+\subsubsection*{Gaussian Density Computation}
+The Gaussian density function was implemented as a diagonal multivariate Gaussian, consistent with the data generation process.
+This assumption does not diminish the overall parallel workload. Since the density function must still be computed for each data point and cluster indipendently, 
+the parallelization remains effective nomatter the covariance structure.
 
 \subsection{Parallel Algorithm Implementation}
 
@@ -32,23 +45,23 @@ The key implementation detail is that the log-likelihood, used for the convergen
 This avoids the need for a separate computation.
 
 \begin{algorithm}[H]
-\caption{E-step: Computation of Responsibilities}
-\begin{algorithmic}[1]
-\Require Dataset $X \in \mathbb{R}^{N \times D}$, parameters $\mu_{k}, \sigma_{k}, \pi_{k}$ for $k=1,\dots,K$
-\Ensure Responsibilities $\gamma_{ik}$
-\For{$i = 1$ to $N$}
-    \State $\text{denom} \gets 0$
-    \For{$k = 1$ to $K$}
-        \State $\gamma_{ik}  \gets \pi_k \cdot \mathcal{N}(X[i] \mid \mu_k, \Sigma_k)$ \Comment{Gaussian density using \ref{gaussian_alg}}
-        \State $\text{denom} \gets \text{denom} + \gamma_{ik}$
-    \EndFor
+    \caption{E-step: Computation of Responsibilities}
+    \begin{algorithmic}[1]
+        \Require Local data chunk $X_{\text{loc}} \in \mathbb{R}^{N_{\text{loc}} \times D}$, local parameters $\mu_{k}^{\text{loc}}, \sigma_{k}^{\text{loc}}, \pi_{k}^{\text{loc}}$ for $k=1,\dots,K$
+        \Ensure Local responsibilities $\gamma_{ik}^{\text{loc}}$
+        \For{$i = 1$ to $N_{\text{loc}}$}
+            \State $\text{denom} \gets 0$
+            \For{$k = 1$ to $K$}
+                \State $\gamma_{ik}^{\text{loc}}  \gets \pi_k^{\text{loc}} \cdot \mathcal{N}(X_{\text{loc}}[i] \mid \mu_k^{\text{loc}}, \Sigma_k^{\text{loc}})$ \Comment{Gaussian density using \ref{gaussian_alg}}
+                \State $\text{denom} \gets \text{denom} + \gamma_{ik}$
+            \EndFor
 
-    \For{$k = 1$ to $K$}
-        \State $\gamma_{ik} \gets \gamma_{ik} / \text{denom}$ 
-   \EndFor
-\EndFor
-\end{algorithmic}
-\label{e_step_alg}
+            \For{$k = 1$ to $K$}
+                \State $\gamma_{ik}^{\text{loc}} \gets \gamma_{ik}^{\text{loc}} / \text{denom}$ 
+        \EndFor
+        \EndFor
+    \end{algorithmic}
+    \label{e_step_parallel}
 \end{algorithm}
 
 \subsubsection*{M-step Implementation}
@@ -116,3 +129,28 @@ Finally, each process updates the model parameters using the aggregated statisti
 \subsection{Hybrid Parallel Algorithm Implementation}
 An hybrid parallel implementation was developed by integrating OpenMP directives into the MPI-based code. 
 Each MPI process spawns multiple threads, allowing to reduce the communication overhead, utilizing shared memory.
+We now focus on the specific implementation details of both the E-step and M-step, but we also parallelized the clustering assignment step in a similar manner to the E-step.
+
+\subsubsection*{E-step Implementation}
+The E-step was parallelized using the \emph{\#pragma omp parallel for} directive to distribute the computation of the responsibilities across multiple threads.
+A \emph{reduction} clause was required to safely accumulate the log-likelihood, ensuring correctness and avoiding data races during parallel execution.
+A static scheduling strategy was chosen, since the workload per iteration is uniform across threads.
+
+Regarding the Gaussian density computation, we wanted to use the \emph{\#pragma simd} directive to enable vectorization.
+Theoretically it would have improved performance by allowing the compiler to generate SIMD instructions for parallel processing of data.
+However, due to uncompatibilities with the compiler used by the HPC cluster, we were unable to successfully apply it. 
+
+\subsubsection*{M-step Implementation}
+In the M-step, OpenMP directives were used to parallelize the local accumulation of sufficient statistics.  
+The \emph{\#pragma omp parallel} directive defines a parallel region, with a static scheduling strategy similar to the E-step.  
+Each thread maintains private accumulators for the cluster counts, weighted means, and variances to avoid data races.  
+After completing the parallel accumulation loops, \emph{\#pragma omp barrier} directives are used to synchronize threads before aggregating into the local accumulators.  
+
+Because the HPC cluster compiler did not support the vector reduction clause, thread-private accumulators were manually implemented for each sufficient statistic.  
+During the aggregation of $N_k$ and $\mu_{kd}$, the \emph{\#pragma omp nowait} directive is applied to allow overlapping of computation and communication, since these operations are independent.  
+Once local aggregation is complete, the M-step proceeds with the \emph{MPI\_Allreduce} operation to combine results across all MPI processes, followed by the final parameter updates.
+
+% I don't know if this is needed
+We also experimented with the \emph{\#pragma omp collapse} directive to parallelize nested loops over clusters and features.  
+However, benchmarking showed negligible performance improvement.  
+This is likely due to the overhead of managing the collapsed loop iterations combined with the relatively small and uneven workload per iteration, which reduces the potential gain from collapsing the loops.
