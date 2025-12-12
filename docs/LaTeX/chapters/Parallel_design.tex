@@ -45,91 +45,91 @@ Nevertheless, the M-step itself remains manageable, as the size of the parameter
 An hybrid parallelization strategy could, in principle, mitigate some of the problems observed in pure process-based data-parallel design.
 Since the size of the of data exchanged during inter-process communication depends only on $K$ and $D$, reducing the number of processes while increasing the number of threads per process reduces the number of communication events, thus lowering the overall communication overhead.
 In such a configuration, each process operates on a larger portion of the dataset, allowing more computation to occur within a shared-memory environment, where threads can efficiently cooperate without the need for expensive message passing.
-As a result, both the frequency and volume of inter-process communication taking place during the M-step can be significantly reduced.
-
+As a result, both the frequency and volume of inter-process idea/image.png
 \subsubsection{Data dependencies}
 To assess the feasibility and potential benefits of hybrid parallelism within our implementation, 
 we first examined the data dependencies inherent to the EM algorithm.
 \subsubsection*{E-step}
-%#TODO: add snippet of estep
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{../media/e_step.png}
+    \caption{E-step implementation code snippet.}
+\end{figure}
 \begin{table}[H]
-\centering
-\small
-\setlength{\tabcolsep}{8pt}
-\renewcommand{\arraystretch}{1.05}
-\resizebox{\textwidth}{!}{
-\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
-\hline
-\multirow{2}{*}{ID} & \multirow{2}{*}{Memory Location} & \multicolumn{3}{c|}{Earlier Statement} & \multicolumn{3}{c|}{Later Statement} & \multirow{2}{*}{Loop-carried?} & \multirow{2}{*}{Kind of Dataflow} \\
-\cline{3-8}
- & & Line & Iteration & Access & Line & Iteration & Access & & \\
-\hline
-1 & \texttt{log\_likelihood} & 13 & $i$ & write & 13 & $i + 1$ & read & yes & flow \\
-\hline
-2 & \texttt{denom} & 10 & $i,k$ & write & 10 & $i,k+1$ & read & yes & flow \\
-\hline
-3 & \texttt{gamma}$(i * k + k)$ & 9 & $i,k$ & write & 10 & $i,k$ & read & no & flow \\
-\hline
-4 & \texttt{gamma}$(i * k + k)$ & 10 & $i,k$ & read & 12 & $i,k$ & write & no & anti \\
-\hline
-5 & \texttt{denom} & 10 & $i,k$ & write & 12 & $i,k$ & read & no & flow \\
-\hline
-6 & \texttt{denom} & 4 & $i$ & write & 10 & $i$ & read & no & flow \\
-\hline
-\end{tabular}}
+    \centering
+    \small
+    \setlength{\tabcolsep}{8pt}
+    \renewcommand{\arraystretch}{1.05}
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+        \hline
+        \multirow{2}{*}{ID} & \multirow{2}{*}{Memory Location} & \multicolumn{3}{c|}{Earlier Statement} & \multicolumn{3}{c|}{Later Statement} & \multirow{2}{*}{Loop-carried?} & \multirow{2}{*}{Kind of Dataflow} \\
+        \cline{3-8}
+        & & Line & Iteration & Access & Line & Iteration & Access & & \\
+        \hline
+        1 & \texttt{log\_likelihood} & 13 & $i$ & write & 13 & $i + 1$ & read & yes & flow \\
+        \hline
+        2 & \texttt{denom} & 10 & $i,k$ & write & 10 & $i,k+1$ & read & yes & flow \\
+        \hline
+        3 & \texttt{gamma}$(i * k + k)$ & 9 & $i,k$ & write & 10 & $i,k$ & read & no & flow \\
+        \hline
+        4 & \texttt{gamma}$(i * k + k)$ & 10 & $i,k$ & read & 12 & $i,k$ & write & no & anti \\
+        \hline
+        5 & \texttt{denom} & 10 & $i,k$ & write & 12 & $i,k$ & read & no & flow \\
+        \hline
+        6 & \texttt{denom} & 4 & $i$ & write & 10 & $i$ & read & no & flow \\
+    \hline
+    \end{tabular}}
 \end{table}
-
 The only true loop-carried dependency is related to the accumulation of the log-likelihood over all data points (ID 1). 
 To address this, we need to implement a reduction operation to safely combine the partial log-likelihoods computed by each thread.
-The dependencies that are not loop-carried (IDs 3-6) do not pose a problem for parallelization, as they involve different iterations of the loop so each thread works on different memory locations.
-Also the other dependency (ID 2) can be considered non-problematic, as it is carried within the inner loop over $K$, which is executed sequentially by each thread.
+The dependencies that are not loop-carried (IDs 3-6) do not pose a problem for parallelization. Since the parallel decomposition ensure that each thread operates on different iterations of the loop, these dependencies are naturally handled without synchronization.
+Also, dependency (ID 2) can be considered non-problematic. Since it is a dependency carried within the inner loop over $K$, and the inner loop is executed sequentially by each thread, no inter-thread synchronization is required.
 
 %M-step
 \subsubsection*{M-step}
-
-In this section, we analyze only the true data dependencies found in the M-step implementation.
-It's important to note that there is a another flow dependency involving the \texttt{gamma} array between the E-step and M-step.
+In this section, we analyze only the true data dependencies found within the M-step implementation.
+It's important to note that there is a flow dependency (Read-After-Write) involving the \texttt{gamma} array that spans between the E-step and M-step. 
 However, since the E-step must be fully completed before the M-step begins, this dependency does not impact the parallelization of the M-step itself.
-
-%#TODO: add snippet of mstep
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{../media/m_step.png}
+    \caption{M-step implementation code snippet.}
+\end{figure}
 \begin{table}[H]
-\centering
-\small
-\setlength{\tabcolsep}{8pt}
-\renewcommand{\arraystretch}{1.05}
-\resizebox{\textwidth}{!}{
-\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
-\hline
-\multirow{2}{*}{ID} & \multirow{2}{*}{Memory Location} & \multicolumn{3}{c|}{Earlier Statement} & \multicolumn{3}{c|}{Later Statement} & \multirow{2}{*}{Loop-carried?} & \multirow{2}{*}{Kind of Dataflow} \\
-\cline{3-8}
- & & Line & Iteration & Access & Line & Iteration & Access & & \\
-\hline
-1 & \texttt{N\_k$(k)$} & 6 & $i,k$ & write & 6 & $i+1,k$ & read & yes & flow \\
-\hline
-2 & \texttt{mu\_k$(k*D+d)$} & 8 & $i,k,d$ & write & 8 & $i+1,k,d$ & read & yes & flow \\
-\hline
-3 & \texttt{N\_k$(k)$} & 6 & $i,k$ & write & 14 & $k$ & read & no & flow \\
-\hline
-4 & \texttt{mu\_k$(k*D+d)$} & 8 & $i,k,d$ & write & 14 & $k,d$ & read & no & flow \\ 
-\hline
-5 & \texttt{mu$(k*D+d)$} & 14 & $k,d$ & write & 21 & $k,d$ & read & no & flow \\
-\hline
-6 & \texttt{sigma\_k$(k*D+d)$} & 22 & $i,k,d$ & write & 22 & $i+1,k,d$ & read & yes & flow \\ 
-\hline
-7 & \texttt{sigma\_k$(k*D+d)$} & 22 & $k,d$ & write & 28 & $k,d$ & read & no & flow \\ 
-\hline
-\end{tabular}}
+    \centering
+    \small
+    \setlength{\tabcolsep}{8pt}
+    \renewcommand{\arraystretch}{1.05}
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+        \hline
+        \multirow{2}{*}{ID} & \multirow{2}{*}{Memory Location} & \multicolumn{3}{c|}{Earlier Statement} & \multicolumn{3}{c|}{Later Statement} & \multirow{2}{*}{Loop-carried?} & \multirow{2}{*}{Kind of Dataflow} \\
+        \cline{3-8}
+        & & Line & Iteration & Access & Line & Iteration & Access & & \\
+        \hline
+        1 & \texttt{N\_k$(k)$} & 6 & $i,k$ & write & 6 & $i+1,k$ & read & yes & flow \\
+        \hline
+        2 & \texttt{mu\_k$(k*D+d)$} & 8 & $i,k,d$ & write & 8 & $i+1,k,d$ & read & yes & flow \\
+        \hline
+        3 & \texttt{N\_k$(k)$} & 6 & $i,k$ & write & 14 & $k$ & read & no & flow \\
+        \hline
+        4 & \texttt{mu\_k$(k*D+d)$} & 8 & $i,k,d$ & write & 14 & $k,d$ & read & no & flow \\ 
+        \hline
+        5 & \texttt{mu$(k*D+d)$} & 14 & $k,d$ & write & 21 & $k,d$ & read & no & flow \\
+        \hline
+        6 & \texttt{sigma\_k$(k*D+d)$} & 22 & $i,k,d$ & write & 22 & $i+1,k,d$ & read & yes & flow \\ 
+        \hline
+        7 & \texttt{sigma\_k$(k*D+d)$} & 22 & $k,d$ & write & 28 & $k,d$ & read & no & flow \\ 
+        \hline
+        \end{tabular}}
 \end{table}
-
 The loop-carried dependencies (IDs 1, 2, and 6) are true dependencies that need to be addressed.
-These can be resolved by implementing reduction operations for the accumulators \texttt{N\_k}, \texttt{mu\_k}, and \texttt{sigma\_k}, allowing each thread to compute partial sums that are then combined safely.
-The other dependencies (IDs 3, 4, 5, and 7) are all executed after the reduction operations, meaning they do not interfere with the parallel computation within the loop.
-
+These can be resolved by implementing reduction operations for the accumulators \texttt{N\_k}, \texttt{mu\_k}, and \texttt{sigma\_k}, allowing each thread to compute partial sums that are then safely combined.
+The other dependencies (IDs 3, 4, 5, and 7) are not loop-carried and occur after the reduction operations, meaning they do not interfere with the parallel computation within the loop.
 It's important to note that, before proceeding with the E-step of the next iteration, we must ensure that all threads have the same parameters (\texttt{mu}, \texttt{sigma}, and \texttt{pi}).
 This can be resolved by first having a reduction on \texttt{sigma\_k}, then all global parameters can be updated by all threads independently. 
 
 \subsection{Different parallelization strategies}
-Other parallelization approaches were considered but ultimately not implemented for this project.
+Other parallelization approaches were considered but ultimately not implemented for this project, as they are less suited to the structure of the Expectation-Maximization (EM) algorithm than data-parallelism.
 \\\emph{Task parallelization} was deemed unsuitable due to the inherent characteristics of the EM algorithm. Each task 
 would require access to the entire dataset in order to compute the responsibilities and update the parameters.
 This would introduce substantial communication overhead, effectively negating any potential performance gains.
@@ -137,5 +137,7 @@ Moreover, the iterative nature of the EM algorithm would require frequent synchr
 \\\emph{Pipeline parallelization} was not applicable. The EM algorithm does not follow an independent sequence of stages that can be overlapped in a pipeline fashion.
 Instead it alternates expectation and maximization phases, each dependent on the results of the previous one.
 This sequential dependency prevents the effective use of pipelining.
-\\\emph{Model parallelization}: splitting the set of Gaussian components across devices when $K$ is large; each unit holds a subset of parameters and participates in responsibility computation via broadcast/gather.
-For what we have seen in the state-of-art literature, we can conclude that other parallelization strategies different from data-parallelism are not suited for the EM algorithm.
+\\\emph{Model parallelization}: splitting the set of Gaussian components across devices when $K$ is large; each unit holds a subset 
+of parameters and participates in responsibility computation via broadcast/gather.
+While feasible when $K$ is very large, this approach introduces significant communication complexity, particularly during the $\text{E-step}$, where every device needs to calculate responsibilities for all data points against the parameters held by all other devices.
+\\\\Based on this analysis and the insights gained from the state-of-the-art literature, we conclude that other parallelization strategies different from data-parallelism are not suited for efficient implementation of the EM algorithm.

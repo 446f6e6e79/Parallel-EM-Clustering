@@ -55,6 +55,10 @@ The project was developed as part of the course "High Performance Computing For 
 
 - **`Makefile`**: Build system for compiling all versions
 
+- **`elaborate_data.ipynb`**: Jupyter notebook for data analysis and visualization
+
+- **`report.pdf`**: Final report document
+
 ## 2. Requirements
   - MPI Compiler (mpicc):
       The core parallel functionality requires the Message Passing Interface (MPI). You must have an MPI implementation installed (like OpenMPI or MPICH) and the associated compiler wrapper (mpicc) available in your system's PATH.

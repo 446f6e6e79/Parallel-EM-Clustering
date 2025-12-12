@@ -285,8 +285,17 @@ For full results of the Hybrid approach, consult the appendix.
     \label{fig:hybrid_speedup_plot}
 \end{figure}
 
-\paragraph{Final Comment}
-From the results obtained, it is evident that both approaches exhibit excellent efficiency, demostrating weak scalability proprierties and obtaining efficiencies above 0.70 in most configurations.
-The pure MPI implementation demonstrates strong scalability, but once the communication became relevant the efficiency starts to drop.
-The hybrid approach, on the other hand, manages to maintain a more consistent efficiency across different configurations, particularly in the M-step, where it outperforms the pure MPI implementation in several scenarios.
-Unfortunately, we were unable to confront our implementation with other existing solutions on the same hardware, however the results obtained respect the state-of-the-art literature.
+\paragraph{Final Evaluation}
+From the results obtained, it is evident that both the pure MPI and hybrid approaches exhibit excellent efficiency,
+demonstrating good weak scaling properties and obtaining efficiencies above $0.70$ in most configurations.
+
+The pure MPI implementation demonstrates strong scalability up to a point, but once the communication overhead becomes
+relevant its efficiency starts to drop.
+
+The hybrid approach, on the other hand, manages to maintain a more consistent efficiency across different configurations. 
+This is particularly noticeable in the M-step, where the hybrid model leverages shared memory parallelism effectively, allowing it 
+to significantly outperform the pure MPI implementation in several scenarios.
+
+Unfortunately, we were unable to directly compare our implementation against other existing 
+solutions on the same hardware architecture. However, the performance metrics obtained are consistent with the state-of-the-art
+literature regarding parallel implementations of the Expectation-Maximization (EM) algorithm.
