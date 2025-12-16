@@ -4,6 +4,7 @@ ITERATION_PER_COMBO=3
 DATASET_INITIAL_NAME="d" # As example, if your datasets are d_1, d_2, d_3 set it to d
 MEM="64gb" # Memory per NODE
 PLACEMENT="pack:excl"
+
 # NODES:NCPUS
 COMBOS=(
   "1:1"
@@ -14,11 +15,12 @@ COMBOS=(
   "2:16"
   "4:16"
 )
+
 # Queues informations
 SHORT_QUEUE="short_HPC4DS"
-SHORT_QUEUE_WALLTIME="06:00:00"
 LONG_QUEUE="long_cpuQ"
-LONG_QUEUE_WALLTIME="10:00:00"
+SHORT_WALLTIME="06:00:00"
+LONG_WALLTIME="10:00:00"
 
 # === Common parameters ===
 BASE_DIR="$HOME/Parallel-EM-Clustering"
@@ -42,9 +44,7 @@ fi
 
 # Create all the output directories for the jobs
 OUTPUT_DIR="${BASE_DIR}/jobs"
-mkdir -p "$OUTPUT_DIR"
-mkdir -p "${OUTPUT_DIR}/long"
-mkdir -p "${OUTPUT_DIR}/short"
+mkdir -p "$OUTPUT_DIR/long" "$OUTPUT_DIR/short"
 
 # === Define the combinations ===
 for run in $(seq 1 "$ITERATION_PER_COMBO"); do
