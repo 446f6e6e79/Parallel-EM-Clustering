@@ -1,8 +1,12 @@
 # Parallel-EM-Clustering
 
-Implementation of **Expectation–Maximization** (EM) algorithm for clustering, using **MPI** for distributed processing. 
+Implementation of **Expectation–Maximization** (EM) algorithm for clustering, using a hybrid **OpenMP** and **MPI** approach for distributed and parallel processing.
 
 The project was developed as part of the course "High Performance Computing For Data Science (HPC4DS)", held by Prof. Sandro Luigi Fiore at the University of Trento, Master's Degree in Computer Science
+
+[View Full Report (PDF)](report.pdf)
+
+To review the implementation of the only MPI approach, please switch to the dedicated **MPI** branch on the GitHub repository.
 
 ## Table of Contents
 
