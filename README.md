@@ -4,6 +4,10 @@ Implementation of **Expectation–Maximization** (EM) algorithm for clustering, 
 
 The project was developed as part of the course "High Performance Computing For Data Science (HPC4DS)", held by Prof. Sandro Luigi Fiore at the University of Trento, Master's Degree in Computer Science
 
+[View Full Report (PDF)](report.pdf)
+
+To review the implementation of the Hybrid approach, please switch to the dedicated **Hybrid** branch on the GitHub repository.
+
 ## Table of Contents
 
 * [1. Repository Structure](#repository-contents)
