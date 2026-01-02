@@ -1,13 +1,4 @@
 \section{Parallel Design}
-\begin{comment}
-    Preliminary study about the opportunities for parallelism inherent in the problem sequential algorithm.
-    - State of the art analysis should be performed on parallel design strategies
-    - Alternative designs, related to different parallelization strategies, should be considered and discussed at
-     this stage, appropriately motivating why some operations lend themselves to effective parallelization and
-     others do not as well as why some data structures may or may not minimize the burden of communication and synchronization.
-    - Reference to prior work as well as link with related work must be clearly stated in the report.
-    - Hybrid parallelization strategies, with data dependencies must be discussed too
-\end{comment}
 Current state-of-the-art parallelization techniques for the EM algorithm primarily focus on data parallelism approaches, where
 the dataset is partitioned across multiple processing units so that computations can be performed simultaneously on different subsets of the data.
 \cite{altinigneli2013massively} present a GPU-based implementation of the EM algorithm that leverages the massive parallelism of GPUs to accelerate the computation of both the E-step and M-step using Asynchronous Model Update strategy.
@@ -16,6 +7,8 @@ Similarly, \cite{lee2016simple} propose a simple multithreaded version of the EM
 
 \subsection{Our Approach}
 Building on the insights of the reviewed literature, our approach adopts a data-parallelism strategy to enhance the performance of the EM algorithm for GMMs.
+The data samples are evenly distributed across multiple processing units to compute local statistics, which are then aggregated to update the global model parameters.
+This design effectively reduces the computational load on each processing unit and minimizes the overall execution time.
 
 \subsubsection*{E-step Parallelization}
 The E-step is trivially parallelizable, as responsibilities for each data point are computed independently of each other.
@@ -129,15 +122,21 @@ It's important to note that, before proceeding with the E-step of the next itera
 This can be resolved by first having a reduction on \texttt{sigma\_k}, then all global parameters can be updated by all threads independently. 
 
 \subsection{Different parallelization strategies}
-Other parallelization approaches were considered but ultimately not implemented for this project, as they are less suited to the structure of the Expectation-Maximization (EM) algorithm than data-parallelism.
-\\\emph{Task parallelization} was deemed unsuitable due to the inherent characteristics of the EM algorithm. Each task 
-would require access to the entire dataset in order to compute the responsibilities and update the parameters.
-This would introduce substantial communication overhead, effectively negating any potential performance gains.
-Moreover, the iterative nature of the EM algorithm would require frequent synchronization between tasks, further increasing the overhead.
-\\\emph{Pipeline parallelization} was not applicable. The EM algorithm does not follow an independent sequence of stages that can be overlapped in a pipeline fashion.
-Instead it alternates expectation and maximization phases, each dependent on the results of the previous one.
-This sequential dependency prevents the effective use of pipelining.
-\\\emph{Model parallelization}: splitting the set of Gaussian components across devices when $K$ is large; each unit holds a subset 
-of parameters and participates in responsibility computation via broadcast/gather.
-While feasible when $K$ is very large, this approach introduces significant communication complexity, particularly during the $\text{E-step}$, where every device needs to calculate responsibilities for all data points against the parameters held by all other devices.
-\\\\Based on this analysis and the insights gained from the state-of-the-art literature, we conclude that other parallelization strategies different from data-parallelism are not suited for efficient implementation of the EM algorithm.
+Several alternative parallelization strategies were considered but ultimately not implemented in this project, 
+as they are less well suited to the structure of the EM algorithm than data parallelism.
+\begin{itemize}
+    \item \emph{Task parallelization}: This approach was deemed unsuitable due to the inherent characteristics of the EM algorithm.
+    Each task would require access to the entire dataset in order to compute the responsibilities and update the parameters,
+    resulting in substantial communication overhead, effectively negating any potential performance gains.
+    Moreover, the iterative nature of the EM algorithm would require frequent synchronization between tasks, further increasing the overhead.
+    \item \emph{Pipeline parallelization}: This strategy was not applicable.
+    The algorithm does not follow an independent sequence of stages that can be overlapped in a pipeline fashion;
+    instead, it is inherently iterative. Iteration $t+1$ cannot begin until step $t$ is fully complete,
+    preventing effective pipeline overlap.
+    \item \emph{Model parallelization}: This approach involves splitting the set of Gaussian components across devices when $K$ is large;
+    each unit holds a subset of parameters and participates in responsibility computation via broadcast/gather.
+    While theoretically feasible, this strategy introduces significant communication complexity, 
+    particularly during the E-step, where each device must compute responsibilities for all data points using parameters distributed across all other devices.
+    As a result, this approach is only viable if $K$ is massive and $N$ is small, which contradicts the typical use case for GMMs.
+\end{itemize}
+Based on this analysis and the insights gained from the state-of-the-art literature, we conclude that other parallelization strategies different from data-parallelism are not suited for efficient implementation of the EM algorithm.
