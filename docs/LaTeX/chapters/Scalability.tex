@@ -5,7 +5,7 @@ We ignored the initial data loading and scattering phases, as they are not part 
 Also, this would be easily resolvable in a real-world scenario by using a distributed file system or parallel I/O techniques.
 \\To ensure a fair comparison, all the experiments were conducted ignoring the convergence criterion, thus running a fixed number of 100 EM iterations for each configuration.
 
-For our benchmarking experiments, we used a \texttt{pack:excl} setting on the cluster to have exclusive access to the allocated nodes and tries to allocate all processes on the same node.
+For our benchmarking experiments, we used a \texttt{pack:excl} setting on the cluster to have exclusive access to the allocated nodes and try to allocate all processes on the same node.
 
 \subsection{Our Approach Results}
 In this analysis we keep number of features ($D = 50$) and number of clusters ($K = 15$) constant, while varying the number of data points ($N$) and the number of processes ($P$).

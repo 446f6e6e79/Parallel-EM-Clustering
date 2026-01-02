@@ -19,7 +19,7 @@ This metadata simplifies the initialization of the EM algorithm by providing all
 \subsubsection*{Accuracy Checks}
 To ensure the correctness of the implementation, particularly during the initial testing phase, we performed extensive validation
 by comparing the outputs of the algorithm against the ground truth labels provided by the data generator.
-Clustering performance were evaluated using permutation-invariant accuracy metrics (using the Python library \texttt{scikit-learn}).
+Clustering performance was evaluated using permutation-invariant accuracy metrics (using the Python library \texttt{scikit-learn}).
 This approach accounts for the arbitrary labeling inherent in unsupervised learning.
 By resolving label permutations, we could accurately measure how well the algorithm clustered the data points according to their true underlying distributions.
 
@@ -37,7 +37,7 @@ The complete source code is available in the \href{https://github.com/446f6e6e79
 \subsubsection*{Data distribution}
 The dataset, together with its metadata, is initially loaded by the root process (rank 0).
 First, the metadata (number of samples, dimensions, and number of clusters) is broadcast to all processes using \texttt{MPI\_Bcast}.
-Based on this information, each process computes the size of its local workload size.
+Based on this information, each process computes the size of its local workload.
  
 The dataset is then partitioned and distributed via \texttt{MPI\_Scatterv}.
 The vector variant (\texttt{v}) is employed here to handle cases where the number of samples $N$ is not perfectly divisible by the number of processes $P$, allowing for uneven chunk sizes.
@@ -136,8 +136,8 @@ Finally, each process updates the model parameters using the aggregated statisti
 \end{algorithm}
 
 \subsection{Hybrid Parallel Algorithm Implementation}
-An hybrid parallel implementation was developed by integrating OpenMP directives into the MPI-based code. 
-Each MPI process spawns multiple threads, allowing to reduce the communication overhead, utilizing shared memory.
+A hybrid parallel implementation was developed by integrating OpenMP directives into the MPI-based code. 
+Each MPI process spawns multiple threads, reducing the communication overhead and utilizing shared memory.
 We now focus on the specific implementation details of both the E-step and M-step, but we also parallelized the clustering assignment step in a similar manner to the E-step.
 
 \subsubsection*{E-step Implementation}
@@ -147,7 +147,7 @@ A static scheduling strategy was chosen, as the computational workload per data 
 
 Regarding the Gaussian density computation, we wanted to use the \texttt{\#pragma simd} directive to enable vectorization.
 Theoretically it would have improved performance by allowing the compiler to generate SIMD instructions for parallel processing of data.
-However, due to uncompatibilities with the compiler used by the HPC cluster, we were unable to successfully apply it. 
+However, due to incompatibilities with the compiler used by the HPC cluster, we were unable to successfully apply it. 
 
 \subsubsection*{M-step Implementation}
 In the M-step, OpenMP directives were used to parallelize the local accumulation of sufficient statistics.  
