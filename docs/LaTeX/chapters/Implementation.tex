@@ -2,11 +2,11 @@
 
 The algorithm was implemented in C, inspired by the Python codebase provided in \cite{Azizi2023ParallelEM}.
 The parallelization was achieved using MPI to enable distributed computing across multiple processors, while hybrid parallelization was achieved by integrating OpenMP to exploit multi-threading within each process.
-Additionally, a suite of Python scripts, Bash scripts and Jupyter Notebooks was developed to support systematic validation and analysis of the performance of our implementation.
+Additionally, a suite of Python scripts, Bash scripts and Jupyter Notebooks were developed to support systematic validation and analysis of the performance of our implementation.
 
 \subsubsection*{Data generation}
 Synthetic datasets were generated in Python to produce GMM-distributed data points.
-This approach allowed for precise control over key parameters, including the number of samples, dimensionality, and cluster count, as well as the mean and variance of each Gaussian component.
+This approach allowed for precise control over key parameters, including the number of samples, dimensionality, and cluster count, as well as the means and variances of each Gaussian component.
 This controlled environment was essential for rigorously testing and validating the correctness and performance of our parallel EM implementation.
 
 It is worth noting that the data generator produces clusters with diagonal covariance matrices, meaning that features within each cluster are uncorrelated.
@@ -43,12 +43,12 @@ The dataset is then partitioned and distributed via \texttt{MPI\_Scatterv}.
 The vector variant (\texttt{v}) is employed here to handle cases where the number of samples $N$ is not perfectly divisible by the number of processes $P$, allowing for uneven chunk sizes.
 After receiving their respective data partition $X_{\text{loc}}$, all processes proceed with the computation in parallel.
 
-At the end of the execution (specifically after the clustering assignment step) each process holds the predicted labels for its local data chunk.
+At the end of the execution (specifically after the clustering assignment step), each process holds the predicted labels for its local data chunk.
 These local predicted labels are gathered back to the root process using \texttt{MPI\_Gatherv}, in order to be written back to a file for accuracy evaluation.
 
 \subsubsection*{E-step Implementation}
 The E-step is inherently data-parallel and does not require inter-process communication during execution.
-As a result, only minimal modifications to the sequential algorithm (Algorithm \ref{e_step_alg}) are necessary.
+As a result, only minimal modifications to the sequential algorithm (Algorithm \ref{e_step_alg}) were necessary.
 Each process computes the responsibilities for its local data chunk independently, using the current global model parameters.
 
 A key optimization in our implementation is the on-the-fly computation of the log-likelihood during the responsibility normalization loop.
@@ -76,8 +76,8 @@ This avoids a redundant pass over the data, improving cache efficiency.
 \subsubsection*{M-step Implementation}
 The M-step is implemented as outlined in Algorithm \ref{parallel_m_step}.
 Each process first initializes local accumulators for the sufficient statistics and computes their partial distribution.
-Upon completion, the local results are aggregated across all processes via \texttt{MPI\_Allreduce}, which is preferred over
-\texttt{MPI\_Reduce} followed by a broadcast, since the combined results are needed by all processes for the subsequent steps.
+Upon completion, the local results are aggregated across all processes via \texttt{MPI\_Allreduce}, which was preferred over
+\texttt{MPI\_Reduce} followed by a broadcast, since the combined results were needed by all processes for the subsequent steps.
 Finally, each process updates the model parameters using the aggregated statistics.
 
 \begin{algorithm}[H]
@@ -146,7 +146,7 @@ A \texttt{reduction} clause was required to safely accumulate the log-likelihood
 A static scheduling strategy was chosen, as the computational workload per data point is uniform, resulting in good load balance and minimal scheduling overhead.
 
 Regarding the Gaussian density computation, we wanted to use the \texttt{\#pragma simd} directive to enable vectorization.
-Theoretically it would have improved performance by allowing the compiler to generate SIMD instructions for parallel processing of data.
+Theoretically, it would have improved performance by allowing the compiler to generate SIMD instructions for parallel processing of data.
 However, due to incompatibilities with the compiler used by the HPC cluster, we were unable to successfully apply it. 
 
 \subsubsection*{M-step Implementation}
@@ -156,7 +156,7 @@ Each thread maintains private accumulators for the cluster counts, weighted mean
 After completing the parallel accumulation loops, \texttt{\#pragma omp barrier} directives are used to synchronize threads before aggregating into the local accumulators.  
 
 Because the HPC cluster compiler did not support the vector reduction clause, thread-private accumulators were manually implemented for each sufficient statistic.  
-During the aggregation of $N_k$ and $\mu_{kd}$, the \texttt{\#pragma omp nowait} directive is applied to allow overlapping of computation and communication, since these operations are independent.  
+During the aggregation of $N_k$ and $\mu_{kd}$, the \texttt{\#pragma omp nowait} directive is applied to allow overlapping computation and communication, since these operations were independent.  
 Once local aggregation is complete, the M-step proceeds with the \texttt{MPI\_Allreduce} operation to combine results across all MPI processes, followed by the final parameter updates.
 
 We also experimented with the \texttt{\#pragma omp collapse} directive to parallelize nested loops over clusters and features.  

@@ -13,7 +13,7 @@ The EM algorithm is an iterative procedure for estimating the parameters of GMMs
 identification of latent cluster structures within the data. However, the EM algorithm can be computationally intensive,
 especially for large datasets, which motivates the need for parallelization to improve efficiency and scalability.
 In this report, we present two parallel implementations of the EM algorithm for clustering.
-The first one is based only on MPI, and a second one using a hybrid approach based on MPI and OpenMP.
+The first one is based only on MPI, and a second one uses a hybrid approach based on MPI and OpenMP.
 We evaluate the performance of our implementation under various settings, analyzing its scalability, speedup, and efficiency.
 Our results demonstrate the effectiveness of parallelization in accelerating the EM algorithm for clustering large datasets.
 
@@ -21,7 +21,7 @@ Our results demonstrate the effectiveness of parallelization in accelerating the
 The goal of clustering is to partition a dataset $\mathcal{X}=\{\boldsymbol{x}_1,\boldsymbol{x}_2,\dots, \boldsymbol{x}_N\}$ where $\boldsymbol{x}_i \in \mathbb{R}^D$ 
 into $K$ (number of clusters) groups without using label information. 
 Each cluster is represented by a probability distribution, and in our case, they are modeled as Gaussian distributions.
-The challenge is to estimate the parameters of these distributions-namely the means, covariances, and mixture weights- 
+The challenge is to estimate the parameters of these distributions--namely the means, covariances, and mixture weights-- 
 such that the overall likelihood of the data given the model is maximized.
 
 \begin{figure}[H]
@@ -55,8 +55,8 @@ such that the overall likelihood of the data given the model is maximized.
 \subsection{Gaussian Mixture Models}
 
 A Gaussian Mixture Model (GMM) \cite{Reynolds2009} is a probabilistic model that represents data as a combination
- of multiple Gaussian distributions, each with its own mean, covariance, and mixture weight. GMMs are widely used for clustering tasks due to their flexibility in modeling complex data distributions,
- where data points may naturally cluster around multiple centers with varying shapes and sizes.
+of multiple Gaussian distributions, each with its own mean, covariance, and mixture weight. GMMs are widely used for clustering tasks due to their flexibility in modeling complex data distributions,
+where data points may naturally cluster around multiple centers with varying shapes and sizes.
 The goal is to estimate the parameters of the Gaussian components and assign data points to these clusters.
 
 A GMM assumes that each data point is generated from one of $K$ Gaussian components:
@@ -87,7 +87,7 @@ The Gaussian density function is defined as:
 
 With this function, we can evaluate the likelihood of a data point $\boldsymbol{x}$ belonging to the $k$-th Gaussian component.
 
-In our implementation we adopt a diagonal covariance matrix \cite{bishop2006pattern} for each Gaussian component. 
+In our implementation, we adopt a diagonal covariance matrix \cite{bishop2006pattern} for each Gaussian component. 
 This assumption implies that the features are uncorrelated within each component, simplifying the covariance matrix to a diagonal form:
 
 
@@ -130,7 +130,7 @@ The EM algorithm consists of two main steps: the Expectation step (E-step) and t
 
 Using the current parameter estimates $\theta$, we compute the posterior probabilities, also called responsibilities, that each data point belongs to each Gaussian component.
 At the first iteration, the parameters are initialized randomly, in order to start the algorithm.
-The responsibilities $\gamma_{ik}$, representing the probability that data point $\boldsymbol{x}_i$ belongs to cluster $k$, is computed as follows:
+The responsibilities $\gamma_{ik}$, representing the probability that data point $\boldsymbol{x}_i$ belongs to cluster $k$, are computed as follows:
 
 \begin{equation}
 \gamma_{ik} 
