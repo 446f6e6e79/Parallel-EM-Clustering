@@ -45,30 +45,5 @@
 \fancyhead[L]{\leftmark}
 \fancyhead[R]{\thepage} 
 
-% Custom commands for definitions
-\newcommand{\definition}[2]{%
-  \paragraph{#1:} #2%
-}
-
-% Alternative with emphasis on the term
-\newcommand{\defterm}[2]{%
-  \paragraph{\textbf{#1}:} #2%
-}
-
-% Environment for lists of definitions
-\newenvironment{definitions}{%
-  \begin{description}[font=\normalfont\bfseries\large, leftmargin=0pt, labelindent=0pt]
-}{%
-  \end{description}
-}
-
-% Definition with colored box (optional)
-\newtcolorbox{defbox}[1]{
-  colback=blue!5!white,
-  colframe=blue!75!black,
-  title=#1,
-  fonttitle=\bfseries
-}
-
 % No indentation for paragraphs
 \setlength{\parindent}{0pt}
