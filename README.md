@@ -31,7 +31,7 @@ To review the implementation of the only MPI approach, please switch to the dedi
   - **`mpi_utils.c`**: MPI communication utilities
   - **`io_utils.c`**: Input/output file operations
   - **`utils.c`**: General utility functions
-  - **`debug.c`**: Debug logging functions (enabled with `-DDEBUG`)
+  - **`debug.c`**: Debug logging functions (enabled with `-DEBUG`)
   - **`sequential/multiFeature.c`**: Entry point for the sequential version
 
 - **`tools/`**: Python utilities
@@ -99,7 +99,7 @@ The executable will be generated at `bin/EM_Sequential`
 
 #### Debug Mode
 A debug mode compilation is provided, which includes additional logging for checking the correctness of the implementation.
-This can be activated either by setting the environment variable `DDEBUG=1` or by adding the keyword `debug` to the other provided compilation commands.
+This can be activated either by setting the environment variable `DEBUG=1` or by adding the keyword `debug` to the other provided compilation commands.
 For example, to compile the parallel version in debug mode:
 ```bash
 make debug

@@ -150,15 +150,15 @@ To further investigate this behavior, we conducted additional experiments on dat
     \footnotesize
     \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
         \hline
-        \textbf{N\_Processes} & \textbf{0.033M} & \textbf{0.066M} & \textbf{0.131M} & \textbf{0.262M} & \textbf{0.524M} & \textbf{1.049M} & \textbf{Na} \\
+        \textbf{N\_Processes} & \textbf{0.033M} & \textbf{0.066M} & \textbf{0.131M} & \textbf{0.262M} & \textbf{0.524M} & \textbf{1.049M} & \textbf{2.097M} \\
         \hline
-        1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & Na \\
-        2  & 1.038 & 1.063 & 0.944 & 1.086 & 1.000 & 1.056 & Na \\
-        4  & 1.046 & 1.121 & 1.022 & 0.983 & 0.953 & 1.041 & Na \\
-        8  & 1.036 & 1.030 & 0.989 & 1.019 & 0.946 & 1.013 & Na \\
-        16 & 0.899 & 0.954 & 0.982 & 0.985 & 0.874 & 0.960 & Na \\
-        32 & 0.880 & 0.989 & 0.929 & 0.943 & 0.838 & 0.887 & Na \\
-        64 & 0.797 & 0.865 & 0.874 & 0.879 & 0.830 & 0.918 & Na \\
+        1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
+        2  & 1.038 & 1.063 & 0.944 & 1.086 & 1.000 & 1.056 & 0.832 \\
+        4  & 1.046 & 1.121 & 1.022 & 0.983 & 0.953 & 1.041 & 0.867 \\
+        8  & 1.036 & 1.030 & 0.989 & 1.019 & 0.946 & 1.013 & 0.879 \\
+        16 & 0.899 & 0.954 & 0.982 & 0.985 & 0.874 & 0.960 & 0.842 \\
+        32 & 0.880 & 0.989 & 0.929 & 0.943 & 0.838 & 0.887 & 0.787 \\
+        64 & 0.797 & 0.865 & 0.874 & 0.879 & 0.830 & 0.918 & 0.757 \\
         \hline
     \end{tabularx}
     \caption{Efficiency (Speedup / $p$) for different dataset sizes and number of processes.}
@@ -256,7 +256,7 @@ For full results of the Hybrid approach, consult the appendix.
     \footnotesize
     \begin{tabularx}{\textwidth}{c|*{7}{>{\centering\arraybackslash}X}}
         \hline
-        \textbf{N\_Processes} & \textbf{0.033M} & \textbf{0.066M} & \textbf{0.131M} & \textbf{0.262M} & \textbf{0.524M} & \textbf{1.049M} &\textbf{Na} \\
+        \textbf{N\_Processes} & \textbf{0.033M} & \textbf{0.066M} & \textbf{0.131M} & \textbf{0.262M} & \textbf{0.524M} & \textbf{1.049M} &\textbf{2.097M} \\
         \hline
         1  & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
         2  & 1.041 & 0.941 & 0.978 & 1.046 & 0.988 & 1.109 & 0.761 \\
