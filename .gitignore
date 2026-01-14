@@ -63,7 +63,10 @@ dkms.conf
 *.synctex.gz
 *.bbl
 *.blg
+*.nav
+*.snm
 */LaTeX/build/main.pdf
+*/presentation/build/main.pdf
 .DS_Store
 notes/
 
