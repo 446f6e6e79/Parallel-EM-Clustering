@@ -20,16 +20,56 @@
         % from wikipedia https://en.wikipedia.org/wiki/Data_parallelism
     \end{frame}
 
+    %MAYBE???
+    \begin{frame}{Our Approach - Data Distribution}
+    \end{frame}
+    
+    % MPI E-step
     \begin{frame}{Our Approach - E-Step}
+        \begin{itemize}
+            \item Each worker computes the responsibilities for its local subset of data points;
+            \item Given the parameters \(\theta\), the responsibilities are computed independently for each data point
+            \item No inter-worker communication is required during this phase.
+        \end{itemize}
     \end{frame}
-
+   
+    % MPI M-step
     \begin{frame}{Our Approach - M-Step}
+        \begin{itemize}
+            \item Each worker computes local sufficient statistics based on the soft assignments calculated in the E-step;
+            \item These local statistics are then aggregated to update the global model parameters;
+            \item Each worker will receive the updated parameters for the next E-step.
+        \end{itemize}
     \end{frame}
 
+    % Performance considerations of MPI approach
     \begin{frame}{Performance Considerations}
+        \begin{itemize}
+            \item Theoretically, the data parallelization strategy should decrease the complexity to;
+            \[O\left(\frac{N \cdot K \cdot D}{P}\right)\]
+            where \(P\) is the number of workers;
+            \item Usually, real-world datasets have \(N \gg K\) and \(N \gg D\), making data parallelization more effective;
+            \item The communication overhead during the M-step aggregation scales with \(K\) and \(D\). This may become
+            a bottleneck with large datasets.
+        \end{itemize}
     \end{frame}
 
+    % Image explaining MPI + OpenMP hybrid approach
     \begin{frame}{Hybrid Parallelization}
+        \centering
+        \begin{figure}
+            \includegraphics[width=0.8\textwidth]{../media/hybrid-scheme.png}
+        \end{figure}
+        %REF: https://www.mdpi.com/2079-9292/13/1/182
+    \end{frame}
+
+    % Why the hybrid approach could improve the results
+    \begin{frame}{Hybrid Parallelization - Theoretical Speedup Analysis}
+        \begin{itemize}
+            \item Reduces the number of MPI processes, lowering the number of communication events and overhead;
+            \item Each MPI Process works on a larger subset of data, allowing computation to occur within a
+            shared-memory environment;
+        \end{itemize}
     \end{frame}
 
     % Discuss other parallelization strategies, and why they were not chosen even in the literature
