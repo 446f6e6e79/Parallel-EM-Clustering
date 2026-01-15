@@ -36,24 +36,115 @@
 \end{frame}
 
 \begin{frame}{What is clustering - More Formally}
+    \centering
+    The goal of clustering is to partition a dataset $\mathcal{X}=\{\boldsymbol{x}_1,\boldsymbol{x}_2,\dots, \boldsymbol{x}_N\}$ where $\boldsymbol{x}_i \in \mathbb{R}^D$ 
+    into $K$ (number of clusters) groups.
+    \\Each cluster is represented by a probability distribution with parameters $\theta_k$.
+    \\We want to find the clusters parameters that maximize the log-likelihood of the data:
+    \[
+    \max_{\Theta} \sum_{i=1}^{N} \log \left( \sum_{k=1}^{K} \pi_k \,
+    p(\boldsymbol{x}_i \mid \theta_k) \right)
+    \]
     %Assignement of clusters to data points based on similarity
     %Makimize log-likelihood of data given a mixture model
 \end{frame}
 
 \begin{frame}{Gaussian Mixture Models}
+    \centering
+    In Gaussian Mixture Models (GMM), each cluster is modeled as a multivariate Gaussian distribution:
+    \[
+    p(\boldsymbol{x} \mid \theta) = \sum_{k=1}^{K} \pi_k \, \mathcal{N}(\boldsymbol{x} \mid \boldsymbol{\mu}_k, \Sigma_k)
+    \]
+    where the likelihood of a data point $\boldsymbol{x}$ to belong to cluster $k$ is given by:
+    \[
+    \mathcal{N}(\boldsymbol{x} \mid \boldsymbol{\mu}_k, \Sigma_k)
+    = \frac{1}{(2\pi)^{D/2} |\Sigma_k|^{1/2}}
+    \exp\left( -\frac{1}{2} (\boldsymbol{x} - \boldsymbol{\mu}_k)^T 
+    \Sigma_k^{-1} (\boldsymbol{x} - \boldsymbol{\mu}_k) \right)
+    \]
+\end{frame}
+
+\begin{frame}{Gaussian Mixture Models -- Approximation}
+    \centering
+    We assumed the features are uncorrelated within each component, simplifying the covariance matrix to a diagonal form:
+    \[
+    \Sigma_k = 
+    \begin{pmatrix}
+    \sigma_{k,1} & 0 & \cdots & 0 \\
+    0 & \sigma_{k,2} & \cdots & 0 \\
+    \vdots & \vdots & \ddots & \vdots \\
+    0 & 0 & \cdots & \sigma_{k,D}
+    \end{pmatrix}
+    \]
+    This implies that the likelihood can be expressed as:
+    \[
+    \mathcal{N}(\boldsymbol{x} \mid \boldsymbol{\mu}_k, \Sigma_k)
+    = \frac{1}{(2\pi)^{D/2} \prod_{d=1}^D \sigma_{k,d}^{1/2}}
+    \exp\Bigg(-\frac{1}{2} \sum_{d=1}^D \frac{(x_d - \mu_{k,d})^2}{\sigma_{k,d}}\Bigg)
+    \]
 \end{frame}
 
 \begin{frame}{EM-Algorithm}
+    \begin{algorithm}[H]
+    \caption{Expectation-Maximization for GMM clustering}
+    \begin{algorithmic}[1]
+    \State Randomly initialize parameters $\{\pi_k, \mu_k, \Sigma_k\}_{k=1}^K$
+    \For{i $= 1 \dots \text{MAX\_ITER}$}
+        \State \textbf{E-step:} compute responsibilities 
+        \State \textbf{M-step:} update parameters 
+        \State Compute log-likelihood $\mathcal{L}$ 
+        \If{Converged} 
+            \State break 
+        \EndIf
+    \EndFor
+    \State \textbf{Clustering:} assign labels 
+    \end{algorithmic}
+    \label{em_alg}
+    \end{algorithm}
 \end{frame}
 
 \begin{frame}{EM-Algorithm - E-Step}
+    \centering
+    Using the current parameter estimates $\theta$, we compute the responsibilities, i.e. the posterior probability that each data point belongs to each Gaussian component.
+    \[
+    \gamma_{ik} 
+    = \frac{\pi_k \, \mathcal{N}(\boldsymbol{x}_i \mid \boldsymbol{\mu}_k, \Sigma_k)}
+        {\sum_{j=1}^{K} \pi_j \, \mathcal{N}(\boldsymbol{x}_i \mid \boldsymbol{\mu}_j, \Sigma_j)}
+    \]
 \end{frame}
 
 \begin{frame}{EM-Algorithm - M-Step}
+    \centering
+    Using the responsibilities \(\gamma_{ik}\) computed in the E-step, we update the parameters:
+    \vfill
+    \begin{itemize}
+        \item \textbf{Sum of responsibilities for each component:} \(N_k = \sum_{i=1}^{N} \gamma_{ik}\)
+        \item \textbf{Update of means}: \(\boldsymbol{\mu}_k = \frac{1}{N_k} \sum_{i=1}^{N} \gamma_{ik} \boldsymbol{x}_i\)   
+        \item \textbf{Update of covariances}: \(\Sigma_k = \frac{1}{N_k} \sum_{i=1}^{N} \gamma_{ik} (\boldsymbol{x}_i - \boldsymbol{\mu}_k)(\boldsymbol{x}_i - \boldsymbol{\mu}_k)^T\)
+        \item \textbf{Update of mixture weights}: \(\pi_k = \frac{N_k}{N}\)
+    \end{itemize}
 \end{frame}
 
 \begin{frame}{Convergence}
+    \centering
+    The log-likelihood of the data given the model parameters is computed as:
+    \[
+    \mathcal{L}(\theta ) = \sum_{i=1}^{N} \log \left( \sum_{k=1}^{K} \pi_k \, \mathcal{N}(\boldsymbol{x}_i \mid \boldsymbol{\mu}_k, \Sigma_k) \right)
+    \]
+    Convergence it's reached if the change is below a predefined threshold $\epsilon$.
+\end{frame}
+
+\begin{frame}{Clustering Assignment}
+    \centering
+    After convergence, each data point is assigned to the cluster with the highest responsibility:
+    \[
+    \hat{z}_i = \arg \max_{k} p(z_i = k \mid \boldsymbol{x}_i, \theta) = \arg\max_{k} \gamma_{ik}
+    \]
 \end{frame}
 
 \begin{frame}{Computational Complexity Analysis}
+    \centering
+    The computational cost of the EM algorithm is determined by the number of data points $N$, clusters $K$, and feature dimensions $D$.  
+    \\It results in an overall per-iteration complexity:
+    \Large{\[O(NKD)\]}       
 \end{frame}
