@@ -4,9 +4,9 @@
         \centering
         \begin{enumerate}
             \item The dataset ($\mathcal{X}$), together with the metadata file, is read by the master process (rank 0);
-            \item The metadata is first collected in an array and then broadcast to all workers using \texttt{MPI\_Bcast};
+            \item The metadata is first collected in an array and then broadcast to all processes using \texttt{MPI\_Bcast};
             \item Each process calculates the size of its local workload;
-            \item Using \texttt{MPI\_Scatterv}, the dataset is partitioned ($\mathcal{X}_{loc}$) and distributed among all workers;
+            \item Using \texttt{MPI\_Scatterv}, the dataset is partitioned ($\mathcal{X}_{loc}$) and distributed among all processes;
             \item After the clustering is complete, all local predicted labels are gathered by the master process using \texttt{MPI\_Gatherv}.
         \end{enumerate}
     \end{frame}
