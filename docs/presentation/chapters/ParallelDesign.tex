@@ -1,3 +1,34 @@
 \section{Parallel Design}
+    % Describe the found parallelization strategy across the literature
     \begin{frame}{Parallel Design}
+        \centering
+        \textbf{State-of-the-Art Approaches}
+        \begin{itemize}
+            % GPU-based approach
+            \item \textit{Massively parallel expectation maximization using graphics processing units}, \\ M. C. Altinigneli, C. Plant, and C. Bohm
+            % Simple multi-threaded approach
+            \item \textit{A simple parallel em algorithm for statistical learning via mixture models}, \\ S. X. Lee, K. L. Leemaqz, and G. J. McLachlan
+        \end{itemize}
+    \end{frame}
+
+    % Discuss the chosen data parallelization strategy
+    \begin{frame}{Data Parallelization Strategy}
+        \centering
+        \begin{figure}
+            \includegraphics[width=0.8\textwidth]{../media/data_strategy.png}
+        \end{figure}
+        % from wikipedia https://en.wikipedia.org/wiki/Data_parallelism
+    \end{frame}
+
+    % Discuss other parallelization strategies, and why they were not chosen even in the literature
+    \begin{frame}{Other Parallelization Strategies}
+        \centering
+        \begin{itemize}
+            % Moreover, the iterative nature of the EM algorithm would require frequent synchronizationbetween tasks
+            \item \textbf{Task Parallelization}
+            % The algorithm does not follow an independent sequence of stages that can be overlapped in a pipeline fashion
+            \item \textbf{Pipeline Parallelization}
+            % While theoretically feasible, this strategy introduces significant communication complexity, 
+            \item \textbf{Model Parallelization}
+        \end{itemize}
     \end{frame}
