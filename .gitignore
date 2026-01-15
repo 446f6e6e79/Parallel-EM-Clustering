@@ -69,6 +69,7 @@ dkms.conf
 */presentation/build/main.pdf
 .DS_Store
 notes/
+docs/presentation/build/presentation.pdf
 
 # Ignoring the data files
 data/
