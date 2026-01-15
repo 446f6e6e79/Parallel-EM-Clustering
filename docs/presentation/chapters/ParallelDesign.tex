@@ -22,6 +22,11 @@
 
     %MAYBE???
     \begin{frame}{Our Approach - Data Distribution}
+        \begin{itemize}
+            \item A master process is responsible for reading the dataset;
+            \item The dataset is then partitioned into \(P\) subsets, where \(P\) is the number of available workers;
+            \item Each subset is distributed to a different worker process;
+        \end{itemize}
     \end{frame}
     
     % MPI E-step
