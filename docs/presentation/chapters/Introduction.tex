@@ -46,7 +46,7 @@
         \item Find the cluster parameters that maximize the log-likelihood of the data:
         \[\max_{\theta} (\mathcal{L}(\theta|\mathcal{X}))\]
         \[
-        \mathcal{L}(\theta|\mathcal{X}) = \log\sum_{i=1}^{N} \left( \sum_{k=1}^{K} \pi_k \,
+        \mathcal{L}(\theta|\mathcal{X}) = \sum_{i=1}^{N} \log \left( \sum_{k=1}^{K} \pi_k \,
         p(\boldsymbol{x}_i \mid \theta_k) \right)
         \]
     \end{itemize}
@@ -118,7 +118,7 @@
     The EM algorithm consists of two main steps:
     \vfill
     \begin{itemize}
-        \item \textbf{E-step (Expectation step):} Compute the expected value of the latent variables given the current parameter estimates.
+        \item \textbf{E-step (Expectation step):} Compute the expected value of the latent variables given the current parameter estimates (soft assignments).
         \item \textbf{M-step (Maximization step):} Update the parameters to maximize the expected log-likelihood found in the E-step.
     \end{itemize}
 \end{frame}
@@ -146,7 +146,7 @@
 % E-step details
 \begin{frame}{EM-Algorithm - E-Step}
     \centering
-    Using the current parameter estimates $\theta$, we compute the responsibilities, i.e. the posterior probability that each data point belongs to each Gaussian component.
+    Using the current parameter estimates $\theta$, we compute the responsibilities, i.e. the posterior probability that data point $i$ belongs to Gaussian component $k$.
     \[
     \gamma_{ik} 
     = \frac{\pi_k \, \mathcal{N}(\boldsymbol{x}_i \mid \boldsymbol{\mu}_k, \Sigma_k)}
@@ -167,6 +167,7 @@
     \end{itemize}
 \end{frame}
 
+% Formalization of computation of log-likelihood and convergence criteria
 \begin{frame}{Convergence}
     \centering
     The log-likelihood of the data given the model parameters is computed as:
@@ -176,6 +177,7 @@
     Convergence it's reached if the change is below a predefined threshold $\epsilon$.
 \end{frame}
 
+% Formalization of clustering assignment
 \begin{frame}{Clustering Assignment}
     \centering
     After convergence, each data point is assigned to the cluster with the highest responsibility:
@@ -184,9 +186,14 @@
     \]
 \end{frame}
 
+% Computational complexity analysis
 \begin{frame}{Computational Complexity Analysis}
     \centering
-    The computational cost of the EM algorithm is determined by the number of data points $N$, clusters $K$, and feature dimensions $D$.  
-    \\It results in an overall per-iteration complexity:
-    \Large{\[O(NKD)\]}       
+    \begin{itemize}
+        \item The computational cost is expressed in terms of number of data points $N$, clusters $K$, and feature dimensions $D$.
+        \item Both E-step and M-step involve operations over all data points and clusters:
+        \[O(NKD)\]
+        \item Overall iteration cost:
+        \[O(NKD) + O(NKD) = O(NKD)\]
+    \end{itemize}
 \end{frame}
