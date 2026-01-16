@@ -3,7 +3,8 @@
 % Statistics about the dataset and settings used for scalability experiments
 \begin{frame}{Scalability - Experimental Setup}
     \begin{itemize}
-        \item The dataset was synthetically generated via the \texttt{make\_blobs} function from \texttt{sklearn.datasets}.
+        \item The dataset was synthetically generated usingour own data generator. This allowed us to create
+        datasets of varying sizes while maintaining consistent characteristics.
         \item Composed of:
         \begin{itemize}
             \item Various number of samples, from 156k to 10M
@@ -12,6 +13,7 @@
         \end{itemize}
         \item We ignored the initial data loading and scattering, as they are not part of the EM algorithm.
         \item We ignored the convergence criterion, fixing the number of iterations to $100$.
+        \item Each configuration was run 5 times, and the average execution time was recorded.
     \end{itemize}
 \end{frame}
 
