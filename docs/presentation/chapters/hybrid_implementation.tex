@@ -1,0 +1,30 @@
+\section{Hybrid - Implementation}
+    % Introduction to hybrid implementation
+    \begin{frame}{Hybrid - Implementation}
+        \centering
+        \begin{itemize}
+            \item The hybrid implementation was built upon the existing MPI implementation by integrating \texttt{OpenMP} directives.
+            \item A \textbf{static scheduling} strategy was chosen, as the workload is evenly distributed among the threads.
+        \end{itemize}
+    \end{frame}
+    % Hybrid E-step implementation details
+    \begin{frame}{Hybrid Implementation - E-Step}
+        \centering
+        \begin{itemize}
+            \item We used \emph{\#pragma omp parallel} to parallelize the outer loop that iterates over data points.
+            \item No relevant data dependencies exist between iterations; only the log-likelihood requires reduction since has a flow loop-carried data dependency.
+        \end{itemize}
+        % Remember to talk about SIMD for Gaussian density computation
+    \end{frame}
+    % Hybrid M-step implementation details
+    \begin{frame}{Hybrid Implementation - M-Step}
+        \centering
+        \begin{enumerate}
+            \item All sufficient statistics have a flow loop-carried data dependency.
+            \item \texttt{OpenMP} directives were used to parallelize the computation of local sufficient statistics.
+            \item A private copy of the local statistics was created for each thread, which was then reduced to obtain the final local statistics.
+            \item During the aggregation of $N_k$ and $u_{kd}$, it was possible to use \emph{\#pragma omp nowait}.
+            \item After all thread-private statistics were aggregated, \texttt{MPI\_Allreduce} was used to compute the global statistics.
+            \item Each process then computed the updated global model parameters for the next E-step.
+        \end{enumerate}
+    \end{frame}

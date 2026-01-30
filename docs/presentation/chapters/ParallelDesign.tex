@@ -1,0 +1,91 @@
+\section{Parallel Design}
+    % Describe the found parallelization strategy across the literature
+    \begin{frame}{Parallel Design - Literature Review}
+        \centering
+        \textbf{State-of-the-Art Approaches}
+        \begin{itemize}
+            % GPU-based approach
+            \item \textit{Massively parallel expectation maximization using graphics processing units}, \\ M. C. Altinigneli, C. Plant, and C. Bohm
+            % Simple multi-threaded approach
+            \item \textit{A simple parallel em algorithm for statistical learning via mixture models}, \\ S. X. Lee, K. L. Leemaqz, and G. J. McLachlan
+        \end{itemize}
+    \end{frame}
+
+    % Discuss the chosen data parallelization strategy
+    \begin{frame}{Our Approach - Data Parallelization Strategy}
+        \centering
+        \begin{figure}
+            \includegraphics[width=0.8\textwidth]{../media/data_parallelism.drawio-25.png}
+        \end{figure}
+        % from wikipedia https://en.wikipedia.org/wiki/Data_parallelism
+    \end{frame}
+
+    %MAYBE???
+    \begin{frame}{Our Approach - Data Distribution}
+        \begin{itemize}
+            \item A master process is responsible for reading the dataset;
+            \item The dataset is then partitioned into \(P\) subsets, where \(P\) is the number of available workers;
+            \item Each subset is distributed to a different worker process;
+        \end{itemize}
+    \end{frame}
+    
+    % MPI E-step
+    \begin{frame}{Our Approach - E-Step}
+        \begin{itemize}
+            \item Each worker computes the responsibilities for its local subset of data points;
+            \item Given the parameters \(\theta\), the responsibilities are computed independently for each data point
+            \item No inter-worker communication is required during this phase.
+        \end{itemize}
+    \end{frame}
+   
+    % MPI M-step
+    \begin{frame}{Our Approach - M-Step}
+        \begin{itemize}
+            \item Each worker computes local sufficient statistics based on the soft assignments calculated in the E-step;
+            \item These local statistics are then aggregated to update the global model parameters;
+            \item Each worker will receive the updated parameters for the next E-step.
+        \end{itemize}
+    \end{frame}
+
+    % Performance considerations of MPI approach
+    \begin{frame}{Performance Considerations}
+        \begin{itemize}
+            \item Theoretically, the data parallelization strategy should decrease the complexity to;
+            \[O\left(\frac{N \cdot K \cdot D}{P}\right)\]
+            where \(P\) is the number of workers;
+            \item Usually, real-world datasets have \(N \gg K\) and \(N \gg D\), making data parallelization more effective;
+            \item The communication overhead during the M-step aggregation scales with \(K\) and \(D\). This may become
+            a bottleneck with large datasets.
+        \end{itemize}
+    \end{frame}
+
+    % Image explaining MPI + OpenMP hybrid approach
+    \begin{frame}{Hybrid Parallelization}
+        \centering
+        \begin{figure}
+            \includegraphics[width=0.8\textwidth]{../media/hybrid-scheme.png}
+        \end{figure}
+        %REF: https://www.mdpi.com/2079-9292/13/1/182
+    \end{frame}
+
+    % Why the hybrid approach could improve the results
+    \begin{frame}{Hybrid Parallelization - Theoretical Speedup Analysis}
+        \begin{itemize}
+            \item Reduces the number of MPI processes, lowering the number of communication events and overhead;
+            \item Each MPI Process works on a larger subset of data, allowing computation to occur within a
+            shared-memory environment;
+        \end{itemize}
+    \end{frame}
+
+    % Discuss other parallelization strategies, and why they were not chosen even in the literature
+    \begin{frame}{Other Parallelization Strategies}
+        \centering
+        \begin{itemize}
+            % Moreover, the iterative nature of the EM algorithm would require frequent synchronizationbetween tasks
+            \item \textbf{Task Parallelization}
+            % The algorithm does not follow an independent sequence of stages that can be overlapped in a pipeline fashion
+            \item \textbf{Pipeline Parallelization}
+            % While theoretically feasible, this strategy introduces significant communication complexity, 
+            \item \textbf{Model Parallelization}
+        \end{itemize}
+    \end{frame}

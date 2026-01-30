@@ -1,0 +1,37 @@
+\documentclass[10pt]{beamer}
+
+% Input setup file with packages and custom commands
+\input{setup.tex}
+
+\begin{document}
+
+\title[January 2026]{Parallel Expectation-Maximization for Clustering}
+\author[University of Trento]{Davide Donà \and Andrea Blushi}
+
+
+\institute[]{ University of Trento}
+\date[]
+{January 2026}
+
+%The next statement creates the title page.
+\frame{\titlepage}
+\begin{frame}
+\frametitle{Contents}
+\tableofcontents
+\end{frame}
+%------------------------------------------------------------
+\input{chapters/Introduction.tex}
+\input{chapters/ParallelDesign.tex}
+\input{chapters/mpi_Implementation.tex}
+\input{chapters/mpi_results.tex}
+\input{chapters/hybrid_implementation.tex}
+\input{chapters/hybrid_results.tex}
+\input{chapters/conclusion.tex}
+
+\section*{References}  
+\begin{frame}
+\nocite{*}
+\bibliographystyle{ieeetr} 
+\small{\bibliography{references}}
+\end{frame}
+\end{document}

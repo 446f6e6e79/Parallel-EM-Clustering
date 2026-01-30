@@ -1,12 +1,33 @@
 # Parallel-EM-Clustering
 
-Implementation of **Expectation–Maximization** (EM) algorithm for clustering, using **MPI** for distributed processing. 
+Implementation of **Expectation–Maximization** (EM) algorithm for clustering, using **MPI** for distributed processing.
+<p align="center">
+  <img src="docs/media/em-3d_progress.gif" width="300" alt="3D EM clustering progress">
+</p>
 
-The project was developed as part of the course "High Performance Computing For Data Science (HPC4DS)", held by Prof. Sandro Luigi Fiore at the University of Trento, Master's Degree in Computer Science
+The project was developed as part of the course "High Performance Computing For Data Science (HPC4DS)", held by Prof. Sandro Luigi Fiore at the University of Trento, Master's Degree in Computer Science.
+<table align="center">
+  <tr>
+    <td align="center">
+      <strong>
+        <a href="report.pdf">View Full Report (PDF)</a>
+      </strong><br><br>
+      <a href="report.pdf">
+        <img src="docs/media/report_preview.png" width="200" alt="Report preview">
+      </a>
+    </td>
+    <td align="center">
+      <strong>
+        <a href="presentation.pdf">View Full Presentation (PDF)</a>
+      </strong><br><br>
+      <a href="presentation.pdf">
+        <img src="docs/media/presentation_preview.png" width="350" alt="Presentation preview">
+      </a>
+    </td>
+  </tr>
+</table>
 
-[View Full Report (PDF)](report.pdf)
-
-To review the implementation of the Hybrid approach, please switch to the dedicated **Hybrid** branch on the GitHub repository.
+To review the implementation of the only MPI approach, please switch to the dedicated **MPI** branch on the GitHub repository.
 
 ## Table of Contents
 
@@ -348,3 +369,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Authors
 - Davide Donà - [GitHub](https://github.com/446f6e6e79) - [Email](mailto:davidedona03@gmail.com)
 - Andrea Blushi - [GitHub](https://github.com/andreablushi) - [Email](mailto:andreablushi@gmail.com)
+

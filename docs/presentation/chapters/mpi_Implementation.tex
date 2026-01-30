@@ -1,0 +1,29 @@
+\section{MPI - Implementation}
+    % How data is distributed among processes
+    \begin{frame}{MPI Implementation - Data Distribution}
+        \centering
+        \begin{enumerate}
+            \item The dataset ($\mathcal{X}$), together with the metadata file, is read by the master process (rank 0);
+            \item The metadata is first collected in an array and then broadcast to all processes using \texttt{MPI\_Bcast};
+            \item Each process calculates the size of its local workload;
+            \item Using \texttt{MPI\_Scatterv}, the dataset is partitioned ($\mathcal{X}_{loc}$) and distributed among all processes;
+            \item After the clustering is complete, all local predicted labels are gathered by the master process using \texttt{MPI\_Gatherv}.
+        \end{enumerate}
+    \end{frame}
+    % MPI E-step implementation details
+    \begin{frame}{MPI Implementation - E-Step}
+        \centering
+        \begin{itemize}
+            \item It's inherently data-parallel, requiring only a change to the input parameter of the function.
+            \item Our implementation computes the log-likelihood during this phase.
+        \end{itemize}
+    \end{frame}
+    % MPI M-step implementation details
+    \begin{frame}{MPI Implementation- M-Step}
+        \centering
+        \begin{itemize}
+            \item Each worker computes local sufficient statistics based on its local data points.
+            \item These local statistics are then aggregated using \texttt{MPI\_Allreduce}.
+            \item Each process computes the updated global model parameters for the next E-step.
+        \end{itemize}
+    \end{frame}
