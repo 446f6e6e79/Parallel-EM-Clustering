@@ -5,7 +5,7 @@ SHORT_QUEUE_LIMIT=100
 LONG_QUEUE="common_cpuQ"
 LONG_QUEUE_LIMIT=10
 
-JOB_DIR="$HOME/Parallel-EM-Clustering/jobs"
+JOB_DIR="$HOME/parallel-em-clustering/jobs"
 SHORT_JOB_DIR="${JOB_DIR}/short"
 LONG_JOB_DIR="${JOB_DIR}/long"
 

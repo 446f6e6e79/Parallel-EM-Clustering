@@ -22,7 +22,7 @@ SHORT_WALLTIME="06:00:00"
 LONG_WALLTIME="10:00:00"
 
 # === Common parameters ===
-BASE_DIR="$HOME/Parallel-EM-Clustering"
+BASE_DIR="$HOME/parallel-em-clustering"
 EXECUTABLE="${BASE_DIR}/bin/EM_Clustering"
 TEMPLATE="${BASE_DIR}/scripts/job_template.sh"
 
