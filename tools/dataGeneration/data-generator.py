@@ -23,7 +23,7 @@ def get_repo_data_dir() -> Path:
         Return the absolute path to the repository's data directory,
         regardless of the current working directory.
     """
-    # parents[0]=.../data/datasetGeneration, parents[1]=.../data, parents[2]=.../Parallel-EM-Clustering
+    # parents[0]=.../data/datasetGeneration, parents[1]=.../data, parents[2]=.../parallel-em-clustering
     repo_root = Path(__file__).resolve().parents[2]
     data_dir = repo_root / "data" / "raw"
     data_dir.mkdir(parents=True, exist_ok=True)
