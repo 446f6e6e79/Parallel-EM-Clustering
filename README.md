@@ -367,6 +367,6 @@ This will generate a PNG showing the initial state of the dataset.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 ### Authors
-- Davide Donà - [GitHub](https://github.com/446f6e6e79) - [Email](mailto:davidedona03@gmail.com)
+- Davide Donà - [GitHub](https://github.com/davide-dona) - [Email](mailto:davidedona03@gmail.com)
 - Andrea Blushi - [GitHub](https://github.com/andreablushi) - [Email](mailto:andreablushi@gmail.com)
 
